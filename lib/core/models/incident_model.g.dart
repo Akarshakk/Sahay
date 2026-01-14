@@ -1,0 +1,44 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'incident_model.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$IncidentModelImpl _$$IncidentModelImplFromJson(Map<String, dynamic> json) =>
+    _$IncidentModelImpl(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      type: _incidentTypeFromJson(json['type'] as String),
+      severity: _severityLevelFromJson(json['severity'] as String),
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      reportedBy: json['reportedBy'] as String,
+      reportedAt: DateTime.parse(json['reportedAt'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      status: _incidentStatusFromJson(json['status'] as String),
+      isSynced: json['isSynced'] as bool,
+      mediaUrls:
+          (json['mediaUrls'] as List<dynamic>).map((e) => e as String).toList(),
+      verificationCount: (json['verificationCount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$IncidentModelImplToJson(_$IncidentModelImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'description': instance.description,
+      'type': _incidentTypeToJson(instance.type),
+      'severity': _severityLevelToJson(instance.severity),
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
+      'reportedBy': instance.reportedBy,
+      'reportedAt': instance.reportedAt.toIso8601String(),
+      'timestamp': instance.timestamp.toIso8601String(),
+      'status': _incidentStatusToJson(instance.status),
+      'isSynced': instance.isSynced,
+      'mediaUrls': instance.mediaUrls,
+      'verificationCount': instance.verificationCount,
+    };
