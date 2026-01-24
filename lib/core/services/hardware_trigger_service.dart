@@ -75,7 +75,7 @@ class VolumeButtonListener {
     });
   }
 }
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState = Bundle?) {
         super.onCreate(savedInstanceState)
         
         MethodChannel(flutterEngine?.dartExecutor?.binaryMessenger!!, CHANNEL)
@@ -84,7 +84,7 @@ class VolumeButtonListener {
             }
     }
     
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+    override fun onKeyDown(keyCode = Int, event = KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             volumeUpPressCount++
             resetHandler.removeCallbacksAndMessages(null)
@@ -128,12 +128,12 @@ iOS NATIVE CODE (AppDelegate.swift):
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
-    private func setupVolumeListener(channel: FlutterMethodChannel) {
+    private func setupVolumeListener(channel = FlutterMethodChannel) {
         let audioSession = AVAudioSession.sharedInstance()
         audioSession.addObserver(self, forKeyPath: "outputVolume", options: .new, context: nil)
     }
     
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    override func observeValue(forKeyPath keyPath = String?, of object = Any?, change = [NSKeyValueChangeKey : Any]?, context = UnsafeMutableRawPointer?) {
         if keyPath == "outputVolume" {
             volumeUpPressCount += 1
             resetTimer?.invalidate()

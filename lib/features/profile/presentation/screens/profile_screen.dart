@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart' as user_model;
+import '../../../../core/providers/profile_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Profile Screen - Edit user details
@@ -32,11 +33,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _loadUserData() {
     final user = ref.read(authControllerProvider);
+    final profileData = ref.read(profileProvider);
+    
     if (user != null) {
-      _nameController.text = user.name;
-      // In a real app, load profession and address from user profile
-      _professionController.text = 'Software Developer';
-      _addressController.text = 'Mumbai, Maharashtra, India';
+      // Use saved profile data if available, otherwise use auth data
+      _nameController.text = profileData.name.isNotEmpty ? profileData.name : user.name;
+      _professionController.text = profileData.profession;
+      _addressController.text = profileData.address;
+      _profileImagePath = profileData.profileImagePath;
+      
+      // Initialize provider from user if first load
+      ref.read(profileProvider.notifier).initFromUser(user.name, '', user.phone);
     }
   }
 

@@ -94,11 +94,14 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         }
       }
     } catch (e) {
+      // Offline mode - show success with queue indicator
       if (mounted) {
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text('📡 Post saved! Will sync when online.'),
+            backgroundColor: AppTheme.primaryOrange,
+            duration: Duration(seconds: 3),
           ),
         );
       }

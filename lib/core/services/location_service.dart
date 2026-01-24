@@ -1,0 +1,122 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+
+/// Location Service for GPS and Geocoding
+class LocationService {
+  /// Check and request location permissions
+  Future<bool> handlePermissions() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return false;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return false;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Get current GPS location
+  Future<Position?> getCurrentLocation() async {
+    try {
+      final hasPermission = await handlePermissions();
+      if (!hasPermission) {
+        return null;
+      }
+
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } catch (e) {
+      print('Error getting location: $e');
+      return null;
+    }
+  }
+
+  /// Convert coordinates to human-readable address
+  Future<String> getAddressFromCoordinates(double lat, double lng) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        
+        // Build address string
+        List<String> addressParts = [];
+        
+        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+          addressParts.add(place.subLocality!);
+        }
+        if (place.locality != null && place.locality!.isNotEmpty) {
+          addressParts.add(place.locality!);
+        }
+        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          addressParts.add(place.administrativeArea!);
+        }
+        
+        if (addressParts.isEmpty) {
+          return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+        }
+        
+        return addressParts.join(', ');
+      }
+      
+      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+    } catch (e) {
+      print('Geocoding error: $e');
+      return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+    }
+  }
+}
+
+// Provider for LocationService
+final locationServiceProvider = Provider<LocationService>((ref) => LocationService());
+
+// Provider for current location state
+final currentLocationProvider = FutureProvider<LocationData?>((ref) async {
+  final service = ref.watch(locationServiceProvider);
+  final position = await service.getCurrentLocation();
+  
+  if (position == null) {
+    return null;
+  }
+  
+  final address = await service.getAddressFromCoordinates(
+    position.latitude,
+    position.longitude,
+  );
+  
+  return LocationData(
+    latitude: position.latitude,
+    longitude: position.longitude,
+    address: address,
+  );
+});
+
+/// Location data model
+class LocationData {
+  final double latitude;
+  final double longitude;
+  final String address;
+
+  LocationData({
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+  });
+}

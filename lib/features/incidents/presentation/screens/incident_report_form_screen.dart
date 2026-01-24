@@ -3,15 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/incident_model.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/incident_provider.dart';
-
-/// Mock Position class for web compatibility
-class MockPosition {
-  final double latitude;
-  final double longitude;
-  MockPosition({required this.latitude, required this.longitude});
-}
 
 /// Modern Incident Reporting Form with Offline-First Architecture
 /// - Captures location automatically
@@ -34,7 +28,7 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   
-  MockPosition? _currentPosition;
+  LocationData? _currentLocation;
   String _address = 'Detecting location...';
   bool _isLoadingLocation = true;
   bool _isOffline = false;
@@ -47,7 +41,6 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     super.initState();
     _checkConnectivity();
     _getCurrentLocation();
-    _checkForDuplicates();
   }
 
   Future<void> _checkConnectivity() async {
@@ -59,14 +52,33 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
 
   Future<void> _getCurrentLocation() async {
     try {
-      // Mock location for web compatibility (Delhi, India)
-      await Future.delayed(const Duration(seconds: 1));
+      final locationService = ref.read(locationServiceProvider);
+      final position = await locationService.getCurrentLocation();
       
-      setState(() {
-        _currentPosition = MockPosition(latitude: 28.6139, longitude: 77.2090);
-        _address = 'Connaught Place, New Delhi, Delhi';
-        _isLoadingLocation = false;
-      });
+      if (position != null) {
+        final address = await locationService.getAddressFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        
+        setState(() {
+          _currentLocation = LocationData(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            address: address,
+          );
+          _address = address;
+          _isLoadingLocation = false;
+        });
+        
+        // Check for duplicates after getting location
+        _checkForDuplicates();
+      } else {
+        setState(() {
+          _address = 'Location permission denied';
+          _isLoadingLocation = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _address = 'Unable to detect location';
@@ -76,12 +88,12 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
   }
 
   Future<void> _checkForDuplicates() async {
-    if (_currentPosition == null) return;
+    if (_currentLocation == null) return;
 
     try {
       final duplicateCheck = await ref
           .read(incidentControllerProvider.notifier)
-          .checkDuplicate(_currentPosition!.latitude, _currentPosition!.longitude);
+          .checkDuplicate(_currentLocation!.latitude, _currentLocation!.longitude);
 
       if (duplicateCheck.isSuccess && duplicateCheck.data != null) {
         setState(() {
@@ -261,10 +273,10 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
                 color: Colors.grey[700],
               ),
             ),
-          if (_currentPosition != null) ...[
+          if (_currentLocation != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Lon: ${_currentPosition!.longitude.toStringAsFixed(6)}',
+              'Lat: ${_currentLocation!.latitude.toStringAsFixed(6)}, Lon: ${_currentLocation!.longitude.toStringAsFixed(6)}',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[500],
@@ -451,7 +463,7 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
       return;
     }
 
-    if (_currentPosition == null) {
+    if (_currentLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Waiting for location...'),
@@ -497,8 +509,8 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
       description: _descriptionController.text.trim(),
       type: widget.incidentType,
       severity: severity,
-      latitude: _currentPosition!.latitude,
-      longitude: _currentPosition!.longitude,
+      latitude: _currentLocation!.latitude,
+      longitude: _currentLocation!.longitude,
       reportedBy: user.phone,
       reportedAt: now,
       timestamp: now,
