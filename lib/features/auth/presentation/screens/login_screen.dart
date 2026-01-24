@@ -67,24 +67,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         );
 
-        // Navigate to appropriate dashboard based on role
+        // Navigate to Home Screen for ALL roles
+        // This ensures everyone gets the standard drawer menu and layout
         if (!mounted) return;
-        
-        if (role == UserRole.authority) {
-          // Authority gets the command center dashboard
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const AuthorityDashboardScreen(),
-            ),
-          );
-        } else {
-          // Citizens and Volunteers get the regular home screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => HomeScreen(userRole: role),
-            ),
-          );
-        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userRole: role),
+          ),
+        );
       } else {
         throw Exception('Login failed - no user data returned');
       }

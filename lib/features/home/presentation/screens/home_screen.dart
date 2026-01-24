@@ -1178,6 +1178,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
             ),
             
+            // Authority Specific Menu Item
+            if (user?.role == user_model.UserRole.authority)
+              _buildDrawerItem(
+                icon: Icons.shield,
+                title: 'Command Center',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
+                  );
+                },
+              ),
+            
             _buildDrawerItem(
               icon: Icons.contact_emergency,
               title: 'E-Contact',
