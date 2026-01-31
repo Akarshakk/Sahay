@@ -38,13 +38,13 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('CivicSync API')
     .setDescription(
-      'Crisis Response Platform API - Hybrid PostgreSQL + MongoDB Backend',
+      'Crisis Response Platform API - Firebase Firestore Backend',
     )
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management')
-    .addTag('incidents', 'Official incident management (PostgreSQL)')
-    .addTag('feed', 'Community Pulse - Local feed (MongoDB)')
+    .addTag('incidents', 'Official incident management')
+    .addTag('feed', 'Community Pulse - Local feed')
     .addBearerAuth()
     .build();
 
@@ -56,8 +56,7 @@ async function bootstrap() {
 
   logger.log(`🚀 CivicSync API running on: http://localhost:${port}`);
   logger.log(`📚 Swagger docs available at: http://localhost:${port}/api/docs`);
-  logger.log(`🗄️  PostgreSQL: Users, Auth, Incidents`);
-  logger.log(`🍃 MongoDB: Community Pulse Feed`);
+  logger.log(`🔥 Firebase Firestore: All data (Users, Auth, Incidents, Feed)`);
 }
 
 bootstrap();

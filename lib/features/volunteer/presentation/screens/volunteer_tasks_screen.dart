@@ -262,7 +262,7 @@ class _VolunteerTasksScreenState extends ConsumerState<VolunteerTasksScreen>
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: Colors.white54, size: 16),
+                    const Icon(Icons.location_on, color: Colors.white54, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -346,8 +346,8 @@ class _VolunteerTasksScreenState extends ConsumerState<VolunteerTasksScreen>
     });
     _tabController.animateTo(1);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('✅ Task accepted!'),
+      const SnackBar(
+        content: Text('✅ Task accepted!'),
         backgroundColor: AppTheme.primaryGreen,
         behavior: SnackBarBehavior.floating,
       ),
@@ -385,8 +385,8 @@ class _VolunteerTasksScreenState extends ConsumerState<VolunteerTasksScreen>
     });
     _tabController.animateTo(2);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('🎉 Task completed! +15 points'),
+      const SnackBar(
+        content: Text('🎉 Task completed! +15 points'),
         backgroundColor: AppTheme.volunteerAccent,
         behavior: SnackBarBehavior.floating,
       ),

@@ -304,12 +304,12 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
         : _resources.where((r) => r.category == category).toList();
 
     if (filtered.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.inventory_2, size: 64, color: Colors.white24),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'No resources in this category',
               style: TextStyle(color: Colors.white54),

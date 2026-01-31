@@ -1,63 +1,112 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
-import { User } from './user.entity';
+import { FIREBASE_APP } from '../../firebase';
+import { User } from './user.interface';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { UserRole } from '../../common/enums';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-  ) {}
+  private db: admin.firestore.Firestore;
+  private usersCollection: admin.firestore.CollectionReference;
+
+  constructor(@Inject(FIREBASE_APP) private readonly firebaseApp: admin.app.App) {
+    this.db = admin.firestore(this.firebaseApp);
+    this.usersCollection = this.db.collection('users');
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const passwordHash = await bcrypt.hash(createUserDto.password, 10);
 
-    const user = this.userRepository.create({
-      ...createUserDto,
+    const userRef = this.usersCollection.doc();
+    const now = new Date();
+
+    const user: User = {
+      id: userRef.id,
+      email: createUserDto.email,
       passwordHash,
-    });
+      fullName: createUserDto.fullName,
+      phone: createUserDto.phone,
+      role: createUserDto.role || UserRole.CITIZEN,
+      isVerified: false,
+      isActive: true,
+      verificationCount: 0,
+      reputationScore: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    return this.userRepository.save(user);
-  }
-
-  async findById(id: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
+    await userRef.set(user);
     return user;
   }
 
+  async findById(id: string): Promise<User> {
+    const doc = await this.usersCollection.doc(id).get();
+    if (!doc.exists) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return doc.data() as User;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
+    const snapshot = await this.usersCollection.where('email', '==', email).limit(1).get();
+    if (snapshot.empty) {
+      return null;
+    }
+    return snapshot.docs[0].data() as User;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findById(id);
-    Object.assign(user, updateUserDto);
-    return this.userRepository.save(user);
+    const userRef = this.usersCollection.doc(id);
+    const doc = await userRef.get();
+
+    if (!doc.exists) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    const updateData = {
+      ...updateUserDto,
+      updatedAt: new Date(),
+    };
+
+    await userRef.update(updateData);
+    return this.findById(id);
   }
 
-  async updateLocation(
-    id: string,
-    latitude: number,
-    longitude: number,
-  ): Promise<User> {
-    const user = await this.findById(id);
-    // PostGIS Point format
-    user.lastKnownLocation = `POINT(${longitude} ${latitude})`;
-    return this.userRepository.save(user);
+  async updateLocation(id: string, latitude: number, longitude: number): Promise<User> {
+    const userRef = this.usersCollection.doc(id);
+    const doc = await userRef.get();
+
+    if (!doc.exists) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    await userRef.update({
+      lastKnownLocation: { latitude, longitude },
+      updatedAt: new Date(),
+    });
+
+    return this.findById(id);
   }
 
   async incrementVerificationCount(id: string): Promise<User> {
-    const user = await this.findById(id);
-    user.verificationCount += 1;
-    user.reputationScore += 10; // Reward for verifying
-    return this.userRepository.save(user);
+    const userRef = this.usersCollection.doc(id);
+    const doc = await userRef.get();
+
+    if (!doc.exists) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    const user = doc.data() as User;
+
+    await userRef.update({
+      verificationCount: user.verificationCount + 1,
+      reputationScore: user.reputationScore + 10,
+      updatedAt: new Date(),
+    });
+
+    return this.findById(id);
   }
 
   async isVolunteer(userId: string): Promise<boolean> {

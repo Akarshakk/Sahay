@@ -141,10 +141,10 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            const Color(0xFF1E1E3F),
-            const Color(0xFF2D2D5A),
+            Color(0xFF1E1E3F),
+            Color(0xFF2D2D5A),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -365,7 +365,7 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
                 ),
                 child: Text(
                   '${points % 100}/100 XP',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppTheme.volunteerAccent,
                     fontWeight: FontWeight.bold,
@@ -389,8 +389,8 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
                 child: Container(
                   height: 8,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.volunteerAccent, const Color(0xFF9C88FF)],
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.volunteerAccent, Color(0xFF9C88FF)],
                     ),
                     borderRadius: BorderRadius.circular(4),
                   ),

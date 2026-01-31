@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
-import '../../../../core/models/feed_post_model.dart';
 
 /// Verification Screen - Volunteer can verify nearby incidents
 class VerificationScreen extends ConsumerStatefulWidget {

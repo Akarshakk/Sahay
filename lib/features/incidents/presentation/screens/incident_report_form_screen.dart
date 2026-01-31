@@ -157,11 +157,11 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.3)),
       ),
-      child: Row(
+      child: const Row(
         children: [
           Icon(Icons.warning_amber_rounded, color: AppTheme.primaryOrange),
-          const SizedBox(width: 12),
-          const Expanded(
+          SizedBox(width: 12),
+          Expanded(
             child: Text(
               '⚠️ Emergency already reported nearby!\nHelp is on the way. Submit only if this is a different incident.',
               style: TextStyle(fontSize: 13),
@@ -239,11 +239,11 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.location_on, color: AppTheme.primaryGreen),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Incident Location',
                 style: TextStyle(
                   fontSize: 16,
@@ -443,11 +443,11 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
         color: AppTheme.primaryOrange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: const Row(
         children: [
           Icon(Icons.info_outline, color: AppTheme.primaryOrange, size: 20),
-          const SizedBox(width: 8),
-          const Expanded(
+          SizedBox(width: 8),
+          Expanded(
             child: Text(
               'No internet connection. Your report will be saved and automatically synced when online.',
               style: TextStyle(fontSize: 12),

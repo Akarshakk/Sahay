@@ -1,28 +1,34 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { ChatMessage, ChatMessageDocument } from './schemas/chat-message.schema';
+import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import * as admin from 'firebase-admin';
+import { FIREBASE_APP } from '../../firebase';
+import { ChatMessage } from './feed.interface';
 import { EventsGateway } from '../websocket/events.gateway';
 
 @Injectable()
 export class ChatService {
-  constructor(
-    @InjectModel(ChatMessage.name)
-    private readonly chatMessageModel: Model<ChatMessageDocument>,
-    private readonly eventsGateway: EventsGateway,
-  ) {}
+  private db: admin.firestore.Firestore;
+  private chatCollection: admin.firestore.CollectionReference;
 
-  /**
-   * Send a message in a post's chat
-   */
+  constructor(
+    @Inject(FIREBASE_APP) private readonly firebaseApp: admin.app.App,
+    private readonly eventsGateway: EventsGateway,
+  ) {
+    this.db = admin.firestore(this.firebaseApp);
+    this.chatCollection = this.db.collection('chat_messages');
+  }
+
   async sendMessage(
     postId: string,
     userId: string,
     userName: string,
     message: string,
     replyToMessageId?: string,
-  ): Promise<ChatMessageDocument> {
-    const chatMessage = new this.chatMessageModel({
+  ): Promise<ChatMessage> {
+    const messageRef = this.chatCollection.doc();
+    const now = new Date();
+
+    const chatMessage: ChatMessage = {
+      id: messageRef.id,
       postId,
       authorId: userId,
       authorName: userName,
@@ -30,60 +36,59 @@ export class ChatService {
       replyToMessageId,
       reactions: [],
       isActive: true,
-    });
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    const saved = await chatMessage.save();
+    await messageRef.set(chatMessage);
 
     // Broadcast to WebSocket clients
     this.eventsGateway.server.emit('newChatMessage', {
       type: 'NEW_CHAT_MESSAGE',
-      data: saved,
+      data: chatMessage,
       postId,
     });
 
-    return saved;
+    return chatMessage;
   }
 
-  /**
-   * Get all messages for a post (Twitter-like thread)
-   */
-  async getPostMessages(
-    postId: string,
-    limit = 50,
-  ): Promise<ChatMessageDocument[]> {
-    return this.chatMessageModel
-      .find({ postId, isActive: true })
-      .sort({ createdAt: -1 })
+  async getPostMessages(postId: string, limit = 50): Promise<ChatMessage[]> {
+    const snapshot = await this.chatCollection
+      .where('postId', '==', postId)
+      .where('isActive', '==', true)
+      .orderBy('createdAt', 'desc')
       .limit(limit)
-      .exec();
+      .get();
+
+    return snapshot.docs.map((doc) => doc.data() as ChatMessage);
   }
 
-  /**
-   * Get threaded replies to a message
-   */
-  async getMessageReplies(messageId: string): Promise<ChatMessageDocument[]> {
-    return this.chatMessageModel
-      .find({ replyToMessageId: messageId, isActive: true })
-      .sort({ createdAt: 1 })
-      .exec();
+  async getMessageReplies(messageId: string): Promise<ChatMessage[]> {
+    const snapshot = await this.chatCollection
+      .where('replyToMessageId', '==', messageId)
+      .where('isActive', '==', true)
+      .orderBy('createdAt', 'asc')
+      .get();
+
+    return snapshot.docs.map((doc) => doc.data() as ChatMessage);
   }
 
-  /**
-   * Add reaction to message
-   */
-  async addReaction(
-    messageId: string,
-    userId: string,
-  ): Promise<ChatMessageDocument> {
-    const message = await this.chatMessageModel.findById(messageId);
-    
-    if (!message) {
+  async addReaction(messageId: string, userId: string): Promise<ChatMessage> {
+    const messageRef = this.chatCollection.doc(messageId);
+    const doc = await messageRef.get();
+
+    if (!doc.exists) {
       throw new NotFoundException('Message not found');
     }
 
+    const message = doc.data() as ChatMessage;
+
     if (!message.reactions.includes(userId)) {
       message.reactions.push(userId);
-      await message.save();
+      await messageRef.update({
+        reactions: message.reactions,
+        updatedAt: new Date(),
+      });
 
       // Broadcast reaction
       this.eventsGateway.server.emit('messageReaction', {
@@ -95,21 +100,23 @@ export class ChatService {
     return message;
   }
 
-  /**
-   * Delete message (author only)
-   */
   async deleteMessage(messageId: string, userId: string): Promise<void> {
-    const message = await this.chatMessageModel.findById(messageId);
+    const messageRef = this.chatCollection.doc(messageId);
+    const doc = await messageRef.get();
 
-    if (!message) {
+    if (!doc.exists) {
       throw new NotFoundException('Message not found');
     }
+
+    const message = doc.data() as ChatMessage;
 
     if (message.authorId !== userId) {
       throw new ForbiddenException('You can only delete your own messages');
     }
 
-    message.isActive = false;
-    await message.save();
+    await messageRef.update({
+      isActive: false,
+      updatedAt: new Date(),
+    });
   }
 }

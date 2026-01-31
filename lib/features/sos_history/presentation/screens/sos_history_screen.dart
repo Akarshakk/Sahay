@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
-import '../../../../core/models/incident_model.dart';
 
 /// SOS History Screen - Show previous SOS incidents
 class SOSHistoryScreen extends ConsumerWidget {

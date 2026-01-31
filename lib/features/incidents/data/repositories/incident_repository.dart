@@ -64,7 +64,7 @@ abstract class IIncidentRepository {
 /// Mock Incident Repository with Deduplication Logic
 class MockIncidentRepository implements IIncidentRepository {
   // Web-compatible: removed Connectivity dependency
-  bool _isOnline = true;
+  final bool _isOnline = true;
   
   // Simulated database
   final List<IncidentModel> _incidents = [

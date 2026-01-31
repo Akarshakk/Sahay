@@ -7,6 +7,11 @@ dist/
 .env.local
 .env.*.local
 
+# Firebase Credentials (NEVER commit to git!)
+sahay-ai-firebase.json
+*-firebase-adminsdk-*.json
+.sahay-ai-firebase.json
+
 # Logs
 logs/
 *.log

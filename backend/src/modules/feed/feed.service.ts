@@ -7,72 +7,60 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
-import { CommunityPost, CommunityPostDocument } from './schemas/community-post.schema';
+import { FIREBASE_APP } from '../../firebase';
+import { CommunityPost } from './feed.interface';
 import { CreatePostDto, FeedQueryDto, VerifyPostDto } from './dto';
 import { IncidentsService } from '../incidents/incidents.service';
 import { UsersService } from '../users/users.service';
 
-/**
- * FeedService - Core service for Community Pulse feature
- * 
- * Handles:
- * 1. Creating posts with geolocation
- * 2. Fetching nearby posts (2km radius) using MongoDB geospatial queries
- * 3. Volunteer verification with gamification
- * 4. Auto-promotion to PostgreSQL incidents when threshold reached
- */
 @Injectable()
 export class FeedService {
   private readonly logger = new Logger(FeedService.name);
   private readonly searchRadiusMeters: number;
   private readonly verificationThreshold: number;
+  private db: admin.firestore.Firestore;
+  private feedCollection: admin.firestore.CollectionReference;
 
   constructor(
-    @InjectModel(CommunityPost.name)
-    private readonly communityPostModel: Model<CommunityPostDocument>,
-    
+    @Inject(FIREBASE_APP) private readonly firebaseApp: admin.app.App,
     @Inject(forwardRef(() => IncidentsService))
     private readonly incidentsService: IncidentsService,
-    
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
+    this.db = admin.firestore(this.firebaseApp);
+    this.feedCollection = this.db.collection('feed');
     this.searchRadiusMeters = this.configService.get<number>(
       'DEFAULT_SEARCH_RADIUS_METERS',
-      2000, // 2km default
+      2000,
     );
     this.verificationThreshold = this.configService.get<number>(
       'VERIFICATION_THRESHOLD',
-      5, // 5 verifications to promote
+      5,
     );
 
-    this.logger.log(`🌍 Feed configured: ${this.searchRadiusMeters}m radius, ${this.verificationThreshold} verifications to promote`);
+    this.logger.log(
+      `🌍 Feed configured: ${this.searchRadiusMeters}m radius, ${this.verificationThreshold} verifications to promote`,
+    );
   }
 
-  /**
-   * POST /feed/create - Create a new community post
-   * 
-   * @param createPostDto - Post content with location
-   * @param userId - Author's PostgreSQL user ID
-   * @returns Created post document
-   */
   async createPost(
     createPostDto: CreatePostDto,
     userId: string,
-  ): Promise<CommunityPostDocument> {
-    // Get user info for caching author name
+  ): Promise<CommunityPost> {
     const user = await this.usersService.findById(userId);
+    const postRef = this.feedCollection.doc();
+    const now = new Date();
 
-    const post = new this.communityPostModel({
+    const post: CommunityPost = {
+      id: postRef.id,
       content: createPostDto.content,
       category: createPostDto.category || 'other',
       location: {
-        type: 'Point',
-        // IMPORTANT: MongoDB uses [longitude, latitude] order!
-        coordinates: [createPostDto.longitude, createPostDto.latitude],
+        latitude: createPostDto.latitude,
+        longitude: createPostDto.longitude,
       },
       address: createPostDto.address,
       authorId: userId,
@@ -82,28 +70,20 @@ export class FeedService {
       verificationCount: 0,
       isPromoted: false,
       isActive: true,
-    });
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    const savedPost = await post.save();
-    
+    await postRef.set(post);
     this.logger.log(
-      `📝 Post created: ${savedPost._id} at [${createPostDto.latitude}, ${createPostDto.longitude}]`,
+      `📝 Post created: ${post.id} at [${createPostDto.latitude}, ${createPostDto.longitude}]`,
     );
 
-    return savedPost;
+    return post;
   }
 
-  /**
-   * GET /feed - Get posts within 2km radius of user's location
-   * 
-   * CRITICAL: Uses MongoDB's $geoNear aggregation for geospatial queries.
-   * The location field must have a 2dsphere index.
-   * 
-   * @param query - Contains lat, lng, optional radius and pagination
-   * @returns Posts within the specified radius, sorted by distance
-   */
   async getNearbyFeed(query: FeedQueryDto): Promise<{
-    data: CommunityPostDocument[];
+    data: CommunityPost[];
     meta: { total: number; radius: number; center: { lat: number; lng: number } };
   }> {
     const {
@@ -119,67 +99,44 @@ export class FeedService {
       `🔍 Fetching feed: lat=${latitude}, lng=${longitude}, radius=${radius}m`,
     );
 
-    // Build match conditions
-    const matchConditions: any = { isActive: true };
+    // Simple bounding box calculation
+    const latDelta = radius / 111320;
+    const lngDelta = radius / (111320 * Math.cos(latitude * (Math.PI / 180)));
+
+    let firestoreQuery: admin.firestore.Query = this.feedCollection
+      .where('isActive', '==', true)
+      .where('location.latitude', '>=', latitude - latDelta)
+      .where('location.latitude', '<=', latitude + latDelta)
+      .orderBy('location.latitude')
+      .orderBy('createdAt', 'desc');
+
+    const snapshot = await firestoreQuery.get();
+
+    // Filter by longitude and category in memory
+    let posts = snapshot.docs
+      .map((doc) => doc.data() as CommunityPost)
+      .filter(
+        (post) =>
+          post.location.longitude >= longitude - lngDelta &&
+          post.location.longitude <= longitude + lngDelta,
+      );
+
     if (category) {
-      matchConditions.category = category;
+      posts = posts.filter((post) => post.category === category);
     }
 
-    /**
-     * MongoDB Geospatial Query using $geoNear aggregation
-     * 
-     * $geoNear MUST be the first stage in the pipeline.
-     * It uses the 2dsphere index on the 'location' field.
-     * 
-     * - near: GeoJSON Point of user's location
-     * - maxDistance: Maximum distance in METERS (2000m = 2km)
-     * - spherical: true for accurate Earth calculations
-     * - distanceField: Field to store calculated distance
-     */
-    const aggregationPipeline: any[] = [
-      {
-        $geoNear: {
-          near: {
-            type: 'Point',
-            coordinates: [longitude, latitude], // [lng, lat] order!
-          },
-          distanceField: 'distance', // Will contain distance in meters
-          maxDistance: radius, // Maximum distance in meters
-          spherical: true, // Use spherical geometry
-          query: matchConditions, // Additional filters
-        },
-      },
-      // Sort by distance (closest first), then by recency
-      { $sort: { distance: 1, createdAt: -1 } },
-      // Pagination
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-    ];
+    const total = posts.length;
 
-    // Execute the geospatial query
-    const posts = await this.communityPostModel.aggregate(aggregationPipeline);
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const paginatedPosts = posts.slice(startIndex, startIndex + limit);
 
-    // Get total count for pagination
-    const countPipeline: any[] = [
-      {
-        $geoNear: {
-          near: { type: 'Point' as const, coordinates: [longitude, latitude] as [number, number] },
-          distanceField: 'distance',
-          maxDistance: radius,
-          spherical: true,
-          query: matchConditions,
-        },
-      },
-      { $count: 'total' },
-    ];
-    
-    const countResult = await this.communityPostModel.aggregate(countPipeline);
-    const total = countResult[0]?.total || 0;
-
-    this.logger.log(`📍 Found ${posts.length} posts within ${radius}m of [${latitude}, ${longitude}]`);
+    this.logger.log(
+      `📍 Found ${paginatedPosts.length} posts within ${radius}m of [${latitude}, ${longitude}]`,
+    );
 
     return {
-      data: posts,
+      data: paginatedPosts,
       meta: {
         total,
         radius,
@@ -188,110 +145,93 @@ export class FeedService {
     };
   }
 
-  /**
-   * Alternative method using $geoWithin for strict boundary queries
-   * Finds all posts within a circular area (no distance sorting)
-   */
   async getPostsWithinRadius(
     latitude: number,
     longitude: number,
     radiusMeters: number = this.searchRadiusMeters,
-  ): Promise<CommunityPostDocument[]> {
-    // Convert radius from meters to radians for $centerSphere
-    // Earth's radius ≈ 6378100 meters
-    const radiusInRadians = radiusMeters / 6378100;
+  ): Promise<CommunityPost[]> {
+    const latDelta = radiusMeters / 111320;
+    const lngDelta = radiusMeters / (111320 * Math.cos(latitude * (Math.PI / 180)));
 
-    return this.communityPostModel.find({
-      isActive: true,
-      location: {
-        $geoWithin: {
-          $centerSphere: [[longitude, latitude], radiusInRadians],
-        },
-      },
-    })
-    .sort({ createdAt: -1 })
-    .exec();
+    const snapshot = await this.feedCollection
+      .where('isActive', '==', true)
+      .where('location.latitude', '>=', latitude - latDelta)
+      .where('location.latitude', '<=', latitude + latDelta)
+      .orderBy('location.latitude')
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    return snapshot.docs
+      .map((doc) => doc.data() as CommunityPost)
+      .filter(
+        (post) =>
+          post.location.longitude >= longitude - lngDelta &&
+          post.location.longitude <= longitude + lngDelta,
+      );
   }
 
-  /**
-   * GET /feed/:id - Get a single post by ID
-   */
-  async getPostById(postId: string): Promise<CommunityPostDocument> {
-    if (!Types.ObjectId.isValid(postId)) {
-      throw new BadRequestException('Invalid post ID format');
+  async getPostById(postId: string): Promise<CommunityPost> {
+    const doc = await this.feedCollection.doc(postId).get();
+
+    if (!doc.exists) {
+      throw new NotFoundException(`Post with ID ${postId} not found`);
     }
 
-    const post = await this.communityPostModel.findById(postId);
-    
-    if (!post || !post.isActive) {
+    const post = doc.data() as CommunityPost;
+    if (!post.isActive) {
       throw new NotFoundException(`Post with ID ${postId} not found`);
     }
 
     return post;
   }
 
-  /**
-   * POST /feed/:id/verify - Volunteer verification endpoint
-   * 
-   * BUSINESS LOGIC:
-   * 1. Only volunteers can verify posts
-   * 2. Users cannot verify their own posts
-   * 3. Each user can only verify once
-   * 4. If verificationCount reaches threshold (5), promote to incident
-   * 
-   * @param postId - MongoDB ObjectId of the post
-   * @param userId - PostgreSQL user ID of the volunteer
-   * @returns Updated post document
-   */
   async verifyPost(
     postId: string,
     userId: string,
     dto?: VerifyPostDto,
-  ): Promise<{ post: CommunityPostDocument; promoted: boolean; incidentId?: string }> {
-    // Validate post exists
+  ): Promise<{ post: CommunityPost; promoted: boolean; incidentId?: string }> {
     const post = await this.getPostById(postId);
 
-    // Check if already promoted
     if (post.isPromoted) {
-      throw new BadRequestException('This post has already been promoted to an official incident');
+      throw new BadRequestException(
+        'This post has already been promoted to an official incident',
+      );
     }
 
-    // Check if user is author (cannot verify own post)
     if (post.authorId === userId) {
       throw new ForbiddenException('You cannot verify your own post');
     }
 
-    // Check if user is a volunteer
     const isVolunteer = await this.usersService.isVolunteer(userId);
     if (!isVolunteer) {
       throw new ForbiddenException('Only volunteers can verify posts');
     }
 
-    // Check if user already verified this post
-    const alreadyVerified = post.verifications.some(
-      (v) => v.odeclareId === userId,
-    );
+    const alreadyVerified = post.verifications.some((v) => v.odeclareId === userId);
     if (alreadyVerified) {
       throw new BadRequestException('You have already verified this post');
     }
 
-    // Add verification
+    // Update post
     post.verifications.push({
       odeclareId: userId,
       verifiedAt: new Date(),
     });
     post.verificationCount = post.verifications.length;
+    post.updatedAt = new Date();
 
-    await post.save();
+    await this.feedCollection.doc(postId).update({
+      verifications: post.verifications,
+      verificationCount: post.verificationCount,
+      updatedAt: post.updatedAt,
+    });
 
-    // Update user's verification count (gamification)
     await this.usersService.incrementVerificationCount(userId);
 
     this.logger.log(
       `✅ Post ${postId} verified by ${userId}. Count: ${post.verificationCount}/${this.verificationThreshold}`,
     );
 
-    // Check if threshold reached - PROMOTE TO INCIDENT
     let promoted = false;
     let incidentId: string | undefined;
 
@@ -304,58 +244,44 @@ export class FeedService {
     return { post, promoted, incidentId };
   }
 
-  /**
-   * PROMOTION LOGIC: Move verified post to PostgreSQL incidents table
-   * 
-   * This is triggered when a community post receives enough verifications,
-   * indicating the community has validated the issue.
-   * 
-   * @param post - The community post to promote
-   * @returns Created incident from PostgreSQL
-   */
-  private async promoteToIncident(post: CommunityPostDocument) {
-    this.logger.log(`🚀 Promoting post ${post._id} to official incident`);
+  private async promoteToIncident(post: CommunityPost) {
+    this.logger.log(`🚀 Promoting post ${post.id} to official incident`);
 
-    // Create incident in PostgreSQL
     const incident = await this.incidentsService.createFromCommunityPost({
       title: `Community Report: ${post.category}`,
       description: post.content,
       category: post.category,
-      latitude: post.location.coordinates[1], // MongoDB stores [lng, lat]
-      longitude: post.location.coordinates[0],
+      latitude: post.location.latitude,
+      longitude: post.location.longitude,
       address: post.address,
       mediaUrls: post.mediaUrls,
       reporterId: post.authorId,
-      communityPostId: post._id.toString(),
+      communityPostId: post.id,
       verificationCount: post.verificationCount,
     });
 
-    // Update the community post to mark as promoted
-    post.isPromoted = true;
-    post.promotedIncidentId = incident.id;
-    post.promotedAt = new Date();
-    await post.save();
+    await this.feedCollection.doc(post.id).update({
+      isPromoted: true,
+      promotedIncidentId: incident.id,
+      promotedAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-    this.logger.log(
-      `🎉 Post ${post._id} promoted to incident ${incident.id}`,
-    );
+    this.logger.log(`🎉 Post ${post.id} promoted to incident ${incident.id}`);
 
     return incident;
   }
 
-  /**
-   * Get posts by author
-   */
-  async getPostsByAuthor(authorId: string): Promise<CommunityPostDocument[]> {
-    return this.communityPostModel
-      .find({ authorId, isActive: true })
-      .sort({ createdAt: -1 })
-      .exec();
+  async getPostsByAuthor(authorId: string): Promise<CommunityPost[]> {
+    const snapshot = await this.feedCollection
+      .where('authorId', '==', authorId)
+      .where('isActive', '==', true)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    return snapshot.docs.map((doc) => doc.data() as CommunityPost);
   }
 
-  /**
-   * Soft delete a post (author only)
-   */
   async deletePost(postId: string, userId: string): Promise<void> {
     const post = await this.getPostById(postId);
 
@@ -363,38 +289,40 @@ export class FeedService {
       throw new ForbiddenException('You can only delete your own posts');
     }
 
-    post.isActive = false;
-    await post.save();
+    await this.feedCollection.doc(postId).update({
+      isActive: false,
+      updatedAt: new Date(),
+    });
 
     this.logger.log(`🗑️ Post ${postId} soft-deleted by author ${userId}`);
   }
 
-  /**
-   * Get trending posts (most verifications in last 24 hours)
-   */
   async getTrendingPosts(
     latitude: number,
     longitude: number,
     limit = 10,
-  ): Promise<CommunityPostDocument[]> {
+  ): Promise<CommunityPost[]> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const latDelta = this.searchRadiusMeters / 111320;
+    const lngDelta = this.searchRadiusMeters / (111320 * Math.cos(latitude * (Math.PI / 180)));
 
-    return this.communityPostModel.aggregate([
-      {
-        $geoNear: {
-          near: { type: 'Point', coordinates: [longitude, latitude] },
-          distanceField: 'distance',
-          maxDistance: this.searchRadiusMeters,
-          spherical: true,
-          query: {
-            isActive: true,
-            isPromoted: false,
-            createdAt: { $gte: oneDayAgo },
-          },
-        },
-      },
-      { $sort: { verificationCount: -1, distance: 1 } },
-      { $limit: limit },
-    ]);
+    const snapshot = await this.feedCollection
+      .where('isActive', '==', true)
+      .where('isPromoted', '==', false)
+      .where('createdAt', '>=', oneDayAgo)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    return snapshot.docs
+      .map((doc) => doc.data() as CommunityPost)
+      .filter(
+        (post) =>
+          post.location.latitude >= latitude - latDelta &&
+          post.location.latitude <= latitude + latDelta &&
+          post.location.longitude >= longitude - lngDelta &&
+          post.location.longitude <= longitude + lngDelta,
+      )
+      .sort((a, b) => b.verificationCount - a.verificationCount)
+      .slice(0, limit);
   }
 }

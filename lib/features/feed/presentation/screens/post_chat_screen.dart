@@ -151,7 +151,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.verified, size: 16, color: AppTheme.primaryGreen),
+                    const Icon(Icons.verified, size: 16, color: AppTheme.primaryGreen),
                     const SizedBox(width: 4),
                     Text(
                       '${widget.post.verificationCount} verifications',
@@ -160,7 +160,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                     const Spacer(),
                     Text(
                       widget.post.category.toUpperCase(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryRed,

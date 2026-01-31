@@ -34,7 +34,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('feed')
 @Controller('feed')
 export class FeedController {
-  constructor(private readonly feedService: FeedService) {}
+  constructor(private readonly feedService: FeedService) { }
 
   /**
    * POST /feed/create
@@ -71,7 +71,7 @@ export class FeedController {
   @ApiOperation({
     summary: 'Get nearby community posts',
     description:
-      'Returns posts within 2km radius of the specified location. Uses MongoDB geospatial queries with 2dsphere index.',
+      'Returns posts within 2km radius of the specified location. Uses Firestore for data storage.',
   })
   @ApiQuery({ name: 'latitude', required: true, type: Number, example: 28.6139 })
   @ApiQuery({ name: 'longitude', required: true, type: Number, example: 77.209 })
@@ -133,7 +133,7 @@ export class FeedController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get post by ID' })
-  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the post' })
+  @ApiParam({ name: 'id', description: 'Firestore document ID of the post' })
   async getPostById(@Param('id') id: string) {
     const post = await this.feedService.getPostById(id);
     return {
@@ -160,7 +160,7 @@ export class FeedController {
     description:
       'Volunteers can verify posts to validate issues. When a post receives 5+ verifications, it is automatically promoted to an official incident.',
   })
-  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the post to verify' })
+  @ApiParam({ name: 'id', description: 'Firestore document ID of the post to verify' })
   @ApiResponse({
     status: 200,
     description: 'Post verified. If promoted, includes incident ID.',
@@ -201,7 +201,7 @@ export class FeedController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete your post' })
-  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the post to delete' })
+  @ApiParam({ name: 'id', description: 'Firestore document ID of the post to delete' })
   async deletePost(@Param('id') id: string, @Request() req: any) {
     await this.feedService.deletePost(id, req.user.id);
     return {

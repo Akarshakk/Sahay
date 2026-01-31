@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/feed_post_model.dart';
 
 /// Verification data for a post
 class VerificationData {

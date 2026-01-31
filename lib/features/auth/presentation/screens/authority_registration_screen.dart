@@ -104,7 +104,7 @@ class _AuthorityRegistrationScreenState
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.info_outline,
                         color: AppTheme.authorityAccent,
                         size: 24,
@@ -164,7 +164,7 @@ class _AuthorityRegistrationScreenState
                 
                 // Department Dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedDepartment,
+                  initialValue: _selectedDepartment,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: 'Department *',

@@ -81,7 +81,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.info_outline,
                     color: AppTheme.primaryRed,
                     size: 24,

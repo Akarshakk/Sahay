@@ -135,7 +135,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
       final result = await api.getNearbyFeed(
         latitude: _currentPosition!.latitude,
         longitude: _currentPosition!.longitude,
-        radius: 2000,
+        radius: 10000,
         limit: 50,
       );
 

@@ -46,12 +46,24 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        setState(() {
-          _address = '${place.street}, ${place.locality}, ${place.administrativeArea}';
-        });
+        final parts = <String>[];
+        if (place.street != null && place.street!.isNotEmpty) {
+          parts.add(place.street!);
+        }
+        if (place.locality != null && place.locality!.isNotEmpty) {
+          parts.add(place.locality!);
+        }
+        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          parts.add(place.administrativeArea!);
+        }
+        if (parts.isNotEmpty) {
+          setState(() {
+            _address = parts.join(', ');
+          });
+        }
       }
     } catch (e) {
-      print('Error getting address: $e');
+      // Geocoding may fail on web/emulator - that's okay
     }
   }
 
@@ -275,7 +287,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Your post will be visible to people within 2km. '
+                      'Your post will be visible to people within 10km. '
                       'Get 5+ verifications to promote it to an official incident!',
                       style: TextStyle(
                         color: Colors.amber[900],

@@ -9,7 +9,7 @@ class OfflineService {
   OfflineService._internal();
 
   final List<IncidentModel> _localIncidents = [];
-  bool _isOnline = true;
+  final bool _isOnline = true;
 
   static const String INCIDENT_BOX = 'incidents';
   static const String SYNC_TASK = 'sync_offline_data';
@@ -48,21 +48,4 @@ class OfflineService {
   Future<void> clearSyncedIncidents() async {
     _localIncidents.removeWhere((incident) => incident.isSynced);
   }
-}
-      for (var incident in unsyncedIncidents) {
-        // await ApiService.instance.syncIncident(incident);
-        developer.log('Syncing incident: ${incident.id}');
-        
-        // Mark as synced (mock)
-        final updated = incident.copyWith(isSynced: true);
-        await box.put(incident.id, updated);
-      }
-
-      developer.log('Sync completed: ${unsyncedIncidents.length} incidents');
-      return Future.value(true);
-    } catch (e) {
-      developer.log('Background sync failed: $e');
-      return Future.value(false);
-    }
-  });
 }

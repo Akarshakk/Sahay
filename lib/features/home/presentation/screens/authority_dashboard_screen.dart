@@ -11,14 +11,22 @@ import '../../../incidents/presentation/providers/incident_provider.dart';
 /// Authority Dashboard - Command Center View
 /// Features: Real-time incident feed, analytics, resource management, broadcast alerts
 class AuthorityDashboardScreen extends ConsumerStatefulWidget {
-  const AuthorityDashboardScreen({super.key});
+  final int initialTab;
+  
+  const AuthorityDashboardScreen({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<AuthorityDashboardScreen> createState() => _AuthorityDashboardScreenState();
 }
 
 class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScreen> {
-  int _selectedTab = 0;
+  late int _selectedTab;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTab = widget.initialTab;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +182,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           ),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppTheme.neutralGray,
             ),
@@ -186,46 +194,68 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
 
   Widget _buildTabBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          _buildTab('Live Feed', 0),
-          const SizedBox(width: 12),
-          _buildTab('Map View', 1),
-          const SizedBox(width: 12),
-          _buildTab('Resources', 2),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildTab('Live Feed', 0, Icons.feed),
+            const SizedBox(width: 8),
+            _buildTab('Heatmap', 1, Icons.map),
+            const SizedBox(width: 8),
+            _buildTab('Broadcast', 2, Icons.campaign),
+            const SizedBox(width: 8),
+            _buildTab('Analytics', 3, Icons.analytics),
+            const SizedBox(width: 8),
+            _buildTab('Resources', 4, Icons.inventory),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTab(String label, int index) {
+  Widget _buildTab(String label, int index, IconData icon) {
     final isSelected = _selectedTab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedTab = index;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppTheme.authorityAccent : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppTheme.authorityAccent : AppTheme.neutralGray.withOpacity(0.3),
-            ),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTab = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.authorityAccent : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppTheme.authorityAccent : AppTheme.neutralGray.withOpacity(0.2),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: AppTheme.authorityAccent.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ] : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
               color: isSelected ? Colors.white : AppTheme.neutralGray,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 14,
             ),
-          ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.neutralGray,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -236,8 +266,12 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
       case 0:
         return _buildLiveFeed();
       case 1:
-        return _buildMapView();
+        return _buildHeatmapView();
       case 2:
+        return _buildBroadcastView();
+      case 3:
+        return _buildAnalyticsView();
+      case 4:
         return _buildResources();
       default:
         return _buildLiveFeed();
@@ -260,7 +294,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                   color: AppTheme.primaryGreen.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'No Active Incidents',
                   style: TextStyle(
                     fontSize: 18,
@@ -361,7 +395,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           const SizedBox(height: 8),
           Text(
             incident.description,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: AppTheme.neutralGray,
             ),
@@ -371,18 +405,18 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.location_on_outlined, size: 16, color: AppTheme.neutralGray),
+              const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.neutralGray),
               const SizedBox(width: 4),
               Text(
                 '${incident.latitude.toStringAsFixed(4)}, ${incident.longitude.toStringAsFixed(4)}',
-                style: TextStyle(fontSize: 12, color: AppTheme.neutralGray),
+                style: const TextStyle(fontSize: 12, color: AppTheme.neutralGray),
               ),
               const Spacer(),
-              Icon(Icons.access_time, size: 16, color: AppTheme.neutralGray),
+              const Icon(Icons.access_time, size: 16, color: AppTheme.neutralGray),
               const SizedBox(width: 4),
               Text(
                 _formatTime(incident.reportedAt),
-                style: TextStyle(fontSize: 12, color: AppTheme.neutralGray),
+                style: const TextStyle(fontSize: 12, color: AppTheme.neutralGray),
               ),
             ],
           ),
@@ -396,7 +430,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                   label: const Text('View Details'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.authorityAccent,
-                    side: BorderSide(color: AppTheme.authorityAccent),
+                    side: const BorderSide(color: AppTheme.authorityAccent),
                   ),
                 ),
               ),
@@ -419,35 +453,319 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     );
   }
 
-  Widget _buildMapView() {
-    return Center(
+  Widget _buildHeatmapView() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.map_outlined,
-            size: 80,
-            color: AppTheme.neutralGray.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Map View',
-            style: TextStyle(
-              fontSize: 18,
-              color: AppTheme.neutralGray,
-              fontWeight: FontWeight.w500,
+          Container(
+            height: 300,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.layers,
+                    size: 64,
+                    color: AppTheme.authorityAccent.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Incident Heatmap',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.neutralGray,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Visualize incident density by area',
+                    style: TextStyle(
+                      color: AppTheme.neutralGray.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          const SizedBox(height: 20),
+          _buildHeatmapLegend(),
+        ],
+      ),
+    ).animate().fadeIn();
+  }
+
+  Widget _buildHeatmapLegend() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildLegendItem('Low', Colors.green),
+          _buildLegendItem('Medium', Colors.orange),
+          _buildLegendItem('High', Colors.red),
+          _buildLegendItem('Critical', Colors.purple),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildBroadcastView() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryOrange, AppTheme.primaryRed],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.campaign, color: Colors.white, size: 48),
+                const SizedBox(height: 12),
+                const Text(
+                  'Send Emergency Broadcast',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Alert all citizens in selected areas',
+                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => _showBroadcastDialog(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.primaryRed,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  child: const Text('Create Broadcast'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Recent Broadcasts',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          _buildBroadcastItem('Flash Flood Warning', '2 hours ago', Icons.waves, Colors.blue),
           const SizedBox(height: 8),
-          Text(
-            'Interactive incident heatmap',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.neutralGray,
+          _buildBroadcastItem('Road Closure Alert', '5 hours ago', Icons.block, Colors.orange),
+          const SizedBox(height: 8),
+          _buildBroadcastItem('Safety Advisory', '1 day ago', Icons.info, Colors.green),
+        ],
+      ),
+    ).animate().fadeIn();
+  }
+
+  Widget _buildBroadcastItem(String title, String time, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(time, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+    );
+  }
+
+  void _showBroadcastDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Broadcast'),
+        content: const Text('Broadcast functionality coming soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsView() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: ListView(
+        children: [
+          const Text(
+            'Incident Analytics',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(child: _buildAnalyticsCard('Total Today', '28', Icons.today, AppTheme.citizenAccent)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildAnalyticsCard('This Week', '156', Icons.date_range, AppTheme.primaryOrange)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildAnalyticsCard('Resolved', '89%', Icons.check_circle, AppTheme.primaryGreen)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildAnalyticsCard('Avg Response', '12m', Icons.timer, AppTheme.authorityAccent)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Incidents by Type',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                _buildAnalyticsBar('Medical', 0.35, Colors.red),
+                const SizedBox(height: 12),
+                _buildAnalyticsBar('Fire', 0.2, Colors.orange),
+                const SizedBox(height: 12),
+                _buildAnalyticsBar('Police', 0.25, Colors.blue),
+                const SizedBox(height: 12),
+                _buildAnalyticsBar('Disaster', 0.1, Colors.purple),
+                const SizedBox(height: 12),
+                _buildAnalyticsBar('Other', 0.1, Colors.grey),
+              ],
             ),
           ),
         ],
       ),
+    ).animate().fadeIn();
+  }
+
+  Widget _buildAnalyticsCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppTheme.neutralGray),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsBar(String label, double value, Color color) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 60,
+          child: Text(label, style: const TextStyle(fontSize: 12)),
+        ),
+        Expanded(
+          child: Container(
+            height: 20,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: value,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text('${(value * 100).toInt()}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 
@@ -526,7 +844,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 const SizedBox(height: 4),
                 Text(
                   count,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppTheme.neutralGray,
                   ),

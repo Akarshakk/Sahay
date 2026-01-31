@@ -269,15 +269,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                              const Row(
                                 children: [
                                   Icon(
                                     Icons.info_outline,
                                     size: 16,
                                     color: AppTheme.primaryGreen,
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Text(
+                                  SizedBox(width: 8),
+                                  Text(
                                     'Test Credentials:',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,

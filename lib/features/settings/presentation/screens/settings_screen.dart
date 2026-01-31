@@ -146,7 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     );
                   },
-                  activeColor: AppTheme.primaryRed,
+                  activeThumbColor: AppTheme.primaryRed,
                 ),
               ],
             ),

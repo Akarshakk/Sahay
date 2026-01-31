@@ -837,17 +837,17 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                   color: Colors.white10,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Center(
+                child: const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.map, size: 80, color: AppTheme.authorityAccent),
-                      const SizedBox(height: 16),
-                      const Text(
+                      SizedBox(height: 16),
+                      Text(
                         'Interactive Heatmap',
                         style: TextStyle(color: Colors.white, fontSize: 18),
                       ),
-                      const Text(
+                      Text(
                         'Showing incident density',
                         style: TextStyle(color: Colors.white54),
                       ),
@@ -1161,7 +1161,7 @@ class AnalyticsScreen extends StatelessWidget {
                         child: Container(
                           height: 24,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
+                            gradient: const LinearGradient(
                               colors: [AppTheme.authorityAccent, AppTheme.primaryGreen],
                             ),
                             borderRadius: BorderRadius.circular(12),

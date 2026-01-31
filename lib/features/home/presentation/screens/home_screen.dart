@@ -22,7 +22,7 @@ import '../../../volunteer/presentation/screens/volunteer_dashboard_screen.dart'
 import '../../../volunteer/presentation/screens/volunteer_tasks_screen.dart';
 import '../../../volunteer/presentation/screens/verification_screen.dart';
 import '../../../volunteer/presentation/screens/resources_screen.dart';
-import '../../../authority/presentation/screens/authority_dashboard_screen.dart';
+import 'authority_dashboard_screen.dart';
 
 /// Modern Material 3 Home Screen with Role-Based UI
 /// Citizen: Focus on SOS, Safety Map, Reporting
@@ -469,7 +469,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.authorityAccent,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
+                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen(initialTab: 1)),
                   ),
                 ),
               ),
@@ -481,7 +481,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.primaryOrange,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
+                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen(initialTab: 2)),
                   ),
                 ),
               ),
@@ -493,7 +493,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.primaryGreen,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
+                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen(initialTab: 3)),
                   ),
                 ),
               ),
@@ -533,7 +533,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppTheme.neutralGray,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -658,7 +658,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppTheme.neutralGray,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -683,7 +683,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.location_on, color: AppTheme.primaryGreen),
+          const Icon(Icons.location_on, color: AppTheme.primaryGreen),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1114,7 +1114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // User Profile Header
             Container(
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppTheme.backgroundLight,
               ),
               child: Column(
@@ -1594,7 +1594,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       title: Text(name),
       trailing: Switch(
         value: available,
-        activeColor: AppTheme.primaryGreen,
+        activeThumbColor: AppTheme.primaryGreen,
         onChanged: (value) {},
       ),
     );
@@ -1605,11 +1605,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.map, color: AppTheme.authorityAccent),
-            const SizedBox(width: 8),
-            const Text('Incident Heatmap'),
+            SizedBox(width: 8),
+            Text('Incident Heatmap'),
           ],
         ),
         content: SizedBox(
@@ -1675,11 +1675,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.campaign, color: AppTheme.primaryOrange),
-            const SizedBox(width: 8),
-            const Text('Broadcast Alert'),
+            SizedBox(width: 8),
+            Text('Broadcast Alert'),
           ],
         ),
         content: Column(
@@ -1742,11 +1742,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.analytics, color: AppTheme.primaryGreen),
-            const SizedBox(width: 8),
-            const Text('Analytics Dashboard'),
+            SizedBox(width: 8),
+            Text('Analytics Dashboard'),
           ],
         ),
         content: SizedBox(
