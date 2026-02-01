@@ -2,26 +2,7 @@
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authRepositoryHash() => r'993384c835b6321261018c63dde96401d30a4b12';
-
-/// Repository Provider
-///
-/// Copied from [authRepository].
-@ProviderFor(authRepository)
-final authRepositoryProvider = AutoDisposeProvider<IAuthRepository>.internal(
-  authRepository,
-  name: r'authRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$authRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AuthRepositoryRef = AutoDisposeProviderRef<IAuthRepository>;
-String _$authControllerHash() => r'5d5d9af217b6beb3bd4aff0e292ed4e545791d04';
+String _$authControllerHash() => r'3ed906586fb0a9d1fc40c6b0be376832b5339d82';
 
 /// Auth State Notifier
 ///

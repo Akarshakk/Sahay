@@ -64,7 +64,7 @@ class LocationService {
         return _getDefaultAddress(lat, lng);
       }
       
-      if (placemarks != null && placemarks.isNotEmpty) {
+      if (placemarks.isNotEmpty) {
         Placemark place = placemarks.first;
         
         // Build address string safely with null checks

@@ -551,7 +551,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [AppTheme.primaryOrange, AppTheme.primaryRed],
               ),
               borderRadius: BorderRadius.circular(20),

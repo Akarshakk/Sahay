@@ -6,13 +6,14 @@ import 'dart:developer' as developer;
 /// Triple Volume Up press triggers Emergency SOS
 /// Web-compatible stub - full functionality available on mobile
 class HardwareTriggerService {
-  static final HardwareTriggerService instance = HardwareTriggerService._internal();
+  static final HardwareTriggerService instance =
+      HardwareTriggerService._internal();
   factory HardwareTriggerService() => instance;
   HardwareTriggerService._internal();
 
   Timer? _resetTimer;
   int _volumeUpPressCount = 0;
-  
+
   static const int TRIGGER_COUNT = 3;
   static const Duration RESET_DURATION = Duration(seconds: 2);
 
@@ -21,7 +22,8 @@ class HardwareTriggerService {
 
   Future<void> initialize() async {
     try {
-      developer.log('HardwareTriggerService initialized (web mode - limited functionality)');
+      developer.log(
+          'HardwareTriggerService initialized (web mode - limited functionality)');
     } catch (e) {
       developer.log('Error initializing hardware trigger: $e');
     }
@@ -50,7 +52,7 @@ class HardwareTriggerService {
   void _triggerEmergency() {
     // Haptic feedback (may not work on web)
     HapticFeedback.heavyImpact();
-    
+
     // Trigger callback
     if (onEmergencyTriggered != null) {
       onEmergencyTriggered!();
@@ -64,7 +66,8 @@ class HardwareTriggerService {
 
 /// Alternative Implementation using Method Channel (for production)
 class VolumeButtonListener {
-  static const MethodChannel _channel = MethodChannel('com.sahay.volume_listener');
+  static const MethodChannel _channel =
+      MethodChannel('com.sahay.volume_listener');
 
   static Future<void> initialize(Function() onTriplePress) async {
     _channel.setMethodCallHandler((call) async {
@@ -75,6 +78,7 @@ class VolumeButtonListener {
     });
   }
 }
+/*
     override fun onCreate(savedInstanceState = Bundle?) {
         super.onCreate(savedInstanceState)
         

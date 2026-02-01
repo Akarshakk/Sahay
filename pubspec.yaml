@@ -40,6 +40,10 @@ dependencies:
   # URL Launcher for calls/SMS
   url_launcher: ^6.2.0
   shared_preferences: ^2.5.4
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  firebase_auth_platform_interface: ^8.1.6
+  local_auth: ^2.1.7
 
 dev_dependencies:
   flutter_test:

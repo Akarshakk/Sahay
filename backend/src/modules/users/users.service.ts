@@ -57,6 +57,14 @@ export class UsersService {
     return snapshot.docs[0].data() as User;
   }
 
+  async findByPhone(phone: string): Promise<User | null> {
+    const snapshot = await this.usersCollection.where('phone', '==', phone).limit(1).get();
+    if (snapshot.empty) {
+      return null;
+    }
+    return snapshot.docs[0].data() as User;
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const userRef = this.usersCollection.doc(id);
     const doc = await userRef.get();

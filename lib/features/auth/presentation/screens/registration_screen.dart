@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ashoka_chakra.dart';
 import '../../../../core/enums/app_enums.dart';
-import 'otp_verification_screen.dart';
+import 'citizen_volunteer_registration_screen.dart';
 import 'authority_registration_screen.dart';
 
 /// Initial Registration Screen - Choose User Type
@@ -29,7 +29,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              
+
               // Logo
               Center(
                 child: Container(
@@ -62,9 +62,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   ),
                 ).animate().fadeIn(duration: 600.ms).scale(),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Title
               const Text(
                 'Join Sahay',
@@ -75,9 +75,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   color: AppTheme.neutralGray,
                 ),
               ).animate().fadeIn(delay: 200.ms),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 'Select your role to get started',
                 textAlign: TextAlign.center,
@@ -86,9 +86,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   color: AppTheme.neutralGray.withOpacity(0.7),
                 ),
               ).animate().fadeIn(delay: 300.ms),
-              
+
               const SizedBox(height: 48),
-              
+
               // Role Selection Cards
               _buildRoleCard(
                 role: UserRole.citizen,
@@ -97,9 +97,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 icon: Icons.person,
                 color: AppTheme.citizenAccent,
               ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildRoleCard(
                 role: UserRole.volunteer,
                 title: 'Volunteer',
@@ -107,9 +107,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 icon: Icons.volunteer_activism,
                 color: AppTheme.volunteerAccent,
               ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.2, end: 0),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildRoleCard(
                 role: UserRole.authority,
                 title: 'Authority',
@@ -117,9 +117,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 icon: Icons.shield_outlined,
                 color: AppTheme.authorityAccent,
               ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2, end: 0),
-              
+
               const SizedBox(height: 32),
-              
+
               // Continue Button
               SizedBox(
                 height: 50,
@@ -128,7 +128,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryRed,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppTheme.neutralGray.withOpacity(0.3),
+                    disabledBackgroundColor:
+                        AppTheme.neutralGray.withOpacity(0.3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -142,9 +143,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   ),
                 ),
               ).animate().fadeIn(delay: 700.ms),
-              
+
               const SizedBox(height: 24),
-              
+
               // Login Link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -184,7 +185,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     required Color color,
   }) {
     final isSelected = _selectedRole == role;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -202,7 +203,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isSelected 
+              color: isSelected
                   ? color.withOpacity(0.2)
                   : Colors.black.withOpacity(0.05),
               blurRadius: isSelected ? 15 : 10,
@@ -244,8 +245,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color, size: 28),
+            if (isSelected) Icon(Icons.check_circle, color: color, size: 28),
           ],
         ),
       ),
@@ -254,7 +254,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   void _handleContinue() {
     if (_selectedRole == null) return;
-    
+
     if (_selectedRole == UserRole.authority) {
       // Navigate to authority registration
       Navigator.push(
@@ -264,11 +264,14 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         ),
       );
     } else {
-      // Navigate to citizen/volunteer registration
+      // Navigate to citizen/volunteer registration directly (Bypassing OTP for now)
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => OtpVerificationScreen(userRole: _selectedRole!),
+          builder: (context) => CitizenVolunteerRegistrationScreen(
+            userRole: _selectedRole!,
+            phoneNumber: '', // Empty phone number to allow user input
+          ),
         ),
       );
     }

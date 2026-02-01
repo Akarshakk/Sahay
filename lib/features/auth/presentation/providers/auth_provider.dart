@@ -4,11 +4,7 @@ import '../../data/repositories/auth_repository.dart';
 
 part 'auth_provider.g.dart';
 
-/// Repository Provider
-@riverpod
-IAuthRepository authRepository(AuthRepositoryRef ref) {
-  return MockAuthRepository();
-}
+// Removed explicit authRepository provider since it's now in the repository file
 
 /// Auth State Notifier
 @riverpod
@@ -18,11 +14,41 @@ class AuthController extends _$AuthController {
     return null; // Initial state: not logged in
   }
 
-  Future<User?> login(String phone) async {
+  Future<User?> login(String phone, String password) async {
     final repository = ref.read(authRepositoryProvider);
-    
+
     try {
-      final user = await repository.login(phone);
+      final user = await repository.login(phone, password);
+      state = user;
+      return user;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<User?> register({
+    required String fullName,
+    required String email,
+    required String password,
+    required String phone,
+    required String role,
+    required String address,
+    required String profession,
+    required DateTime dob,
+  }) async {
+    final repository = ref.read(authRepositoryProvider);
+
+    try {
+      final user = await repository.register(
+        fullName: fullName,
+        email: email,
+        password: password,
+        phone: phone,
+        role: role,
+        address: address,
+        profession: profession,
+        dob: dob.toIso8601String(),
+      );
       state = user;
       return user;
     } catch (e) {
@@ -37,6 +63,6 @@ class AuthController extends _$AuthController {
   }
 
   bool get isLoggedIn => state != null;
-  
+
   UserRole? get userRole => state?.role;
 }

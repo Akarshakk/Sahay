@@ -24,7 +24,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _emailController = TextEditingController();
   final _professionController = TextEditingController();
   final _addressController = TextEditingController();
-  
+
   String? _profileImagePath;
   String? _currentLocation;
   String? _currentAddress;
@@ -44,22 +44,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _loadUserData() {
     final user = ref.read(authControllerProvider);
     final profileData = ref.read(profileProvider);
-    
+
     if (user != null) {
       // Use saved profile data if available, otherwise use auth data
-      _nameController.text = profileData.name.isNotEmpty ? profileData.name : user.name;
-      _phoneController.text = profileData.phone.isNotEmpty ? profileData.phone : user.phone;
-      _emailController.text = profileData.email.isNotEmpty ? profileData.email : '';
+      _nameController.text =
+          profileData.name.isNotEmpty ? profileData.name : user.name;
+      _phoneController.text =
+          profileData.phone.isNotEmpty ? profileData.phone : user.phone;
+      _emailController.text =
+          profileData.email.isNotEmpty ? profileData.email : '';
       _professionController.text = profileData.profession;
       _addressController.text = profileData.address;
       _profileImagePath = profileData.profileImagePath;
-      
+
       // Initialize provider from user if first load
       if (profileData.name.isEmpty) {
         ref.read(profileProvider.notifier).updateProfile(
-          name: user.name,
-          phone: user.phone,
-        );
+              name: user.name,
+              phone: user.phone,
+            );
       }
     }
     setState(() {});
@@ -67,7 +70,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _fetchCurrentLocation() async {
     setState(() => _fetchingLocation = true);
-    
+
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -83,7 +86,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         permission = await Geolocator.requestPermission();
       }
 
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         setState(() {
           _currentLocation = 'Location permission denied';
           _fetchingLocation = false;
@@ -92,15 +96,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
 
       Position position = await Geolocator.getCurrentPosition();
-      _currentLocation = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
-      
+      _currentLocation =
+          '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+
       // Get address from coordinates (may fail on web/emulator)
       try {
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
         );
-        
+
         if (placemarks.isNotEmpty) {
           final place = placemarks.first;
           final parts = <String>[];
@@ -110,7 +115,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           if (place.locality != null && place.locality!.isNotEmpty) {
             parts.add(place.locality!);
           }
-          if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          if (place.administrativeArea != null &&
+              place.administrativeArea!.isNotEmpty) {
             parts.add(place.administrativeArea!);
           }
           _currentAddress = parts.isNotEmpty ? parts.join(', ') : null;
@@ -122,7 +128,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       _currentLocation = 'Could not get location';
     }
-    
+
     setState(() => _fetchingLocation = false);
   }
 
@@ -140,7 +146,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
     final profileData = ref.watch(profileProvider);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -200,8 +206,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             : null,
                         child: _profileImagePath == null
                             ? Text(
-                                (profileData.name.isNotEmpty ? profileData.name : user?.name ?? 'A')
-                                    .substring(0, 1).toUpperCase(),
+                                (profileData.name.isNotEmpty
+                                        ? profileData.name
+                                        : user?.name ?? 'A')
+                                    .substring(0, 1)
+                                    .toUpperCase(),
                                 style: const TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.bold,
@@ -235,25 +244,76 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ).animate().fadeIn().scale(),
-              
+
+              const SizedBox(height: 12),
+
+              // User Role Badge
+              if (user != null)
+                Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _getRoleColors(user.role.name),
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getRoleColors(user.role.name)
+                              .first
+                              .withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getRoleIcon(user.role.name),
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          user.role.name.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 50.ms),
+
               const SizedBox(height: 24),
-              
+
               // Current Location Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppTheme.primaryRed.withOpacity(0.1), AppTheme.primaryOrange.withOpacity(0.1)],
+                    colors: [
+                      AppTheme.primaryRed.withOpacity(0.1),
+                      AppTheme.primaryOrange.withOpacity(0.1)
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.primaryRed.withOpacity(0.2)),
+                  border:
+                      Border.all(color: AppTheme.primaryRed.withOpacity(0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.my_location, color: AppTheme.primaryRed, size: 20),
+                        const Icon(Icons.my_location,
+                            color: AppTheme.primaryRed, size: 20),
                         const SizedBox(width: 8),
                         const Text(
                           'Current Location',
@@ -299,25 +359,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ).animate().fadeIn(delay: 100.ms),
-              
+
               const SizedBox(height: 24),
-              
+
               // Full Name
               _isEditing
                   ? _buildEditableField(
                       controller: _nameController,
                       label: 'Full Name',
                       icon: Icons.person,
-                      validator: (value) => value?.isEmpty ?? true ? 'Please enter your name' : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter your name'
+                          : null,
                     )
                   : _buildInfoTile(
                       label: 'Full Name',
-                      value: profileData.name.isNotEmpty ? profileData.name : 'Not set',
+                      value: profileData.name.isNotEmpty
+                          ? profileData.name
+                          : 'Not set',
                       icon: Icons.person,
                     ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Phone Number (Now Editable)
               _isEditing
                   ? _buildEditableField(
@@ -326,16 +390,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       icon: Icons.phone,
                       keyboardType: TextInputType.phone,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (value) => value?.isEmpty ?? true ? 'Please enter phone number' : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter phone number'
+                          : null,
                     )
                   : _buildInfoTile(
                       label: 'Phone Number',
-                      value: profileData.phone.isNotEmpty ? '+91 ${profileData.phone}' : 'Not set',
+                      value: profileData.phone.isNotEmpty
+                          ? '+91 ${profileData.phone}'
+                          : 'Not set',
                       icon: Icons.phone,
                     ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Email
               _isEditing
                   ? _buildEditableField(
@@ -346,12 +414,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     )
                   : _buildInfoTile(
                       label: 'Email Address',
-                      value: profileData.email.isNotEmpty ? profileData.email : 'Not set',
+                      value: profileData.email.isNotEmpty
+                          ? profileData.email
+                          : 'Not set',
                       icon: Icons.email,
                     ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Profession
               _isEditing
                   ? _buildEditableField(
@@ -361,12 +431,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     )
                   : _buildInfoTile(
                       label: 'Profession',
-                      value: profileData.profession.isNotEmpty ? profileData.profession : 'Not set',
+                      value: profileData.profession.isNotEmpty
+                          ? profileData.profession
+                          : 'Not set',
                       icon: Icons.work,
                     ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Address
               _isEditing
                   ? _buildEditableField(
@@ -377,13 +449,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     )
                   : _buildInfoTile(
                       label: 'Home Address',
-                      value: profileData.address.isNotEmpty ? profileData.address : 'Not set',
+                      value: profileData.address.isNotEmpty
+                          ? profileData.address
+                          : 'Not set',
                       icon: Icons.home,
                     ),
-              
+
               if (_isEditing) ...[
                 const SizedBox(height: 32),
-                
+
                 // Save Button
                 SizedBox(
                   height: 54,
@@ -404,12 +478,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : Row(
+                        : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               Icon(Icons.save, size: 22),
                               SizedBox(width: 8),
                               Text(
@@ -424,9 +499,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                   ),
                 ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Cancel Button
                 SizedBox(
                   height: 54,
@@ -441,7 +516,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.neutralGray,
-                      side: BorderSide(color: AppTheme.neutralGray.withOpacity(0.3)),
+                      side: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.3)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -456,7 +532,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
               ],
-              
+
               const SizedBox(height: 32),
             ],
           ),
@@ -498,7 +574,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppTheme.primaryRed, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
       validator: validator,
     ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1);
@@ -551,7 +628,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value,
                   style: TextStyle(
                     fontSize: 16,
-                    color: value == 'Not set' ? Colors.grey : AppTheme.neutralGray,
+                    color:
+                        value == 'Not set' ? Colors.grey : AppTheme.neutralGray,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -576,32 +654,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     // Save to provider (with persistence)
     await ref.read(profileProvider.notifier).updateProfile(
-      name: _nameController.text,
-      phone: _phoneController.text,
-      email: _emailController.text,
-      profession: _professionController.text,
-      address: _addressController.text,
-      profileImagePath: _profileImagePath,
-    );
-    
+          name: _nameController.text,
+          phone: _phoneController.text,
+          email: _emailController.text,
+          profession: _professionController.text,
+          address: _addressController.text,
+          profileImagePath: _profileImagePath,
+        );
+
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = false;
       _isEditing = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: const [
+        content: const Row(
+          children: [
             Icon(Icons.check_circle, color: Colors.white),
             SizedBox(width: 12),
             Text('Profile saved successfully!'),
@@ -613,5 +691,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  List<Color> _getRoleColors(String role) {
+    switch (role.toLowerCase()) {
+      case 'citizen':
+        return [AppTheme.primaryGreen, const Color(0xFF00BFA5)];
+      case 'volunteer':
+        return [AppTheme.primaryOrange, const Color(0xFFFF8A65)];
+      case 'authority':
+        return [AppTheme.primaryRed, const Color(0xFFE53935)];
+      default:
+        return [AppTheme.neutralGray, AppTheme.neutralGray];
+    }
+  }
+
+  IconData _getRoleIcon(String role) {
+    switch (role.toLowerCase()) {
+      case 'citizen':
+        return Icons.person;
+      case 'volunteer':
+        return Icons.volunteer_activism;
+      case 'authority':
+        return Icons.security;
+      default:
+        return Icons.badge;
+    }
   }
 }

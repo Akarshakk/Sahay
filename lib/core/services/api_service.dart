@@ -3,19 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:3000/api/v1';
-  
+
   final Dio _dio;
   String? _authToken;
 
-  ApiService() : _dio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-  )) {
+  ApiService()
+      : _dio = Dio(BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        )) {
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
@@ -35,7 +36,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> login(Map<String, dynamic> data) async {
     final response = await _dio.post('/auth/login', data: data);
-    if (response.data['success'] == true && response.data['data']?['token'] != null) {
+    if (response.data['success'] == true &&
+        response.data['data']?['token'] != null) {
       setAuthToken(response.data['data']['token']);
     }
     return response.data;
@@ -97,7 +99,8 @@ class ApiService {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> getChatMessages(String postId, {int? limit}) async {
+  Future<Map<String, dynamic>> getChatMessages(String postId,
+      {int? limit}) async {
     final response = await _dio.get('/chat/$postId/messages', queryParameters: {
       if (limit != null) 'limit': limit,
     });

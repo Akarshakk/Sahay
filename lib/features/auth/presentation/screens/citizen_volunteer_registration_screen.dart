@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../home/presentation/screens/home_screen.dart';
+import '../providers/auth_provider.dart';
 
 /// Citizen/Volunteer Registration Form Screen
 class CitizenVolunteerRegistrationScreen extends ConsumerStatefulWidget {
@@ -25,15 +26,33 @@ class _CitizenVolunteerRegistrationScreenState
     extends ConsumerState<CitizenVolunteerRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _professionController = TextEditingController();
   final _addressController = TextEditingController();
-  
+
   DateTime? _selectedDate;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.phoneNumber.isNotEmpty) {
+      _phoneController.text = widget.phoneNumber;
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _professionController.dispose();
     _addressController.dispose();
     super.dispose();
@@ -70,11 +89,12 @@ class _CitizenVolunteerRegistrationScreenState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                
+
                 // Role Badge
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: widget.userRole == UserRole.citizen
                           ? AppTheme.citizenAccent.withOpacity(0.1)
@@ -87,7 +107,9 @@ class _CitizenVolunteerRegistrationScreenState
                       ),
                     ),
                     child: Text(
-                      widget.userRole == UserRole.citizen ? 'CITIZEN' : 'VOLUNTEER',
+                      widget.userRole == UserRole.citizen
+                          ? 'CITIZEN'
+                          : 'VOLUNTEER',
                       style: TextStyle(
                         color: widget.userRole == UserRole.citizen
                             ? AppTheme.citizenAccent
@@ -98,36 +120,21 @@ class _CitizenVolunteerRegistrationScreenState
                     ),
                   ),
                 ).animate().fadeIn().scale(),
-                
+
                 const SizedBox(height: 32),
-                
-                // Phone Number (Read-only)
+
+                // Phone Number
                 TextFormField(
-                  initialValue: widget.phoneNumber,
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: 'Mobile Number',
-                    prefixIcon: const Icon(Icons.phone, color: AppTheme.neutralGray),
-                    filled: true,
-                    fillColor: AppTheme.neutralGray.withOpacity(0.1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.2, end: 0),
-                
-                const SizedBox(height: 20),
-                
-                // Full Name
-                TextFormField(
-                  controller: _nameController,
+                  controller: _phoneController,
                   enabled: !_isLoading,
-                  textCapitalization: TextCapitalization.words,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
                   decoration: InputDecoration(
-                    labelText: 'Full Name *',
-                    hintText: 'Enter your full name',
-                    prefixIcon: const Icon(Icons.person, color: AppTheme.primaryRed),
+                    labelText: 'Mobile Number *',
+                    hintText: 'Enter 10-digit mobile number',
+                    prefixIcon:
+                        const Icon(Icons.phone, color: AppTheme.neutralGray),
+                    prefixText: '+91 ',
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -136,11 +143,54 @@ class _CitizenVolunteerRegistrationScreenState
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.neutralGray.withOpacity(0.2)),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryRed, width: 2),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
+                    ),
+                    counterText: '',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your mobile number';
+                    }
+                    if (value.length != 10) {
+                      return 'Mobile number must be 10 digits';
+                    }
+                    return null;
+                  },
+                ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.2, end: 0),
+
+                const SizedBox(height: 20),
+
+                // Full Name
+                TextFormField(
+                  controller: _nameController,
+                  enabled: !_isLoading,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name *',
+                    hintText: 'Enter your full name',
+                    prefixIcon:
+                        const Icon(Icons.person, color: AppTheme.primaryRed),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -153,9 +203,156 @@ class _CitizenVolunteerRegistrationScreenState
                     return null;
                   },
                 ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2, end: 0),
-                
+
                 const SizedBox(height: 20),
-                
+
+                // Email
+                TextFormField(
+                  controller: _emailController,
+                  enabled: !_isLoading,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email *',
+                    hintText: 'Enter your email address',
+                    prefixIcon:
+                        const Icon(Icons.email, color: AppTheme.primaryRed),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.2, end: 0),
+
+                const SizedBox(height: 20),
+
+                // Password
+                TextFormField(
+                  controller: _passwordController,
+                  enabled: !_isLoading,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password *',
+                    hintText: 'Create a password (min 6 characters)',
+                    prefixIcon:
+                        const Icon(Icons.lock, color: AppTheme.primaryRed),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: AppTheme.neutralGray,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.2, end: 0),
+
+                const SizedBox(height: 20),
+
+                // Confirm Password
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  enabled: !_isLoading,
+                  obscureText: _obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password *',
+                    hintText: 'Re-enter your password',
+                    prefixIcon: const Icon(Icons.lock_outline,
+                        color: AppTheme.primaryRed),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: AppTheme.neutralGray,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ).animate().fadeIn(delay: 350.ms).slideX(begin: -0.2, end: 0),
+
+                const SizedBox(height: 20),
+
                 // Date of Birth
                 InkWell(
                   onTap: _isLoading ? null : _selectDate,
@@ -163,7 +360,8 @@ class _CitizenVolunteerRegistrationScreenState
                     decoration: InputDecoration(
                       labelText: 'Date of Birth *',
                       hintText: 'Select your date of birth',
-                      prefixIcon: const Icon(Icons.calendar_today, color: AppTheme.primaryRed),
+                      prefixIcon: const Icon(Icons.calendar_today,
+                          color: AppTheme.primaryRed),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -172,11 +370,13 @@ class _CitizenVolunteerRegistrationScreenState
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.neutralGray.withOpacity(0.2)),
+                        borderSide: BorderSide(
+                            color: AppTheme.neutralGray.withOpacity(0.2)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.primaryRed, width: 2),
+                        borderSide: const BorderSide(
+                            color: AppTheme.primaryRed, width: 2),
                       ),
                     ),
                     child: Text(
@@ -191,9 +391,9 @@ class _CitizenVolunteerRegistrationScreenState
                     ),
                   ),
                 ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.2, end: 0),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Profession
                 TextFormField(
                   controller: _professionController,
@@ -202,7 +402,8 @@ class _CitizenVolunteerRegistrationScreenState
                   decoration: InputDecoration(
                     labelText: 'Profession *',
                     hintText: 'Enter your profession',
-                    prefixIcon: const Icon(Icons.work, color: AppTheme.primaryRed),
+                    prefixIcon:
+                        const Icon(Icons.work, color: AppTheme.primaryRed),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -211,11 +412,13 @@ class _CitizenVolunteerRegistrationScreenState
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.neutralGray.withOpacity(0.2)),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryRed, width: 2),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -225,9 +428,9 @@ class _CitizenVolunteerRegistrationScreenState
                     return null;
                   },
                 ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Address
                 TextFormField(
                   controller: _addressController,
@@ -239,7 +442,8 @@ class _CitizenVolunteerRegistrationScreenState
                     hintText: 'Enter your complete address',
                     prefixIcon: const Padding(
                       padding: EdgeInsets.only(bottom: 50),
-                      child: Icon(Icons.location_on, color: AppTheme.primaryRed),
+                      child:
+                          Icon(Icons.location_on, color: AppTheme.primaryRed),
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -249,11 +453,13 @@ class _CitizenVolunteerRegistrationScreenState
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.neutralGray.withOpacity(0.2)),
+                      borderSide: BorderSide(
+                          color: AppTheme.neutralGray.withOpacity(0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryRed, width: 2),
+                      borderSide: const BorderSide(
+                          color: AppTheme.primaryRed, width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -266,9 +472,9 @@ class _CitizenVolunteerRegistrationScreenState
                     return null;
                   },
                 ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.2, end: 0),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Submit Button
                 SizedBox(
                   height: 50,
@@ -289,7 +495,8 @@ class _CitizenVolunteerRegistrationScreenState
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
@@ -330,7 +537,7 @@ class _CitizenVolunteerRegistrationScreenState
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -342,7 +549,7 @@ class _CitizenVolunteerRegistrationScreenState
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -352,39 +559,82 @@ class _CitizenVolunteerRegistrationScreenState
       );
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
-    // Simulate registration API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    
-    setState(() {
-      _isLoading = false;
-    });
-    
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.userRole == UserRole.citizen
-              ? 'Citizen registration successful!'
-              : 'Volunteer registration successful!',
+
+    try {
+      await ref.read(authControllerProvider.notifier).register(
+            fullName: _nameController.text,
+            email: _emailController.text,
+            password: _passwordController.text,
+            phone: _phoneController.text,
+            role: widget.userRole == UserRole.citizen ? 'citizen' : 'volunteer',
+            address: _addressController.text,
+            profession: _professionController.text,
+            dob: _selectedDate!,
+          );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.userRole == UserRole.citizen
+                ? 'Citizen registration successful!'
+                : 'Volunteer registration successful!',
+          ),
+          backgroundColor: AppTheme.primaryGreen,
         ),
-        backgroundColor: AppTheme.primaryGreen,
-      ),
-    );
-    
-    // Navigate to home screen
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(userRole: widget.userRole),
-      ),
-      (route) => false,
-    );
+      );
+
+      // Navigate to home screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(userRole: widget.userRole),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Check for specific error types
+      String errorMessage = 'Registration Failed';
+      final errorString = e.toString().toLowerCase();
+
+      if (errorString.contains('409') ||
+          errorString.contains('conflict') ||
+          errorString.contains('already exists') ||
+          errorString.contains('already registered')) {
+        errorMessage =
+            'This email is already registered. Please use a different email or login instead.';
+      } else if (errorString.contains('400') ||
+          errorString.contains('bad request')) {
+        errorMessage = 'Please check your information and try again.';
+      } else if (errorString.contains('network') ||
+          errorString.contains('connection')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else {
+        errorMessage = 'Registration failed. Please try again later.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: AppTheme.primaryRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 }

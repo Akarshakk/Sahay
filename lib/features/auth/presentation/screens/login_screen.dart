@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/widgets/ashoka_chakra.dart';
 import '../providers/auth_provider.dart';
 import '../../../home/presentation/screens/home_screen.dart';
-import '../../../home/presentation/screens/authority_dashboard_screen.dart';
 import 'registration_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -20,11 +22,146 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final LocalAuthentication _localAuth = LocalAuthentication();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _canUseBiometrics = false;
+  bool _hasSavedCredentials = false;
+  String? _savedPhone;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    if (kIsWeb) {
+      setState(() => _canUseBiometrics = false);
+      return;
+    }
+
+    try {
+      final canAuthenticate = await _localAuth.canCheckBiometrics ||
+          await _localAuth.isDeviceSupported();
+
+      if (canAuthenticate) {
+        final prefs = await SharedPreferences.getInstance();
+        final savedPhone = prefs.getString('saved_phone');
+        final savedPassword = prefs.getString('saved_password');
+
+        setState(() {
+          _canUseBiometrics = true;
+          _hasSavedCredentials = savedPhone != null && savedPassword != null;
+          _savedPhone = savedPhone;
+        });
+      }
+    } catch (e) {
+      setState(() => _canUseBiometrics = false);
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    try {
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: 'Authenticate to login to Sahay',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+
+      if (!authenticated) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biometric authentication failed'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+        return;
+      }
+
+      // Get saved credentials
+      final prefs = await SharedPreferences.getInstance();
+      final savedPhone = prefs.getString('saved_phone');
+      final savedPassword = prefs.getString('saved_password');
+
+      if (savedPhone == null || savedPassword == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('No saved credentials. Please login with password first.'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+        return;
+      }
+
+      setState(() => _isLoading = true);
+
+      final user = await ref.read(authControllerProvider.notifier).login(
+            savedPhone,
+            savedPassword,
+          );
+
+      if (!mounted) return;
+
+      if (user != null) {
+        UserRole role = _convertRole(user.role);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back, ${user.name}!'),
+            backgroundColor: AppTheme.primaryGreen,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userRole: role),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Login failed: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  UserRole _convertRole(user_model.UserRole role) {
+    switch (role) {
+      case user_model.UserRole.citizen:
+        return UserRole.citizen;
+      case user_model.UserRole.volunteer:
+        return UserRole.volunteer;
+      case user_model.UserRole.authority:
+        return UserRole.authority;
+    }
+  }
+
+  Future<void> _saveCredentials(String phone, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_phone', phone);
+    await prefs.setString('saved_password', password);
+  }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -38,30 +175,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final user = await ref.read(authControllerProvider.notifier).login(_phoneController.text);
+      final user = await ref.read(authControllerProvider.notifier).login(
+            _phoneController.text,
+            _passwordController.text,
+          );
 
       if (!mounted) return;
-      
+
       if (user != null) {
+        // Save credentials for biometric login
+        await _saveCredentials(_phoneController.text, _passwordController.text);
+
         // Convert user.role (from user_model) to UserRole (from app_enums)
-        UserRole role;
-        switch (user.role) {
-          case user_model.UserRole.citizen:
-            role = UserRole.citizen;
-            break;
-          case user_model.UserRole.volunteer:
-            role = UserRole.volunteer;
-            break;
-          case user_model.UserRole.authority:
-            role = UserRole.authority;
-            break;
-        }
-        
+        UserRole role = _convertRole(user.role);
+
         // Show success message
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Welcome, ${user.name}! (${role.name.toUpperCase()})'),
+            content:
+                Text('Welcome, ${user.name}! (${role.name.toUpperCase()})'),
             backgroundColor: AppTheme.primaryGreen,
             duration: const Duration(seconds: 1),
           ),
@@ -80,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceAll('Exception: ', '')),
@@ -140,9 +273,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ).animate().fadeIn(duration: 600.ms).scale(),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Title
                   const Text(
                     'Sahay',
@@ -153,9 +286,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       letterSpacing: 2,
                     ),
                   ).animate().fadeIn(delay: 200.ms),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   Text(
                     'Log in to the Sahay App',
                     style: TextStyle(
@@ -163,9 +296,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: Colors.white.withOpacity(0.9),
                     ),
                   ).animate().fadeIn(delay: 400.ms),
-                  
+
                   const SizedBox(height: 48),
-                  
+
                   // Login Card
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -183,9 +316,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Mobile Number Field
+                        // Phone Number Field
                         const Text(
-                          'Mobile Number',
+                          'Phone Number',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -193,18 +326,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        
+
                         TextFormField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           maxLength: 10,
                           enabled: !_isLoading,
                           decoration: InputDecoration(
-                            hintText: 'Enter 10-digit mobile number',
-                            prefixIcon: const Icon(Icons.phone, color: AppTheme.primaryRed),
+                            hintText: 'Enter your 10-digit phone number',
+                            prefixIcon: const Icon(Icons.phone,
+                                color: AppTheme.primaryRed),
+                            counterText: '',
                             filled: true,
                             fillColor: AppTheme.backgroundLight,
-                            counterText: '',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -212,18 +346,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your mobile number';
+                              return 'Please enter your phone number';
                             }
                             if (value.length != 10) {
-                              return 'Mobile number must be 10 digits';
+                              return 'Phone number must be 10 digits';
                             }
                             return null;
                           },
                         ),
-                        
+
+                        const SizedBox(height: 16),
+
+                        // Password Field
+                        const Text(
+                          'Password',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.neutralGray,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          enabled: !_isLoading,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your password',
+                            prefixIcon: const Icon(Icons.lock,
+                                color: AppTheme.primaryRed),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: AppTheme.neutralGray,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            filled: true,
+                            fillColor: AppTheme.backgroundLight,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+
                         const SizedBox(height: 24),
-                        
-                        // Generate OTP Button
+
+                        // Login Button
                         SizedBox(
                           height: 50,
                           child: ElevatedButton(
@@ -241,7 +424,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
                                     ),
                                   )
                                 : const Text(
@@ -253,52 +437,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                           ),
                         ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Test Credentials Info
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppTheme.primaryGreen.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                        // Biometric Button (if available and credentials saved)
+                        if (_canUseBiometrics && _hasSavedCredentials) ...[
+                          const SizedBox(height: 16),
+                          Row(
                             children: [
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    size: 16,
-                                    color: AppTheme.primaryGreen,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Test Credentials:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                              Expanded(
+                                child: Divider(
+                                    color:
+                                        AppTheme.neutralGray.withOpacity(0.3)),
                               ),
-                              const SizedBox(height: 8),
-                              _buildTestCredential('1111111111', 'Citizen'),
-                              _buildTestCredential('2222222222', 'Volunteer'),
-                              _buildTestCredential('3333333333', 'Authority'),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'or',
+                                  style: TextStyle(
+                                    color:
+                                        AppTheme.neutralGray.withOpacity(0.6),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                    color:
+                                        AppTheme.neutralGray.withOpacity(0.3)),
+                              ),
                             ],
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 50,
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  _isLoading ? null : _handleBiometricLogin,
+                              icon: const Icon(Icons.fingerprint, size: 24),
+                              label: Text(
+                                'Login with Biometrics${_savedPhone != null ? ' (${_savedPhone!.substring(0, 4)}****)' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.primaryRed,
+                                side: const BorderSide(
+                                    color: AppTheme.primaryRed),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Register Link
                   TextButton(
                     onPressed: () {
@@ -318,9 +516,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ).animate().fadeIn(delay: 700.ms),
-                  
+
+                  const SizedBox(height: 16),
+
+                  // Test Credentials Info
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 18, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Test Credentials',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildTestCredential(
+                            '9876543210', 'test123', 'Citizen'),
+                        _buildTestCredential(
+                            '9876543211', 'test123', 'Volunteer'),
+                        _buildTestCredential(
+                            '9876543212', 'test123', 'Authority'),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 800.ms),
+
                   const SizedBox(height: 8),
-                  
+
                   // Terms
                   Text(
                     'By continuing, you agree to the Sahay app\nterms and conditions',
@@ -330,9 +569,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: Colors.white.withOpacity(0.8),
                     ),
                   ).animate().fadeIn(delay: 800.ms),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   Text(
                     'version: 1.0.0',
                     style: TextStyle(
@@ -349,25 +588,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _buildTestCredential(String phone, String role) {
+  Widget _buildTestCredential(String phone, String password, String role) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(
-            phone,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'monospace',
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              role,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            '→ $role',
+            phone,
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '/ $password',
             style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.7),
             ),
           ),
         ],

@@ -7,8 +7,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/models/incident_model.dart';
-import '../../../../core/providers/verification_provider.dart';
-import '../../../../core/providers/profile_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../incidents/presentation/providers/incident_provider.dart';
 import '../../../incidents/presentation/screens/incident_report_form_screen.dart';

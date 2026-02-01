@@ -8,7 +8,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     // Check if user already exists
@@ -41,7 +41,7 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const user = await this.usersService.findByPhone(loginDto.phone);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -74,5 +74,23 @@ export class AuthService {
 
   async validateUser(userId: string) {
     return this.usersService.findById(userId);
+  }
+
+  async verifyFirebaseToken(idToken: string) {
+    try {
+      // Import firebase-admin dynamically or inject it if you possess a provider
+      // Assuming a clean approach: import * as admin from 'firebase-admin'; 
+      // But better to use the specific provider you might have. 
+      // Given the file structure showing src/firebase/firebase.provider.ts, let's use that if possible 
+      // OR just use the global admin instance since nestjs-firebase usually initializes it globally or use a service.
+
+      // Checking local imports showed 'firebase-admin' in package.json.
+      // Let's assume standard admin usage.
+      const admin = require('firebase-admin');
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      return decodedToken;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid Firebase token');
+    }
   }
 }
