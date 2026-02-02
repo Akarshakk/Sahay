@@ -1,14 +1,43 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto, RegisterDto } from './dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
+  private otpMap = new Map<string, string>();
+
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) { }
+
+  async sendEmailOtp(email: string) {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    this.otpMap.set(email, otp);
+
+    try {
+      await this.mailService.sendOtp(email, otp);
+      this.logger.log(`OTP sent to ${email}`);
+    } catch (e) {
+      this.logger.error(`Mail Error: ${e.message}`);
+      throw new BadRequestException(`Failed to send OTP email: ${e.message}`);
+    }
+
+    return { success: true, message: 'OTP sent successfully' };
+  }
+
+  async verifyEmailOtp(email: string, otp: string) {
+    const stored = this.otpMap.get(email);
+    if (!stored) throw new BadRequestException('OTP expired or not requested');
+    if (stored !== otp) throw new BadRequestException('Invalid OTP');
+    this.otpMap.delete(email);
+    return { success: true, message: 'Verified' };
+  }
 
   async register(registerDto: RegisterDto) {
     // Check if user already exists
@@ -24,6 +53,18 @@ export class AuthService {
       fullName: registerDto.fullName,
       phone: registerDto.phone,
       role: registerDto.role,
+
+      profession: registerDto.profession,
+      address: registerDto.address,
+
+      registeredArea: registerDto.registeredArea,
+      registeredAreaId: registerDto.registeredAreaId,
+      identityDocumentUrl: registerDto.identityDocumentUrl,
+      identityDocumentType: registerDto.identityDocumentType,
+
+      authorityCode: registerDto.authorityCode,
+      department: registerDto.department,
+      registrationNumber: registerDto.registrationNumber,
     });
 
     // Generate token
@@ -61,7 +102,13 @@ export class AuthService {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        phone: user.phone,
         role: user.role,
+        profession: user.profession,
+        address: user.address,
+        registeredArea: user.registeredArea,
+        identityDocumentUrl: user.identityDocumentUrl,
+        identityDocumentType: user.identityDocumentType,
       },
       accessToken: token,
     };

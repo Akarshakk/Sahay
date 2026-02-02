@@ -6,7 +6,7 @@ part 'feed_post_model.g.dart';
 @freezed
 class FeedPost with _$FeedPost {
   const factory FeedPost({
-    @JsonKey(name: '_id') required String id,
+    required String id,
     required String content,
     required String category,
     required String authorId,
@@ -15,10 +15,11 @@ class FeedPost with _$FeedPost {
     String? address,
     @Default([]) List<String> mediaUrls,
     @Default(0) int verificationCount,
-    @Default(false) bool isPromoted,
-    String? promotedIncidentId,
-    double? distance, // Distance in meters from user
+    @Default([]) List<String> likes,
+    @Default(0) int commentsCount,
     required DateTime createdAt,
+    @Default(false) bool isPromoted,
+    double? distance,
     DateTime? updatedAt,
   }) = _FeedPost;
 
@@ -28,8 +29,8 @@ class FeedPost with _$FeedPost {
 @freezed
 class FeedLocation with _$FeedLocation {
   const factory FeedLocation({
-    required String type,
-    required List<double> coordinates, // [longitude, latitude]
+    required double latitude,
+    required double longitude,
   }) = _FeedLocation;
 
   factory FeedLocation.fromJson(Map<String, dynamic> json) => _$FeedLocationFromJson(json);
@@ -38,7 +39,7 @@ class FeedLocation with _$FeedLocation {
 @freezed
 class ChatMessage with _$ChatMessage {
   const factory ChatMessage({
-    @JsonKey(name: '_id') required String id,
+    required String id,
     required String postId,
     required String authorId,
     required String authorName,

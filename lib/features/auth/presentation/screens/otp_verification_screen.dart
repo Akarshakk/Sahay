@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import 'citizen_volunteer_registration_screen.dart';
+import 'authority_registration_screen.dart';
+import '../providers/auth_provider.dart';
 
-/// OTP Verification Screen for Mobile Number
+/// Email Verification Screen
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final UserRole userRole;
 
@@ -25,7 +25,8 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _authorityCodeController = TextEditingController();
   final List<TextEditingController> _otpControllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
@@ -34,14 +35,21 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   bool _otpSent = false;
   int _resendTimer = 30;
 
-  // Web-specific confirmation result
-  ConfirmationResult? _webConfirmationResult;
-  // Mobile-specific verification ID
-  String? _verificationId;
+  // Authority code validation result
+  Map<String, dynamic>? _validatedAuthorityCode;
+  String? _authorityCodeError;
+  bool _isAuthority = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isAuthority = widget.userRole == UserRole.authority;
+  }
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
+    _authorityCodeController.dispose();
     for (var controller in _otpControllers) {
       controller.dispose();
     }
@@ -63,19 +71,40 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
+      body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 20),
+                // Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: _isAuthority
+                        ? AppTheme.authorityAccent.withValues(alpha: 0.1)
+                        : AppTheme.primaryRed.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.email_outlined,
+                      size: 40,
+                      color: _isAuthority ? AppTheme.authorityAccent : AppTheme.primaryRed,
+                    ),
+                  ),
+                ).animate().fadeIn().scale(),
+
+                const SizedBox(height: 24),
 
                 // Title
                 Text(
-                  _otpSent ? 'Verify OTP' : 'Enter Mobile Number',
+                  _otpSent ? 'Verify OTP' : 'Enter Email Address',
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -87,38 +116,34 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
                 Text(
                   _otpSent
-                      ? 'Enter the 6-digit code sent to ${_phoneController.text}'
-                      : 'We\'ll send you a verification code',
+                      ? 'Enter the 6-digit code sent to ${_emailController.text}'
+                      : _isAuthority 
+                          ? 'Enter your department email and authority code'
+                          : 'We\'ll send a verification code to your email',
+                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.neutralGray.withOpacity(0.7),
+                    color: AppTheme.neutralGray.withValues(alpha: 0.7),
                   ),
                 ).animate().fadeIn(delay: 200.ms),
 
                 const SizedBox(height: 40),
 
                 if (!_otpSent) ...[
-                  // Phone Number Input
+                  // Email Input
                   TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    maxLength: 10,
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
                     enabled: !_isLoading,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
-                      labelText: 'Mobile Number',
-                      hintText: 'Enter 10-digit mobile number',
-                      prefixIcon:
-                          const Icon(Icons.phone, color: AppTheme.primaryRed),
-                      prefixText: '+91 ',
-                      prefixStyle: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      labelText: 'Email Address',
+                      hintText: 'john@example.com',
+                      prefixIcon: Icon(
+                        Icons.email_outlined,
+                        color: _isAuthority ? AppTheme.authorityAccent : AppTheme.primaryRed,
                       ),
                       filled: true,
                       fillColor: Colors.white,
-                      counterText: '',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -126,24 +151,101 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                            color: AppTheme.neutralGray.withOpacity(0.2)),
+                            color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: AppTheme.primaryRed, width: 2),
+                        borderSide: BorderSide(
+                            color: _isAuthority ? AppTheme.authorityAccent : AppTheme.primaryRed, width: 2),
                       ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your mobile number';
+                        return 'Please enter your email';
                       }
-                      if (value.length != 10) {
-                        return 'Mobile number must be 10 digits';
+                      if (!value.contains('@')) {
+                        return 'Please enter a valid email';
                       }
                       return null;
                     },
                   ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+
+                  // Authority Code Input (only for authority role)
+                  if (_isAuthority) ...[
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _authorityCodeController,
+                      textCapitalization: TextCapitalization.characters,
+                      enabled: !_isLoading,
+                      decoration: InputDecoration(
+                        labelText: 'Authority Code *',
+                        hintText: 'e.g., POLICE-MUM-001',
+                        prefixIcon: const Icon(Icons.security, color: AppTheme.authorityAccent),
+                        filled: true,
+                        fillColor: Colors.white,
+                        errorText: _authorityCodeError,
+                        helperText: _validatedAuthorityCode != null 
+                            ? '✓ ${_validatedAuthorityCode!['department']} - ${_validatedAuthorityCode!['area']}'
+                            : null,
+                        helperStyle: const TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.bold),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              color: _validatedAuthorityCode != null 
+                                  ? AppTheme.primaryGreen 
+                                  : AppTheme.neutralGray.withValues(alpha: 0.2)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.authorityAccent, width: 2),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        // Clear previous validation
+                        if (_validatedAuthorityCode != null || _authorityCodeError != null) {
+                          setState(() {
+                            _validatedAuthorityCode = null;
+                            _authorityCodeError = null;
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (_isAuthority && (value == null || value.isEmpty)) {
+                          return 'Please enter your authority code';
+                        }
+                        return null;
+                      },
+                    ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.2, end: 0),
+
+                    const SizedBox(height: 12),
+
+                    // Validate Authority Code Button
+                    SizedBox(
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _validateAuthorityCode,
+                        icon: const Icon(Icons.verified_user, size: 20),
+                        label: Text(_validatedAuthorityCode != null ? 'CODE VERIFIED' : 'VERIFY CODE'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _validatedAuthorityCode != null 
+                              ? AppTheme.primaryGreen 
+                              : AppTheme.authorityAccent,
+                          side: BorderSide(
+                            color: _validatedAuthorityCode != null 
+                                ? AppTheme.primaryGreen 
+                                : AppTheme.authorityAccent,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 400.ms),
+                  ],
                 ] else ...[
                   // OTP Input
                   Row(
@@ -171,12 +273,12 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                  color: AppTheme.neutralGray.withOpacity(0.2)),
+                                  color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: AppTheme.primaryRed, width: 2),
+                              borderSide: BorderSide(
+                                  color: _isAuthority ? AppTheme.authorityAccent : AppTheme.primaryRed, width: 2),
                             ),
                           ),
                           onChanged: (value) {
@@ -184,6 +286,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                               _otpFocusNodes[index + 1].requestFocus();
                             } else if (value.isEmpty && index > 0) {
                               _otpFocusNodes[index - 1].requestFocus();
+                            }
+                            if (index == 5 && value.isNotEmpty) {
+                              // Optional: auto-submit
                             }
                           },
                         ),
@@ -203,8 +308,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                             : 'Resend OTP',
                         style: TextStyle(
                           color: _resendTimer > 0
-                              ? AppTheme.neutralGray.withOpacity(0.5)
-                              : AppTheme.primaryRed,
+                              ? AppTheme.neutralGray.withValues(alpha: 0.5)
+                              : (_isAuthority ? AppTheme.authorityAccent : AppTheme.primaryRed),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -221,7 +326,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     onPressed:
                         _isLoading ? null : (_otpSent ? _verifyOtp : _sendOtp),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryRed,
+                      backgroundColor: _isAuthority ? AppTheme.authorityAccent : AppTheme.primaryRed,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -238,7 +343,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                             ),
                           )
                         : Text(
-                            _otpSent ? 'VERIFY & CONTINUE' : 'SEND OTP',
+                            _otpSent ? 'VERIFY & CONTINUE' : 'SEND EMAIL OTP',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -246,6 +351,35 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           ),
                   ),
                 ).animate().fadeIn(delay: 400.ms),
+
+                // Info box for authority
+                if (_isAuthority && !_otpSent) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.amber[800], size: 20),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Authority codes are provided by your department. Contact your supervisor if you don\'t have one.',
+                            style: TextStyle(
+                              color: AppTheme.neutralGray,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 500.ms),
+                ],
               ],
             ),
           ),
@@ -254,215 +388,149 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     );
   }
 
-  Future<void> _sendOtp() async {
-    if (!_formKey.currentState!.validate()) return;
+  /// Validate authority code against Firestore
+  Future<void> _validateAuthorityCode() async {
+    final code = _authorityCodeController.text.trim().toUpperCase();
+    if (code.isEmpty) {
+      setState(() => _authorityCodeError = 'Please enter authority code');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
+      _authorityCodeError = null;
     });
 
-    final phoneNumber = '+91${_phoneController.text}';
-
     try {
-      if (kIsWeb) {
-        // Web-specific implementation - Firebase handles reCAPTCHA automatically
-        final confirmationResult =
-            await FirebaseAuth.instance.signInWithPhoneNumber(phoneNumber);
-
-        if (!mounted) return;
-        setState(() {
-          _webConfirmationResult = confirmationResult;
-          _isLoading = false;
-          _otpSent = true;
-          _resendTimer = 30;
-        });
-        _startResendTimer();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP sent successfully!'),
-            backgroundColor: AppTheme.primaryGreen,
-          ),
-        );
-      } else {
-        // Android/iOS implementation
-        await FirebaseAuth.instance.verifyPhoneNumber(
-          phoneNumber: phoneNumber,
-          verificationCompleted: (PhoneAuthCredential credential) async {
-            // Android only: Auto-resolution
-            await FirebaseAuth.instance.signInWithCredential(credential);
-            if (!mounted) return;
-            _navigateToNextScreen();
-          },
-          verificationFailed: (FirebaseAuthException e) {
-            if (!mounted) return;
-            setState(() {
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed ($phoneNumber): ${e.message}'),
-                backgroundColor: AppTheme.primaryRed,
-                duration: const Duration(seconds: 5),
-              ),
-            );
-          },
-          codeSent: (String verificationId, int? resendToken) {
-            if (!mounted) return;
-            setState(() {
-              _verificationId = verificationId;
-              _isLoading = false;
-              _otpSent = true;
-              _resendTimer = 30;
-            });
-            _startResendTimer();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('OTP sent successfully!'),
-                backgroundColor: AppTheme.primaryGreen,
-              ),
-            );
-          },
-          codeAutoRetrievalTimeout: (String verificationId) {
-            if (mounted) {
-              setState(() {
-                _verificationId = verificationId;
-              });
-            }
-          },
-        );
-      }
-    } on FirebaseAuthException catch (e) {
+      final doc = await FirebaseFirestore.instance.collection('authority_codes').doc(code).get();
+      
       if (!mounted) return;
+
+      if (!doc.exists) {
+        setState(() {
+          _authorityCodeError = 'Invalid authority code';
+          _validatedAuthorityCode = null;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final data = doc.data()!;
+      if (data['isActive'] != true) {
+         setState(() {
+          _authorityCodeError = 'Authority code is inactive';
+          _validatedAuthorityCode = null;
+          _isLoading = false;
+        });
+        return;
+      }
+      
       setState(() {
+        _validatedAuthorityCode = {
+          'code': code,
+          'department': data['department'],
+          'area': data['area'],
+          'areaId': data['areaId'],
+        };
         _isLoading = false;
       });
-
-      String errorMessage = 'Verification Failed';
-      if (e.code == 'web-context-cancelled') {
-        errorMessage = 'Verification cancelled by user';
-      } else if (e.code == 'too-many-requests') {
-        errorMessage = 'Too many requests. Try again later.';
-      } else if (e.code == 'invalid-phone-number') {
-        errorMessage = 'Invalid phone number format';
-      } else if (e.message != null) {
-        errorMessage = e.message!;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed ($phoneNumber): $errorMessage'),
-          backgroundColor: AppTheme.primaryRed,
-          duration: const Duration(seconds: 5),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _authorityCodeError = 'Error validating code';
       });
+    }
+  }
+
+  Future<void> _sendOtp() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_isAuthority && _validatedAuthorityCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
+        const SnackBar(content: Text('Please verify your authority code first'), backgroundColor: AppTheme.primaryRed),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final email = _emailController.text.trim();
+
+    try {
+      final authController = ref.read(authControllerProvider.notifier);
+      await authController.sendEmailOtp(email);
+
+      if (!mounted) return;
+      setState(() {
+        _otpSent = true;
+        _isLoading = false;
+        _resendTimer = 30;
+      });
+      _startResendTimer();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP sent to email!'), backgroundColor: AppTheme.primaryGreen),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.primaryRed),
       );
     }
   }
 
   Future<void> _verifyOtp() async {
     final otp = _otpControllers.map((c) => c.text).join();
-
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter the complete OTP'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
+        const SnackBar(content: Text('Please enter the complete OTP'), backgroundColor: AppTheme.primaryRed),
       );
       return;
     }
 
-    // Validation for Mobile
-    if (!kIsWeb && _verificationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Verification ID missing. Please resend OTP.'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
-      );
-      return;
-    }
-
-    // Validation for Web
-    if (kIsWeb && _webConfirmationResult == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Error: Confirmation Result missing. Please resend OTP.'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
+    final email = _emailController.text.trim();
 
     try {
-      if (kIsWeb) {
-        // Web verification
-        await _webConfirmationResult!.confirm(otp);
-      } else {
-        // Mobile verification
-        PhoneAuthCredential credential = PhoneAuthProvider.credential(
-          verificationId: _verificationId!,
-          smsCode: otp,
-        );
-        await FirebaseAuth.instance.signInWithCredential(credential);
-      }
+      final authController = ref.read(authControllerProvider.notifier);
+      await authController.verifyEmailOtp(email, otp);
 
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-
+      setState(() => _isLoading = false);
       _navigateToNextScreen();
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? 'Invalid OTP'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.primaryRed),
       );
     }
   }
 
   void _navigateToNextScreen() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CitizenVolunteerRegistrationScreen(
-          userRole: widget.userRole,
-          phoneNumber: _phoneController.text,
+    final email = _emailController.text.trim();
+    if (_isAuthority) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AuthorityRegistrationScreen(
+            phoneNumber: '', // No phone
+            authorityCodeData: _validatedAuthorityCode!,
+            verifiedEmail: email,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CitizenVolunteerRegistrationScreen(
+            userRole: widget.userRole,
+            phoneNumber: '', // No phone
+            verifiedEmail: email,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _resendOtp() async {
@@ -473,13 +541,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
-
       setState(() {
-        if (_resendTimer > 0) {
-          _resendTimer--;
-        }
+        if (_resendTimer > 0) _resendTimer--;
       });
-
       return _resendTimer > 0;
     });
   }

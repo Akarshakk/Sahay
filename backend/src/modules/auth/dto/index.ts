@@ -46,6 +46,44 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   dob?: string;
+
+  // Area-based assignment (for volunteers/authorities)
+  @ApiPropertyOptional({ example: 'Mumbai Central' })
+  @IsOptional()
+  @IsString()
+  registeredArea?: string;
+
+  @ApiPropertyOptional({ example: 'mumbai-central' })
+  @IsOptional()
+  @IsString()
+  registeredAreaId?: string;
+
+  // Identity document
+  @ApiPropertyOptional({ example: 'https://storage.googleapis.com/...' })
+  @IsOptional()
+  @IsString()
+  identityDocumentUrl?: string;
+
+  @ApiPropertyOptional({ enum: ['aadhaar', 'pan', 'driving_license', 'voter_id'] })
+  @IsOptional()
+  @IsString()
+  identityDocumentType?: string;
+
+  // Authority-specific fields
+  @ApiPropertyOptional({ example: 'POLICE-MUM-001' })
+  @IsOptional()
+  @IsString()
+  authorityCode?: string;
+
+  @ApiPropertyOptional({ example: 'Police' })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiPropertyOptional({ example: 'AUTH-REG-12345' })
+  @IsOptional()
+  @IsString()
+  registrationNumber?: string;
 }
 
 export class LoginDto {

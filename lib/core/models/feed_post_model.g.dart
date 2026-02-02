@@ -8,7 +8,7 @@ part of 'feed_post_model.dart';
 
 _$FeedPostImpl _$$FeedPostImplFromJson(Map<String, dynamic> json) =>
     _$FeedPostImpl(
-      id: json['_id'] as String,
+      id: json['id'] as String,
       content: json['content'] as String,
       category: json['category'] as String,
       authorId: json['authorId'] as String,
@@ -20,10 +20,13 @@ _$FeedPostImpl _$$FeedPostImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       verificationCount: (json['verificationCount'] as num?)?.toInt() ?? 0,
-      isPromoted: json['isPromoted'] as bool? ?? false,
-      promotedIncidentId: json['promotedIncidentId'] as String?,
-      distance: (json['distance'] as num?)?.toDouble(),
+      likes:
+          (json['likes'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+              const [],
+      commentsCount: (json['commentsCount'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isPromoted: json['isPromoted'] as bool? ?? false,
+      distance: (json['distance'] as num?)?.toDouble(),
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),
@@ -31,7 +34,7 @@ _$FeedPostImpl _$$FeedPostImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$FeedPostImplToJson(_$FeedPostImpl instance) =>
     <String, dynamic>{
-      '_id': instance.id,
+      'id': instance.id,
       'content': instance.content,
       'category': instance.category,
       'authorId': instance.authorId,
@@ -40,30 +43,29 @@ Map<String, dynamic> _$$FeedPostImplToJson(_$FeedPostImpl instance) =>
       'address': instance.address,
       'mediaUrls': instance.mediaUrls,
       'verificationCount': instance.verificationCount,
-      'isPromoted': instance.isPromoted,
-      'promotedIncidentId': instance.promotedIncidentId,
-      'distance': instance.distance,
+      'likes': instance.likes,
+      'commentsCount': instance.commentsCount,
       'createdAt': instance.createdAt.toIso8601String(),
+      'isPromoted': instance.isPromoted,
+      'distance': instance.distance,
       'updatedAt': instance.updatedAt?.toIso8601String(),
     };
 
 _$FeedLocationImpl _$$FeedLocationImplFromJson(Map<String, dynamic> json) =>
     _$FeedLocationImpl(
-      type: json['type'] as String,
-      coordinates: (json['coordinates'] as List<dynamic>)
-          .map((e) => (e as num).toDouble())
-          .toList(),
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$$FeedLocationImplToJson(_$FeedLocationImpl instance) =>
     <String, dynamic>{
-      'type': instance.type,
-      'coordinates': instance.coordinates,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
     };
 
 _$ChatMessageImpl _$$ChatMessageImplFromJson(Map<String, dynamic> json) =>
     _$ChatMessageImpl(
-      id: json['_id'] as String,
+      id: json['id'] as String,
       postId: json['postId'] as String,
       authorId: json['authorId'] as String,
       authorName: json['authorName'] as String,
@@ -79,7 +81,7 @@ _$ChatMessageImpl _$$ChatMessageImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$ChatMessageImplToJson(_$ChatMessageImpl instance) =>
     <String, dynamic>{
-      '_id': instance.id,
+      'id': instance.id,
       'postId': instance.postId,
       'authorId': instance.authorId,
       'authorName': instance.authorName,

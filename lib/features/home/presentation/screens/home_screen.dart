@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/hardware_trigger_service.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
@@ -18,7 +20,6 @@ import '../../../faq/presentation/screens/top_questions_screen.dart';
 import '../../../feed/presentation/screens/community_feed_screen.dart';
 import '../../../volunteer/presentation/screens/volunteer_dashboard_screen.dart';
 import '../../../volunteer/presentation/screens/volunteer_tasks_screen.dart';
-import '../../../volunteer/presentation/screens/verification_screen.dart';
 import '../../../volunteer/presentation/screens/resources_screen.dart';
 import 'authority_dashboard_screen.dart';
 
@@ -39,9 +40,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // Hardcoded location for demo (Mumbai coordinates)
-  static const double _demoLatitude = 19.0760;
-  static const double _demoLongitude = 72.8777;
+  // Default location for fallback (Mumbai coordinates)
+  static const double _defaultLatitude = 19.0760;
+  static const double _defaultLongitude = 72.8777;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Hardware Trigger Listener
+    HardwareTriggerService().onEmergencyTriggered = _submitEmergencySOS;
+    HardwareTriggerService().initialize();
+  }
+
+  @override
+  void dispose() {
+    HardwareTriggerService().dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
@@ -340,7 +355,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.primaryOrange,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const VerificationScreen()),
+                    MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
                   ),
                 ),
               ),
@@ -436,7 +451,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.primaryOrange,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const VerificationScreen()),
+                    MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
                   ),
                 ),
               ),
@@ -858,6 +873,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
+            
+            // Trigger Alert Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _submitEmergencySOS();
+                },
+                icon: const Icon(Icons.notifications_active),
+                label: const Text('TRIGGER SOS ALERT (LOG HISTORY)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             const Text('Select emergency service to call:', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             // Emergency Call Buttons
@@ -993,50 +1028,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.read(authControllerProvider);
     if (user == null) return;
 
-    final now = DateTime.now();
-    final incident = IncidentModel(
-      id: 'sos-${now.millisecondsSinceEpoch}',
-      title: 'Emergency SOS',
-      description: 'Emergency assistance required - triggered via SOS button',
-      type: IncidentType.police,
-      severity: SeverityLevel.critical,
-      latitude: _demoLatitude,
-      longitude: _demoLongitude,
-      reportedBy: user.phone,
-      reportedAt: now,
-      timestamp: now,
-      status: IncidentStatus.pending,
-      isSynced: false,
-      mediaUrls: const [],
-      verificationCount: 0,
-    );
+    final location = ref.read(currentLocationProvider).valueOrNull;
 
-    final result = await ref
-        .read(incidentControllerProvider.notifier)
-        .submitReport(incident: incident);
+    try {
+      final api = ref.read(apiServiceProvider);
+      
+      // 1. Trigger SOS API
+      await api.triggerSOS(
+        latitude: location?.latitude ?? _defaultLatitude,
+        longitude: location?.longitude ?? _defaultLongitude,
+        type: 'POLICE', // Default
+        address: location?.address,
+      );
 
-    if (!mounted) return;
-
-    if (result.isSuccess) {
+      // 2. Show success
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('🚨 Emergency SOS sent successfully!'),
-          backgroundColor: Colors.green,
+          content: Text('🚨 Emergency SOS Triggered! Creating logs...'),
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } else if (result.isOffline) {
+      
+      // 3. Send SMS automatically (optional, keeps existing logic)
+      // _sendEmergencySMS(location); 
+
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('📡 No connection - SOS queued for sync'),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
+        SnackBar(
+          content: Text('Failed to trigger SOS: $e'),
+          backgroundColor: Colors.red,
         ),
       );
-    } else {
-      _showError(result.error ?? 'Failed to send SOS');
     }
   }
+
+
 
   /// Show duplicate incident alert
   void _showDuplicateAlert(IncidentModel duplicate) {
@@ -1134,7 +1163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 12),
                   // User Name
                   Text(
-                    user?.name ?? 'Akarshak Singh',
+                    user?.name ?? 'User',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1144,7 +1173,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 4),
                   // Phone Number
                   Text(
-                    '+91 ${user?.phone ?? '8605720924'}',
+                    '+91 ${user?.phone ?? 'Not logged in'}',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.neutralGray.withOpacity(0.7),
@@ -1177,7 +1206,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             
             // Authority Specific Menu Item
-            if (user?.role == user_model.UserRole.authority)
+            if (user?.role == UserRole.authority)
               _buildDrawerItem(
                 icon: Icons.shield,
                 title: 'Command Center',
@@ -1551,237 +1580,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Show Resources Panel
-  void _showResourcesPanel() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Resource Availability'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildResourceToggle('First Aid Kit', true),
-            _buildResourceToggle('Fire Extinguisher', true),
-            _buildResourceToggle('Medical Supplies', false),
-            _buildResourceToggle('Emergency Food', true),
-            _buildResourceToggle('Water Supply', true),
-            _buildResourceToggle('Transport Vehicle', false),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Resources updated!'), backgroundColor: AppTheme.primaryGreen),
-              );
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildResourceToggle(String name, bool available) {
-    return ListTile(
-      title: Text(name),
-      trailing: Switch(
-        value: available,
-        activeThumbColor: AppTheme.primaryGreen,
-        onChanged: (value) {},
-      ),
-    );
-  }
 
-  /// Show Heatmap Dialog
-  void _showHeatmapDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.map, color: AppTheme.authorityAccent),
-            SizedBox(width: 8),
-            Text('Incident Heatmap'),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: Column(
-            children: [
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.map, size: 48, color: Colors.grey),
-                      SizedBox(height: 8),
-                      Text('Heatmap View', style: TextStyle(color: Colors.grey)),
-                      Text('Mumbai Region', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildLegendItem('Critical', AppTheme.primaryRed),
-                  _buildLegendItem('High', AppTheme.primaryOrange),
-                  _buildLegendItem('Medium', Colors.amber),
-                  _buildLegendItem('Low', AppTheme.primaryGreen),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11)),
-      ],
-    );
-  }
 
-  /// Show Broadcast Dialog
-  void _showBroadcastDialog() {
-    final TextEditingController messageController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.campaign, color: AppTheme.primaryOrange),
-            SizedBox(width: 8),
-            Text('Broadcast Alert'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Alert Type', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'emergency', child: Text('🚨 Emergency')),
-                DropdownMenuItem(value: 'warning', child: Text('⚠️ Warning')),
-                DropdownMenuItem(value: 'info', child: Text('ℹ️ Information')),
-              ],
-              onChanged: (value) {},
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Target Area', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'all', child: Text('All Mumbai')),
-                DropdownMenuItem(value: 'north', child: Text('North Mumbai')),
-                DropdownMenuItem(value: 'south', child: Text('South Mumbai')),
-                DropdownMenuItem(value: 'central', child: Text('Central Mumbai')),
-              ],
-              onChanged: (value) {},
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: messageController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Message',
-                border: OutlineInputBorder(),
-                hintText: 'Enter broadcast message...',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Alert broadcasted successfully!'), backgroundColor: AppTheme.primaryGreen),
-              );
-            },
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryOrange),
-            child: const Text('Broadcast'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  /// Show Analytics Dialog
-  void _showAnalyticsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.analytics, color: AppTheme.primaryGreen),
-            SizedBox(width: 8),
-            Text('Analytics Dashboard'),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildAnalyticsStat('Total Incidents Today', '47', Icons.report, AppTheme.primaryRed),
-              _buildAnalyticsStat('Resolved', '38', Icons.check_circle, AppTheme.primaryGreen),
-              _buildAnalyticsStat('In Progress', '7', Icons.pending, AppTheme.primaryOrange),
-              _buildAnalyticsStat('Avg Response Time', '8.5 min', Icons.timer, AppTheme.citizenAccent),
-              _buildAnalyticsStat('Active Volunteers', '156', Icons.people, AppTheme.volunteerAccent),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Export Report'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAnalyticsStat(String label, String value, IconData icon, Color color) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color.withOpacity(0.1),
-        child: Icon(icon, color: color, size: 20),
-      ),
-      title: Text(label),
-      trailing: Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: color)),
-    );
-  }
+
 }

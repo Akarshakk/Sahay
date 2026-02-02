@@ -5,7 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/models/user_model.dart' as user_model;
+
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/widgets/ashoka_chakra.dart';
 import '../providers/auth_provider.dart';
@@ -110,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (user != null) {
-        UserRole role = _convertRole(user.role);
+        UserRole role = user.role;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Welcome back, ${user.name}!'),
@@ -141,16 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  UserRole _convertRole(user_model.UserRole role) {
-    switch (role) {
-      case user_model.UserRole.citizen:
-        return UserRole.citizen;
-      case user_model.UserRole.volunteer:
-        return UserRole.volunteer;
-      case user_model.UserRole.authority:
-        return UserRole.authority;
-    }
-  }
+
 
   Future<void> _saveCredentials(String phone, String password) async {
     final prefs = await SharedPreferences.getInstance();
@@ -187,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await _saveCredentials(_phoneController.text, _passwordController.text);
 
         // Convert user.role (from user_model) to UserRole (from app_enums)
-        UserRole role = _convertRole(user.role);
+        UserRole role = user.role;
 
         // Show success message
         if (!mounted) return;
@@ -260,7 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -293,7 +284,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Log in to the Sahay App',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ).animate().fadeIn(delay: 400.ms),
 
@@ -307,7 +298,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -446,15 +437,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Expanded(
                                 child: Divider(
                                     color:
-                                        AppTheme.neutralGray.withOpacity(0.3)),
+                                        AppTheme.neutralGray.withValues(alpha: 0.3)),
                               ),
                               Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
                                   'or',
                                   style: TextStyle(
                                     color:
-                                        AppTheme.neutralGray.withOpacity(0.6),
+                                        AppTheme.neutralGray.withValues(alpha: 0.6),
                                     fontSize: 14,
                                   ),
                                 ),
@@ -462,7 +453,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Expanded(
                                 child: Divider(
                                     color:
-                                        AppTheme.neutralGray.withOpacity(0.3)),
+                                        AppTheme.neutralGray.withValues(alpha: 0.3)),
                               ),
                             ],
                           ),
@@ -510,7 +501,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Text(
                       'Don\'t have an account? Register',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -523,10 +514,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(
@@ -549,11 +540,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 12),
                         _buildTestCredential(
-                            '9876543210', 'test123', 'Citizen'),
+                            '9876543210', 'test1234', 'Citizen'),
                         _buildTestCredential(
-                            '9876543211', 'test123', 'Volunteer'),
+                            '9876543211', 'test1234', 'Volunteer'),
                         _buildTestCredential(
-                            '9876543212', 'test123', 'Authority'),
+                            '9876543212', 'test1234', 'Authority'),
                       ],
                     ),
                   ).animate().fadeIn(delay: 800.ms),
@@ -566,7 +557,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ).animate().fadeIn(delay: 800.ms),
 
@@ -576,7 +567,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'version: 1.0.0',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -596,7 +587,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -622,7 +613,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             '/ $password',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
         ],

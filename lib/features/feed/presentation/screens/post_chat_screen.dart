@@ -5,6 +5,7 @@ import '../../../../core/models/feed_post_model.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class PostChatScreen extends ConsumerStatefulWidget {
   final FeedPost post;
@@ -46,7 +47,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
     
     try {
       final api = ref.read(apiServiceProvider);
-      final result = await api.getChatMessages(widget.post.id, limit: 100);
+      final result = await api.getComments(widget.post.id);
       
       if (result['success'] == true && result['data'] != null) {
         setState(() {
@@ -73,17 +74,43 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
     
     try {
       final api = ref.read(apiServiceProvider);
-      await api.sendChatMessage(
+      final currentUser = ref.read(authControllerProvider);
+      
+      // Optimistically add message to UI immediately
+      final optimisticMessage = ChatMessage(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
         postId: widget.post.id,
+        authorId: currentUser?.id ?? '',
+        authorName: currentUser?.name ?? 'You',
         message: text,
+        createdAt: DateTime.now(),
       );
+      
+      setState(() {
+        _messages.insert(0, optimisticMessage);
+      });
+      _scrollToBottom();
+      
+      // Send to backend
+      final result = await api.addComment(widget.post.id, text);
+      
+      if (result['success'] == true) {
+        // Reload the full list to get the actual saved comment with correct ID
+        await _loadMessages();
+      }
     } catch (e) {
+      // Remove the optimistic message on error
+      setState(() {
+        _messages.removeWhere((m) => m.id.startsWith('temp_'));
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error sending message: $e')),
       );
     }
   }
 
+  // Reactions not supported yet
+  /*
   Future<void> _reactToMessage(ChatMessage message) async {
     try {
       final api = ref.read(apiServiceProvider);
@@ -102,6 +129,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
       print('Error reacting to message: $e');
     }
   }
+  */
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -312,35 +340,37 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    InkWell(
-                      onTap: () => _reactToMessage(message),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                        child: Row(
-                          children: [
-                            Icon(
-                              message.reactions.contains('me')
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              size: 16,
-                              color: message.reactions.contains('me')
-                                  ? Colors.red
-                                  : Colors.grey,
-                            ),
-                            if (message.reactions.isNotEmpty) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                '${message.reactions.length}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
+                      /*
+                      InkWell(
+                        onTap: () => _reactToMessage(message),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                message.reactions.contains('me')
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 16,
+                                color: message.reactions.contains('me')
+                                    ? Colors.red
+                                    : Colors.grey,
                               ),
+                              if (message.reactions.isNotEmpty) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${message.reactions.length}',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                      */
                   ],
                 ),
               ],

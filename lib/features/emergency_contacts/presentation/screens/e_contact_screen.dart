@@ -3,21 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
-
-/// Emergency Contact Model
-class EmergencyContact {
-  final String id;
-  String name;
-  String phone;
-  String relation;
-
-  EmergencyContact({
-    required this.id,
-    required this.name,
-    required this.phone,
-    required this.relation,
-  });
-}
+import '../../../../core/models/user_model.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// E-Contact Screen - Manage emergency contacts
 class EContactScreen extends ConsumerStatefulWidget {
@@ -28,24 +15,11 @@ class EContactScreen extends ConsumerStatefulWidget {
 }
 
 class _EContactScreenState extends ConsumerState<EContactScreen> {
-  final List<EmergencyContact> _contacts = [];
-  
-  @override
-  void initState() {
-    super.initState();
-    _loadContacts();
-  }
-
-  void _loadContacts() {
-    // In a real app, load from database/API
-    // For demo, initialize with empty slots
-    setState(() {
-      _contacts.clear();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authControllerProvider);
+    final contacts = user?.emergencyContacts ?? [];
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -108,12 +82,12 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: 5,
               itemBuilder: (context, index) {
-                final hasContact = index < _contacts.length;
+                final hasContact = index < contacts.length;
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: hasContact
-                      ? _buildContactCard(_contacts[index], index)
+                      ? _buildContactCard(contacts[index], index)
                       : _buildEmptyContactSlot(index),
                 ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: -0.2, end: 0);
               },
@@ -257,16 +231,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     );
     
     if (result != null) {
-      setState(() {
-        _contacts.add(result);
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Contact added successfully!'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
+      await _updateContacts((currentContacts) => [...currentContacts, result]);
     }
   }
 
@@ -280,16 +245,11 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     );
     
     if (result != null) {
-      setState(() {
-        _contacts[index] = result;
+      await _updateContacts((currentContacts) {
+        final newContacts = List<EmergencyContact>.from(currentContacts);
+        newContacts[index] = result;
+        return newContacts;
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Contact updated successfully!'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
     }
   }
 
@@ -316,16 +276,50 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     );
     
     if (confirm == true) {
-      setState(() {
-        _contacts.removeAt(index);
+      await _updateContacts((currentContacts) {
+        final newContacts = List<EmergencyContact>.from(currentContacts);
+        newContacts.removeAt(index);
+        return newContacts;
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Contact deleted successfully!'),
-          backgroundColor: AppTheme.primaryRed,
-        ),
-      );
+    }
+  }
+
+  Future<void> _updateContacts(List<EmergencyContact> Function(List<EmergencyContact>) updateFn) async {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+
+    final currentContacts = user.emergencyContacts ?? [];
+    final updatedContacts = updateFn(currentContacts);
+
+    try {
+      // Map back to JSON for API update
+      final contactsJson = updatedContacts.map((c) => {
+        'name': c.name,
+        'phone': c.phone,
+        'relation': c.relation,
+      }).toList();
+
+      await ref.read(authControllerProvider.notifier).updateUser({
+        'emergencyContacts': contactsJson,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contacts updated successfully!'),
+            backgroundColor: AppTheme.primaryGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update contacts: $e'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+      }
     }
   }
 }
@@ -452,7 +446,6 @@ class _ContactDialogState extends State<_ContactDialog> {
     }
     
     final contact = EmergencyContact(
-      id: widget.contact?.id ?? DateTime.now().toString(),
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       relation: _relationController.text.trim(),

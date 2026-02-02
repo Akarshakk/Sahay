@@ -4,8 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ashoka_chakra.dart';
 import '../../../../core/enums/app_enums.dart';
-import 'citizen_volunteer_registration_screen.dart';
-import 'authority_registration_screen.dart';
+import 'otp_verification_screen.dart';
 
 /// Initial Registration Screen - Choose User Type
 class RegistrationScreen extends ConsumerStatefulWidget {
@@ -48,7 +47,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -83,7 +82,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  color: AppTheme.neutralGray.withOpacity(0.7),
+                  color: AppTheme.neutralGray.withValues(alpha: 0.7),
                 ),
               ).animate().fadeIn(delay: 300.ms),
 
@@ -153,7 +152,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   Text(
                     'Already have an account? ',
                     style: TextStyle(
-                      color: AppTheme.neutralGray.withOpacity(0.7),
+                      color: AppTheme.neutralGray.withValues(alpha: 0.7),
                     ),
                   ),
                   TextButton(
@@ -204,8 +203,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? color.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.05),
+                  ? color.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: isSelected ? 15 : 10,
               offset: const Offset(0, 4),
             ),
@@ -216,7 +215,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 32),
@@ -239,7 +238,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.neutralGray.withOpacity(0.7),
+                      color: AppTheme.neutralGray.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -255,25 +254,14 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   void _handleContinue() {
     if (_selectedRole == null) return;
 
-    if (_selectedRole == UserRole.authority) {
-      // Navigate to authority registration
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const AuthorityRegistrationScreen(),
+    // ALL roles go through OTP verification first
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OtpVerificationScreen(
+          userRole: _selectedRole!,
         ),
-      );
-    } else {
-      // Navigate to citizen/volunteer registration directly (Bypassing OTP for now)
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CitizenVolunteerRegistrationScreen(
-            userRole: _selectedRole!,
-            phoneNumber: '', // Empty phone number to allow user input
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 }

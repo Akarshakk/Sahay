@@ -46,6 +46,23 @@ export class FeedService {
     );
   }
 
+  /**
+   * Helper to serialize a post from Firestore, converting Timestamps to ISO strings
+   */
+  private serializePost(data: any): CommunityPost {
+    return {
+      ...data,
+      createdAt:
+        data.createdAt && typeof data.createdAt.toDate === 'function'
+          ? data.createdAt.toDate().toISOString()
+          : data.createdAt,
+      updatedAt:
+        data.updatedAt && typeof data.updatedAt.toDate === 'function'
+          ? data.updatedAt.toDate().toISOString()
+          : data.updatedAt,
+    };
+  }
+
   async createPost(
     createPostDto: CreatePostDto,
     userId: string,
@@ -70,6 +87,8 @@ export class FeedService {
       verificationCount: 0,
       isPromoted: false,
       isActive: true,
+      likes: [],
+      commentsCount: 0,
       createdAt: now,
       updatedAt: now,
     };
@@ -103,27 +122,74 @@ export class FeedService {
     const latDelta = radius / 111320;
     const lngDelta = radius / (111320 * Math.cos(latitude * (Math.PI / 180)));
 
+    // COMPLETELY SIMPLIFIED QUERY: Only filter by Latitude Range.
+    // This effectively uses a Single-Field Index which is auto-created by Firestore.
+    // We will filter 'isActive' and 'longitude' in memory.
     let firestoreQuery: admin.firestore.Query = this.feedCollection
-      .where('isActive', '==', true)
       .where('location.latitude', '>=', latitude - latDelta)
       .where('location.latitude', '<=', latitude + latDelta)
-      .orderBy('location.latitude')
-      .orderBy('createdAt', 'desc');
+      .orderBy('location.latitude');
 
     const snapshot = await firestoreQuery.get();
+    this.logger.log(`🔍 Raw Firestore results: ${snapshot.docs.length} docs`);
 
-    // Filter by longitude and category in memory
+    // Filter by longitude and category in memory, AND sort by createdAt descending
     let posts = snapshot.docs
-      .map((doc) => doc.data() as CommunityPost)
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          ...data,
+          // Firestore Timestamps need conversion to Date objects
+          createdAt:
+            data.createdAt && typeof data.createdAt.toDate === 'function'
+              ? data.createdAt.toDate()
+              : new Date(data.createdAt),
+          updatedAt:
+            data.updatedAt && typeof data.updatedAt.toDate === 'function'
+              ? data.updatedAt.toDate()
+              : new Date(data.updatedAt),
+          id: doc.id,
+        } as CommunityPost;
+      })
       .filter(
-        (post) =>
-          post.location.longitude >= longitude - lngDelta &&
-          post.location.longitude <= longitude + lngDelta,
+        (post) => {
+          const isActive = post.isActive === true;
+          const isValid = post.location.longitude >= longitude - lngDelta &&
+            post.location.longitude <= longitude + lngDelta;
+
+          if (!isActive) this.logger.debug(`❌ Post ${post.id} filtered: inactive`);
+          if (!isValid) this.logger.debug(`❌ Post ${post.id} filtered: lng out of bounds`);
+
+          return isActive && isValid;
+        }
       );
 
     if (category) {
       posts = posts.filter((post) => post.category === category);
     }
+
+    // Reddit-style Engagement Ranking Algorithm
+    // Score = (verifications * 3) + (likes * 2) + (comments * 1)
+    // Higher engagement = higher priority, tie-breaker = newest first
+    const getEngagementScore = (post: CommunityPost): number => {
+      const verifications = post.verificationCount || 0;
+      const likes = post.likes?.length || 0;
+      const comments = post.commentsCount || 0;
+      return (verifications * 3) + (likes * 2) + (comments * 1);
+    };
+
+    posts.sort((a, b) => {
+      const scoreA = getEngagementScore(a);
+      const scoreB = getEngagementScore(b);
+
+      // Primary sort: engagement score (descending)
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA;
+      }
+
+      // Tie-breaker: newest first
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
 
     const total = posts.length;
 
@@ -132,7 +198,7 @@ export class FeedService {
     const paginatedPosts = posts.slice(startIndex, startIndex + limit);
 
     this.logger.log(
-      `📍 Found ${paginatedPosts.length} posts within ${radius}m of [${latitude}, ${longitude}]`,
+      `📍 Found ${posts.length} posts (returning ${paginatedPosts.length}) within ${radius}m`,
     );
 
     return {
@@ -324,5 +390,85 @@ export class FeedService {
       )
       .sort((a, b) => b.verificationCount - a.verificationCount)
       .slice(0, limit);
+  }
+
+  async addComment(
+    postId: string,
+    userId: string,
+    content: string,
+  ): Promise<CommunityPost> {
+    const user = await this.usersService.findById(userId);
+    const postRef = this.feedCollection.doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      throw new NotFoundException(`Post with ID ${postId} not found`);
+    }
+
+    const commentRef = postRef.collection('comments').doc();
+    const now = new Date();
+
+    const comment = {
+      id: commentRef.id,
+      postId,
+      authorId: userId,
+      authorName: user.fullName,
+      message: content,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await commentRef.set(comment);
+
+    // Update post comment count
+    await postRef.update({
+      commentsCount: admin.firestore.FieldValue.increment(1),
+    });
+
+    return this.serializePost((await postRef.get()).data());
+  }
+
+  async getComments(postId: string): Promise<any[]> {
+    const commentsRef = this.feedCollection.doc(postId).collection('comments');
+    const snapshot = await commentsRef.orderBy('createdAt', 'asc').get();
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt:
+          data.createdAt && typeof data.createdAt.toDate === 'function'
+            ? data.createdAt.toDate().toISOString()
+            : data.createdAt,
+      };
+    });
+  }
+
+  async toggleLike(postId: string, userId: string): Promise<CommunityPost> {
+    const postRef = this.feedCollection.doc(postId);
+    const postDoc = await postRef.get();
+
+    if (!postDoc.exists) {
+      throw new NotFoundException(`Post with ID ${postId} not found`);
+    }
+
+    const post = postDoc.data() as CommunityPost;
+    const likes = post.likes || [];
+    const index = likes.indexOf(userId);
+
+    if (index === -1) {
+      // Like
+      await postRef.update({
+        likes: admin.firestore.FieldValue.arrayUnion(userId),
+      });
+    } else {
+      // Unlike
+      await postRef.update({
+        likes: admin.firestore.FieldValue.arrayRemove(userId),
+      });
+    }
+
+    return this.serializePost((await postRef.get()).data());
   }
 }

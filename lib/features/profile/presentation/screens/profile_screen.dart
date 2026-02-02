@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/profile_provider.dart';
+import '../../../../core/models/user_model.dart';
+import '../../../../core/widgets/document_upload_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Profile Screen - Edit user details with persistence
@@ -42,29 +44,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _loadUserData() {
-    final user = ref.read(authControllerProvider);
+    final authUser = ref.read(authControllerProvider);
     final profileData = ref.read(profileProvider);
+    
+    // Use authUser if available, otherwise fall back to mock user (like drawer does)
+    final user = authUser ?? MockUsers.citizen;
 
-    if (user != null) {
-      // Use saved profile data if available, otherwise use auth data
-      _nameController.text =
-          profileData.name.isNotEmpty ? profileData.name : user.name;
-      _phoneController.text =
-          profileData.phone.isNotEmpty ? profileData.phone : user.phone;
-      _emailController.text =
-          profileData.email.isNotEmpty ? profileData.email : '';
-      _professionController.text = profileData.profession;
-      _addressController.text = profileData.address;
-      _profileImagePath = profileData.profileImagePath;
+    // Use auth data for all fields since it comes from database after login
+    _nameController.text = user.name;
+    _phoneController.text = user.phone;
+    
+    // Use user data if available, fallback to profile provider for any missing
+    _emailController.text = user.email ?? profileData.email;
+    _professionController.text = user.profession ?? profileData.profession;
+    _addressController.text = user.address ?? profileData.address;
+    _profileImagePath = profileData.profileImagePath;
 
-      // Initialize provider from user if first load
-      if (profileData.name.isEmpty) {
-        ref.read(profileProvider.notifier).updateProfile(
-              name: user.name,
-              phone: user.phone,
-            );
-      }
-    }
+    // Sync profile provider with current user data
+    ref.read(profileProvider.notifier).initFromUser(
+          user.name,
+          user.email ?? profileData.email,
+          user.phone,
+        );
+    
     setState(() {});
   }
 
@@ -414,8 +416,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     )
                   : _buildInfoTile(
                       label: 'Email Address',
-                      value: profileData.email.isNotEmpty
-                          ? profileData.email
+                      value: (user?.email ?? profileData.email).isNotEmpty
+                          ? (user?.email ?? profileData.email)
                           : 'Not set',
                       icon: Icons.email,
                     ),
@@ -431,8 +433,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     )
                   : _buildInfoTile(
                       label: 'Profession',
-                      value: profileData.profession.isNotEmpty
-                          ? profileData.profession
+                      value: (user?.profession ?? profileData.profession).isNotEmpty
+                          ? (user?.profession ?? profileData.profession)
                           : 'Not set',
                       icon: Icons.work,
                     ),
@@ -449,11 +451,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     )
                   : _buildInfoTile(
                       label: 'Home Address',
-                      value: profileData.address.isNotEmpty
-                          ? profileData.address
+                      value: (user?.address ?? profileData.address).isNotEmpty
+                          ? (user?.address ?? profileData.address)
                           : 'Not set',
                       icon: Icons.home,
                     ),
+
+              const SizedBox(height: 24),
+
+              // My Documents Section
+              _buildDocumentsSection(user),
 
               if (_isEditing) ...[
                 const SizedBox(height: 32),
@@ -639,6 +646,294 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
     ).animate().fadeIn(delay: 50.ms);
+  }
+
+  Widget _buildDocumentsSection(User? user) {
+    final hasDocument = user?.identityDocumentUrl != null && user!.identityDocumentUrl!.isNotEmpty;
+    
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primaryRed.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.folder_copy, color: AppTheme.primaryRed, size: 22),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'My Documents',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.neutralGray,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (hasDocument) ...[
+            // Show uploaded document
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _formatDocumentType(user?.identityDocumentType ?? 'Document'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.neutralGray,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Uploaded & Verified',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.primaryGreen.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.visibility, color: AppTheme.primaryRed),
+                    onPressed: () => _viewDocument(user!.identityDocumentUrl!),
+                    tooltip: 'View Document',
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // No document uploaded
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: AppTheme.primaryOrange, size: 24),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'No documents uploaded yet',
+                      style: TextStyle(
+                        color: AppTheme.neutralGray,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          // Upload/Update button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _showDocumentUploadDialog,
+              icon: Icon(hasDocument ? Icons.refresh : Icons.upload_file),
+              label: Text(hasDocument ? 'Update Document' : 'Upload Document'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryRed,
+                side: const BorderSide(color: AppTheme.primaryRed),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 150.ms);
+  }
+
+  String _formatDocumentType(String type) {
+    switch (type.toLowerCase()) {
+      case 'aadhaar':
+        return 'Aadhaar Card';
+      case 'pan':
+        return 'PAN Card';
+      case 'driving_license':
+        return 'Driving License';
+      case 'voter_id':
+        return 'Voter ID';
+      default:
+        return type;
+    }
+  }
+
+  void _viewDocument(String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: const Text('Document Preview'),
+              backgroundColor: AppTheme.primaryRed,
+              foregroundColor: Colors.white,
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 400),
+              child: Image.network(
+                url,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 200,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: AppTheme.primaryRed),
+                        const SizedBox(height: 8),
+                        Text('Could not load image\n$url', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDocumentUploadDialog() {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Upload Document',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.neutralGray,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Divider(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: DocumentUploadWidget(
+                  initialUrl: user.identityDocumentUrl,
+                  initialType: user.identityDocumentType,
+                  username: user.phone, // Use phone as username for uniqueness
+                  onDocumentUploaded: (url, type) async {
+                    if (url != null && type != null) {
+                      try {
+                        // Update user profile with new document
+                        await ref.read(authControllerProvider.notifier).updateUser({
+                          'identityDocumentUrl': url,
+                          'identityDocumentType': type,
+                        });
+                        
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Document updated successfully!'),
+                              backgroundColor: AppTheme.primaryGreen,
+                            ),
+                          );
+                          // Reload profile to refresh UI
+                          setState(() {
+                            _loadUserData();
+                          });
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to update profile: $e'),
+                              backgroundColor: AppTheme.primaryRed,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _pickImage() async {

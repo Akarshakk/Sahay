@@ -11,7 +11,20 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       name: json['name'] as String,
       phone: json['phone'] as String,
       role: $enumDecode(_$UserRoleEnumMap, json['role']),
+      email: json['email'] as String?,
       state: json['state'] as String?,
+      profession: json['profession'] as String?,
+      address: json['address'] as String?,
+      registeredArea: json['registeredArea'] as String?,
+      registeredAreaId: json['registeredAreaId'] as String?,
+      identityDocumentUrl: json['identityDocumentUrl'] as String?,
+      identityDocumentType: json['identityDocumentType'] as String?,
+      authorityCode: json['authorityCode'] as String?,
+      department: json['department'] as String?,
+      registrationNumber: json['registrationNumber'] as String?,
+      emergencyContacts: (json['emergencyContacts'] as List<dynamic>?)
+          ?.map((e) => EmergencyContact.fromJson(e as Map<String, dynamic>))
+          .toList(),
       isAvailable: json['isAvailable'] as bool? ?? true,
     );
 
@@ -21,7 +34,18 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'name': instance.name,
       'phone': instance.phone,
       'role': _$UserRoleEnumMap[instance.role]!,
+      'email': instance.email,
       'state': instance.state,
+      'profession': instance.profession,
+      'address': instance.address,
+      'registeredArea': instance.registeredArea,
+      'registeredAreaId': instance.registeredAreaId,
+      'identityDocumentUrl': instance.identityDocumentUrl,
+      'identityDocumentType': instance.identityDocumentType,
+      'authorityCode': instance.authorityCode,
+      'department': instance.department,
+      'registrationNumber': instance.registrationNumber,
+      'emergencyContacts': instance.emergencyContacts,
       'isAvailable': instance.isAvailable,
     };
 
@@ -30,3 +54,19 @@ const _$UserRoleEnumMap = {
   UserRole.volunteer: 'volunteer',
   UserRole.authority: 'authority',
 };
+
+_$EmergencyContactImpl _$$EmergencyContactImplFromJson(
+        Map<String, dynamic> json) =>
+    _$EmergencyContactImpl(
+      name: json['name'] as String,
+      phone: json['phone'] as String,
+      relation: json['relation'] as String,
+    );
+
+Map<String, dynamic> _$$EmergencyContactImplToJson(
+        _$EmergencyContactImpl instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'phone': instance.phone,
+      'relation': instance.relation,
+    };

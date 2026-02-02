@@ -1,17 +1,75 @@
+import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/enums/app_enums.dart';
 import '../../data/repositories/auth_repository.dart';
 
 part 'auth_provider.g.dart';
 
-// Removed explicit authRepository provider since it's now in the repository file
+// Storage key for persisted user session
+const String _userSessionKey = 'user_session';
 
-/// Auth State Notifier
-@riverpod
+/// Auth State Notifier - keepAlive: true prevents state from resetting on navigation
+@Riverpod(keepAlive: true)
 class AuthController extends _$AuthController {
   @override
   User? build() {
-    return null; // Initial state: not logged in
+    // Try to restore session on build
+    _restoreSession();
+    return null; // Initial state: not logged in (will be updated async)
+  }
+
+  /// Restore session from SharedPreferences
+  Future<void> _restoreSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString(_userSessionKey);
+      if (userJson != null) {
+        final userData = jsonDecode(userJson) as Map<String, dynamic>;
+        state = User.fromJson(userData);
+      }
+    } catch (e) {
+      // Session restoration failed, user will need to login again
+      print('Session restore failed: $e');
+    }
+  }
+
+  /// Save user session to SharedPreferences
+  Future<void> _saveSession(User user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = jsonEncode(user.toJson());
+      await prefs.setString(_userSessionKey, userJson);
+    } catch (e) {
+      print('Session save failed: $e');
+    }
+  }
+
+  /// Clear saved session
+  Future<void> _clearSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_userSessionKey);
+    } catch (e) {
+      print('Session clear failed: $e');
+    }
+  }
+
+  /// Check and restore session - call this on app startup
+  Future<User?> checkSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString(_userSessionKey);
+      if (userJson != null) {
+        final userData = jsonDecode(userJson) as Map<String, dynamic>;
+        state = User.fromJson(userData);
+        return state;
+      }
+    } catch (e) {
+      print('Session check failed: $e');
+    }
+    return null;
   }
 
   Future<User?> login(String phone, String password) async {
@@ -19,11 +77,24 @@ class AuthController extends _$AuthController {
 
     try {
       final user = await repository.login(phone, password);
-      state = user;
+      if (user != null) {
+        state = user;
+        await _saveSession(user); // Persist session
+      }
       return user;
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> sendEmailOtp(String email) async {
+    final repository = ref.read(authRepositoryProvider);
+    await repository.sendEmailOtp(email);
+  }
+
+  Future<void> verifyEmailOtp(String email, String otp) async {
+    final repository = ref.read(authRepositoryProvider);
+    await repository.verifyEmailOtp(email, otp);
   }
 
   Future<User?> register({
@@ -31,12 +102,25 @@ class AuthController extends _$AuthController {
     required String email,
     required String password,
     required String phone,
-    required String role,
+    required dynamic role, // Can be UserRole or String
     required String address,
     required String profession,
     required DateTime dob,
+    // New fields for area-based system
+    String? registeredArea,
+    String? registeredAreaId,
+    // Document fields
+    String? identityDocumentUrl,
+    String? identityDocumentType,
+    // Authority fields
+    String? authorityCode,
+    String? department,
+    String? registrationNumber,
   }) async {
     final repository = ref.read(authRepositoryProvider);
+
+    // Convert UserRole to string if needed
+    final roleString = role is UserRole ? role.toString().split('.').last : role.toString();
 
     try {
       final user = await repository.register(
@@ -44,13 +128,37 @@ class AuthController extends _$AuthController {
         email: email,
         password: password,
         phone: phone,
-        role: role,
+        role: roleString,
         address: address,
         profession: profession,
         dob: dob.toIso8601String(),
+        registeredArea: registeredArea,
+        registeredAreaId: registeredAreaId,
+        identityDocumentUrl: identityDocumentUrl,
+        identityDocumentType: identityDocumentType,
+        authorityCode: authorityCode,
+        department: department,
+        registrationNumber: registrationNumber,
       );
-      state = user;
+      if (user != null) {
+        state = user;
+        await _saveSession(user); // Persist session
+      }
       return user;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<User?> updateUser(Map<String, dynamic> data) async {
+    final repository = ref.read(authRepositoryProvider);
+    try {
+      final updatedUser = await repository.updateProfile(data);
+      if (updatedUser != null) {
+        state = updatedUser;
+        await _saveSession(updatedUser);
+      }
+      return updatedUser;
     } catch (e) {
       rethrow;
     }
@@ -59,6 +167,7 @@ class AuthController extends _$AuthController {
   Future<void> logout() async {
     final repository = ref.read(authRepositoryProvider);
     await repository.logout();
+    await _clearSession(); // Clear persisted session
     state = null;
   }
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/widgets/document_upload_widget.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import '../providers/auth_provider.dart';
 
@@ -10,11 +12,13 @@ import '../providers/auth_provider.dart';
 class CitizenVolunteerRegistrationScreen extends ConsumerStatefulWidget {
   final UserRole userRole;
   final String phoneNumber;
+  final String? verifiedEmail;
 
   const CitizenVolunteerRegistrationScreen({
     super.key,
     required this.userRole,
     required this.phoneNumber,
+    this.verifiedEmail,
   });
 
   @override
@@ -38,11 +42,49 @@ class _CitizenVolunteerRegistrationScreenState
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Volunteer area selection
+  String? _selectedArea;
+  String? _selectedAreaId;
+  List<Map<String, dynamic>> _availableAreas = [];
+
+  // Document upload
+  String? _documentUrl;
+  String? _documentType;
+
   @override
   void initState() {
     super.initState();
     if (widget.phoneNumber.isNotEmpty) {
       _phoneController.text = widget.phoneNumber;
+    }
+    if (widget.verifiedEmail != null) {
+      _emailController.text = widget.verifiedEmail!;
+    }
+    // Load available areas for volunteers
+    if (widget.userRole == UserRole.volunteer) {
+      _loadAvailableAreas();
+    }
+  }
+
+  Future<void> _loadAvailableAreas() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('area_resources')
+          .get();
+      if (mounted) {
+        setState(() {
+          _availableAreas = snapshot.docs.map((doc) => {
+            'areaId': doc.id,
+            'areaName': doc.data()['areaName'] ?? doc.id,
+          }).toList();
+        });
+      }
+    } catch (e) {
+      // Fallback areas if Firestore fails
+      _availableAreas = [
+        {'areaId': 'mumbai-central', 'areaName': 'Mumbai Central'},
+        {'areaId': 'delhi-south', 'areaName': 'Delhi South'},
+      ];
     }
   }
 
@@ -97,8 +139,8 @@ class _CitizenVolunteerRegistrationScreenState
                         const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: widget.userRole == UserRole.citizen
-                          ? AppTheme.citizenAccent.withOpacity(0.1)
-                          : AppTheme.volunteerAccent.withOpacity(0.1),
+                          ? AppTheme.citizenAccent.withValues(alpha: 0.1)
+                          : AppTheme.volunteerAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: widget.userRole == UserRole.citizen
@@ -144,7 +186,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -185,7 +227,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -225,7 +267,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -279,7 +321,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -291,8 +333,8 @@ class _CitizenVolunteerRegistrationScreenState
                     if (value == null || value.isEmpty) {
                       return 'Please enter a password';
                     }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                    if (value.length < 8) {
+                      return 'Password must be at least 8 characters';
                     }
                     return null;
                   },
@@ -332,7 +374,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -371,7 +413,7 @@ class _CitizenVolunteerRegistrationScreenState
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                            color: AppTheme.neutralGray.withOpacity(0.2)),
+                            color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -385,7 +427,7 @@ class _CitizenVolunteerRegistrationScreenState
                           : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                       style: TextStyle(
                         color: _selectedDate == null
-                            ? AppTheme.neutralGray.withOpacity(0.5)
+                            ? AppTheme.neutralGray.withValues(alpha: 0.5)
                             : AppTheme.neutralGray,
                       ),
                     ),
@@ -413,7 +455,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -430,6 +472,63 @@ class _CitizenVolunteerRegistrationScreenState
                 ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
 
                 const SizedBox(height: 20),
+
+                // Volunteer Area Selection (only for volunteers)
+                if (widget.userRole == UserRole.volunteer) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedArea != null 
+                            ? AppTheme.volunteerAccent 
+                            : AppTheme.neutralGray.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedAreaId,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Area *',
+                        hintText: 'Choose your volunteer area',
+                        prefixIcon: Icon(Icons.map, color: AppTheme.volunteerAccent),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: _availableAreas.isEmpty
+                          ? [
+                              const DropdownMenuItem(
+                                value: null,
+                                child: Text('Loading areas...'),
+                              ),
+                            ]
+                          : _availableAreas.map((area) {
+                              return DropdownMenuItem(
+                                value: area['areaId'] as String,
+                                child: Text(area['areaName'] as String),
+                              );
+                            }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          final area = _availableAreas.firstWhere(
+                            (a) => a['areaId'] == value,
+                            orElse: () => {'areaId': value, 'areaName': value},
+                          );
+                          setState(() {
+                            _selectedAreaId = value;
+                            _selectedArea = area['areaName'] as String;
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (widget.userRole == UserRole.volunteer && value == null) {
+                          return 'Please select your volunteer area';
+                        }
+                        return null;
+                      },
+                    ),
+                  ).animate().fadeIn(delay: 450.ms).slideX(begin: -0.2, end: 0),
+                  const SizedBox(height: 20),
+                ],
 
                 // Address
                 TextFormField(
@@ -454,7 +553,7 @@ class _CitizenVolunteerRegistrationScreenState
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: AppTheme.neutralGray.withOpacity(0.2)),
+                          color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -472,6 +571,34 @@ class _CitizenVolunteerRegistrationScreenState
                     return null;
                   },
                 ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.2, end: 0),
+
+                const SizedBox(height: 24),
+
+                // Document Upload Section
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: widget.userRole == UserRole.citizen
+                          ? AppTheme.citizenAccent.withValues(alpha: 0.3)
+                          : AppTheme.volunteerAccent.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: DocumentUploadWidget(
+                    accentColor: widget.userRole == UserRole.citizen
+                        ? AppTheme.citizenAccent
+                        : AppTheme.volunteerAccent,
+                    required: false,
+                    onDocumentUploaded: (url, type) {
+                      setState(() {
+                        _documentUrl = url;
+                        _documentType = type;
+                      });
+                    },
+                  ),
+                ).animate().fadeIn(delay: 550.ms).slideX(begin: -0.2, end: 0),
 
                 const SizedBox(height: 32),
 
@@ -574,6 +701,12 @@ class _CitizenVolunteerRegistrationScreenState
             address: _addressController.text,
             profession: _professionController.text,
             dob: _selectedDate!,
+            // Volunteer area assignment
+            registeredArea: widget.userRole == UserRole.volunteer ? _selectedArea : null,
+            registeredAreaId: widget.userRole == UserRole.volunteer ? _selectedAreaId : null,
+            // Identity document (optional for citizen/volunteer)
+            identityDocumentUrl: _documentUrl,
+            identityDocumentType: _documentType,
           );
 
       if (!mounted) return;

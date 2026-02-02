@@ -46,4 +46,16 @@ export class AuthController {
 
     return { message: 'Token verified', uid: decodedToken.uid, phone: decodedToken.phone_number };
   }
+
+  @Post('send-otp')
+  @ApiOperation({ summary: 'Send Email OTP' })
+  async sendOtp(@Body('email') email: string) {
+    return this.authService.sendEmailOtp(email);
+  }
+
+  @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify Email OTP' })
+  async verifyOtp(@Body() body: { email: string; otp: string }) {
+    return this.authService.verifyEmailOtp(body.email, body.otp);
+  }
 }

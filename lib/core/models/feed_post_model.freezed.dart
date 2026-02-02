@@ -20,7 +20,6 @@ FeedPost _$FeedPostFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$FeedPost {
-  @JsonKey(name: '_id')
   String get id => throw _privateConstructorUsedError;
   String get content => throw _privateConstructorUsedError;
   String get category => throw _privateConstructorUsedError;
@@ -30,11 +29,11 @@ mixin _$FeedPost {
   String? get address => throw _privateConstructorUsedError;
   List<String> get mediaUrls => throw _privateConstructorUsedError;
   int get verificationCount => throw _privateConstructorUsedError;
-  bool get isPromoted => throw _privateConstructorUsedError;
-  String? get promotedIncidentId => throw _privateConstructorUsedError;
-  double? get distance =>
-      throw _privateConstructorUsedError; // Distance in meters from user
+  List<String> get likes => throw _privateConstructorUsedError;
+  int get commentsCount => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
+  bool get isPromoted => throw _privateConstructorUsedError;
+  double? get distance => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this FeedPost to a JSON map.
@@ -53,7 +52,7 @@ abstract class $FeedPostCopyWith<$Res> {
       _$FeedPostCopyWithImpl<$Res, FeedPost>;
   @useResult
   $Res call(
-      {@JsonKey(name: '_id') String id,
+      {String id,
       String content,
       String category,
       String authorId,
@@ -62,10 +61,11 @@ abstract class $FeedPostCopyWith<$Res> {
       String? address,
       List<String> mediaUrls,
       int verificationCount,
-      bool isPromoted,
-      String? promotedIncidentId,
-      double? distance,
+      List<String> likes,
+      int commentsCount,
       DateTime createdAt,
+      bool isPromoted,
+      double? distance,
       DateTime? updatedAt});
 
   $FeedLocationCopyWith<$Res> get location;
@@ -95,10 +95,11 @@ class _$FeedPostCopyWithImpl<$Res, $Val extends FeedPost>
     Object? address = freezed,
     Object? mediaUrls = null,
     Object? verificationCount = null,
-    Object? isPromoted = null,
-    Object? promotedIncidentId = freezed,
-    Object? distance = freezed,
+    Object? likes = null,
+    Object? commentsCount = null,
     Object? createdAt = null,
+    Object? isPromoted = null,
+    Object? distance = freezed,
     Object? updatedAt = freezed,
   }) {
     return _then(_value.copyWith(
@@ -138,22 +139,26 @@ class _$FeedPostCopyWithImpl<$Res, $Val extends FeedPost>
           ? _value.verificationCount
           : verificationCount // ignore: cast_nullable_to_non_nullable
               as int,
-      isPromoted: null == isPromoted
-          ? _value.isPromoted
-          : isPromoted // ignore: cast_nullable_to_non_nullable
-              as bool,
-      promotedIncidentId: freezed == promotedIncidentId
-          ? _value.promotedIncidentId
-          : promotedIncidentId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      distance: freezed == distance
-          ? _value.distance
-          : distance // ignore: cast_nullable_to_non_nullable
-              as double?,
+      likes: null == likes
+          ? _value.likes
+          : likes // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      commentsCount: null == commentsCount
+          ? _value.commentsCount
+          : commentsCount // ignore: cast_nullable_to_non_nullable
+              as int,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      isPromoted: null == isPromoted
+          ? _value.isPromoted
+          : isPromoted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      distance: freezed == distance
+          ? _value.distance
+          : distance // ignore: cast_nullable_to_non_nullable
+              as double?,
       updatedAt: freezed == updatedAt
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -181,7 +186,7 @@ abstract class _$$FeedPostImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: '_id') String id,
+      {String id,
       String content,
       String category,
       String authorId,
@@ -190,10 +195,11 @@ abstract class _$$FeedPostImplCopyWith<$Res>
       String? address,
       List<String> mediaUrls,
       int verificationCount,
-      bool isPromoted,
-      String? promotedIncidentId,
-      double? distance,
+      List<String> likes,
+      int commentsCount,
       DateTime createdAt,
+      bool isPromoted,
+      double? distance,
       DateTime? updatedAt});
 
   @override
@@ -222,10 +228,11 @@ class __$$FeedPostImplCopyWithImpl<$Res>
     Object? address = freezed,
     Object? mediaUrls = null,
     Object? verificationCount = null,
-    Object? isPromoted = null,
-    Object? promotedIncidentId = freezed,
-    Object? distance = freezed,
+    Object? likes = null,
+    Object? commentsCount = null,
     Object? createdAt = null,
+    Object? isPromoted = null,
+    Object? distance = freezed,
     Object? updatedAt = freezed,
   }) {
     return _then(_$FeedPostImpl(
@@ -265,22 +272,26 @@ class __$$FeedPostImplCopyWithImpl<$Res>
           ? _value.verificationCount
           : verificationCount // ignore: cast_nullable_to_non_nullable
               as int,
-      isPromoted: null == isPromoted
-          ? _value.isPromoted
-          : isPromoted // ignore: cast_nullable_to_non_nullable
-              as bool,
-      promotedIncidentId: freezed == promotedIncidentId
-          ? _value.promotedIncidentId
-          : promotedIncidentId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      distance: freezed == distance
-          ? _value.distance
-          : distance // ignore: cast_nullable_to_non_nullable
-              as double?,
+      likes: null == likes
+          ? _value._likes
+          : likes // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      commentsCount: null == commentsCount
+          ? _value.commentsCount
+          : commentsCount // ignore: cast_nullable_to_non_nullable
+              as int,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      isPromoted: null == isPromoted
+          ? _value.isPromoted
+          : isPromoted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      distance: freezed == distance
+          ? _value.distance
+          : distance // ignore: cast_nullable_to_non_nullable
+              as double?,
       updatedAt: freezed == updatedAt
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -293,7 +304,7 @@ class __$$FeedPostImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$FeedPostImpl implements _FeedPost {
   const _$FeedPostImpl(
-      {@JsonKey(name: '_id') required this.id,
+      {required this.id,
       required this.content,
       required this.category,
       required this.authorId,
@@ -302,18 +313,19 @@ class _$FeedPostImpl implements _FeedPost {
       this.address,
       final List<String> mediaUrls = const [],
       this.verificationCount = 0,
-      this.isPromoted = false,
-      this.promotedIncidentId,
-      this.distance,
+      final List<String> likes = const [],
+      this.commentsCount = 0,
       required this.createdAt,
+      this.isPromoted = false,
+      this.distance,
       this.updatedAt})
-      : _mediaUrls = mediaUrls;
+      : _mediaUrls = mediaUrls,
+        _likes = likes;
 
   factory _$FeedPostImpl.fromJson(Map<String, dynamic> json) =>
       _$$FeedPostImplFromJson(json);
 
   @override
-  @JsonKey(name: '_id')
   final String id;
   @override
   final String content;
@@ -339,22 +351,31 @@ class _$FeedPostImpl implements _FeedPost {
   @override
   @JsonKey()
   final int verificationCount;
+  final List<String> _likes;
+  @override
+  @JsonKey()
+  List<String> get likes {
+    if (_likes is EqualUnmodifiableListView) return _likes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_likes);
+  }
+
+  @override
+  @JsonKey()
+  final int commentsCount;
+  @override
+  final DateTime createdAt;
   @override
   @JsonKey()
   final bool isPromoted;
   @override
-  final String? promotedIncidentId;
-  @override
   final double? distance;
-// Distance in meters from user
-  @override
-  final DateTime createdAt;
   @override
   final DateTime? updatedAt;
 
   @override
   String toString() {
-    return 'FeedPost(id: $id, content: $content, category: $category, authorId: $authorId, authorName: $authorName, location: $location, address: $address, mediaUrls: $mediaUrls, verificationCount: $verificationCount, isPromoted: $isPromoted, promotedIncidentId: $promotedIncidentId, distance: $distance, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'FeedPost(id: $id, content: $content, category: $category, authorId: $authorId, authorName: $authorName, location: $location, address: $address, mediaUrls: $mediaUrls, verificationCount: $verificationCount, likes: $likes, commentsCount: $commentsCount, createdAt: $createdAt, isPromoted: $isPromoted, distance: $distance, updatedAt: $updatedAt)';
   }
 
   @override
@@ -377,14 +398,15 @@ class _$FeedPostImpl implements _FeedPost {
                 .equals(other._mediaUrls, _mediaUrls) &&
             (identical(other.verificationCount, verificationCount) ||
                 other.verificationCount == verificationCount) &&
-            (identical(other.isPromoted, isPromoted) ||
-                other.isPromoted == isPromoted) &&
-            (identical(other.promotedIncidentId, promotedIncidentId) ||
-                other.promotedIncidentId == promotedIncidentId) &&
-            (identical(other.distance, distance) ||
-                other.distance == distance) &&
+            const DeepCollectionEquality().equals(other._likes, _likes) &&
+            (identical(other.commentsCount, commentsCount) ||
+                other.commentsCount == commentsCount) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.isPromoted, isPromoted) ||
+                other.isPromoted == isPromoted) &&
+            (identical(other.distance, distance) ||
+                other.distance == distance) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt));
   }
@@ -402,10 +424,11 @@ class _$FeedPostImpl implements _FeedPost {
       address,
       const DeepCollectionEquality().hash(_mediaUrls),
       verificationCount,
-      isPromoted,
-      promotedIncidentId,
-      distance,
+      const DeepCollectionEquality().hash(_likes),
+      commentsCount,
       createdAt,
+      isPromoted,
+      distance,
       updatedAt);
 
   /// Create a copy of FeedPost
@@ -426,7 +449,7 @@ class _$FeedPostImpl implements _FeedPost {
 
 abstract class _FeedPost implements FeedPost {
   const factory _FeedPost(
-      {@JsonKey(name: '_id') required final String id,
+      {required final String id,
       required final String content,
       required final String category,
       required final String authorId,
@@ -435,17 +458,17 @@ abstract class _FeedPost implements FeedPost {
       final String? address,
       final List<String> mediaUrls,
       final int verificationCount,
-      final bool isPromoted,
-      final String? promotedIncidentId,
-      final double? distance,
+      final List<String> likes,
+      final int commentsCount,
       required final DateTime createdAt,
+      final bool isPromoted,
+      final double? distance,
       final DateTime? updatedAt}) = _$FeedPostImpl;
 
   factory _FeedPost.fromJson(Map<String, dynamic> json) =
       _$FeedPostImpl.fromJson;
 
   @override
-  @JsonKey(name: '_id')
   String get id;
   @override
   String get content;
@@ -464,13 +487,15 @@ abstract class _FeedPost implements FeedPost {
   @override
   int get verificationCount;
   @override
-  bool get isPromoted;
+  List<String> get likes;
   @override
-  String? get promotedIncidentId;
-  @override
-  double? get distance; // Distance in meters from user
+  int get commentsCount;
   @override
   DateTime get createdAt;
+  @override
+  bool get isPromoted;
+  @override
+  double? get distance;
   @override
   DateTime? get updatedAt;
 
@@ -488,8 +513,8 @@ FeedLocation _$FeedLocationFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$FeedLocation {
-  String get type => throw _privateConstructorUsedError;
-  List<double> get coordinates => throw _privateConstructorUsedError;
+  double get latitude => throw _privateConstructorUsedError;
+  double get longitude => throw _privateConstructorUsedError;
 
   /// Serializes this FeedLocation to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -507,7 +532,7 @@ abstract class $FeedLocationCopyWith<$Res> {
           FeedLocation value, $Res Function(FeedLocation) then) =
       _$FeedLocationCopyWithImpl<$Res, FeedLocation>;
   @useResult
-  $Res call({String type, List<double> coordinates});
+  $Res call({double latitude, double longitude});
 }
 
 /// @nodoc
@@ -525,18 +550,18 @@ class _$FeedLocationCopyWithImpl<$Res, $Val extends FeedLocation>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? type = null,
-    Object? coordinates = null,
+    Object? latitude = null,
+    Object? longitude = null,
   }) {
     return _then(_value.copyWith(
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      coordinates: null == coordinates
-          ? _value.coordinates
-          : coordinates // ignore: cast_nullable_to_non_nullable
-              as List<double>,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
     ) as $Val);
   }
 }
@@ -549,7 +574,7 @@ abstract class _$$FeedLocationImplCopyWith<$Res>
       __$$FeedLocationImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String type, List<double> coordinates});
+  $Res call({double latitude, double longitude});
 }
 
 /// @nodoc
@@ -565,18 +590,18 @@ class __$$FeedLocationImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? type = null,
-    Object? coordinates = null,
+    Object? latitude = null,
+    Object? longitude = null,
   }) {
     return _then(_$FeedLocationImpl(
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      coordinates: null == coordinates
-          ? _value._coordinates
-          : coordinates // ignore: cast_nullable_to_non_nullable
-              as List<double>,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -584,26 +609,19 @@ class __$$FeedLocationImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$FeedLocationImpl implements _FeedLocation {
-  const _$FeedLocationImpl(
-      {required this.type, required final List<double> coordinates})
-      : _coordinates = coordinates;
+  const _$FeedLocationImpl({required this.latitude, required this.longitude});
 
   factory _$FeedLocationImpl.fromJson(Map<String, dynamic> json) =>
       _$$FeedLocationImplFromJson(json);
 
   @override
-  final String type;
-  final List<double> _coordinates;
+  final double latitude;
   @override
-  List<double> get coordinates {
-    if (_coordinates is EqualUnmodifiableListView) return _coordinates;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_coordinates);
-  }
+  final double longitude;
 
   @override
   String toString() {
-    return 'FeedLocation(type: $type, coordinates: $coordinates)';
+    return 'FeedLocation(latitude: $latitude, longitude: $longitude)';
   }
 
   @override
@@ -611,15 +629,15 @@ class _$FeedLocationImpl implements _FeedLocation {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$FeedLocationImpl &&
-            (identical(other.type, type) || other.type == type) &&
-            const DeepCollectionEquality()
-                .equals(other._coordinates, _coordinates));
+            (identical(other.latitude, latitude) ||
+                other.latitude == latitude) &&
+            (identical(other.longitude, longitude) ||
+                other.longitude == longitude));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, type, const DeepCollectionEquality().hash(_coordinates));
+  int get hashCode => Object.hash(runtimeType, latitude, longitude);
 
   /// Create a copy of FeedLocation
   /// with the given fields replaced by the non-null parameter values.
@@ -639,16 +657,16 @@ class _$FeedLocationImpl implements _FeedLocation {
 
 abstract class _FeedLocation implements FeedLocation {
   const factory _FeedLocation(
-      {required final String type,
-      required final List<double> coordinates}) = _$FeedLocationImpl;
+      {required final double latitude,
+      required final double longitude}) = _$FeedLocationImpl;
 
   factory _FeedLocation.fromJson(Map<String, dynamic> json) =
       _$FeedLocationImpl.fromJson;
 
   @override
-  String get type;
+  double get latitude;
   @override
-  List<double> get coordinates;
+  double get longitude;
 
   /// Create a copy of FeedLocation
   /// with the given fields replaced by the non-null parameter values.
@@ -664,7 +682,6 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ChatMessage {
-  @JsonKey(name: '_id')
   String get id => throw _privateConstructorUsedError;
   String get postId => throw _privateConstructorUsedError;
   String get authorId => throw _privateConstructorUsedError;
@@ -692,7 +709,7 @@ abstract class $ChatMessageCopyWith<$Res> {
       _$ChatMessageCopyWithImpl<$Res, ChatMessage>;
   @useResult
   $Res call(
-      {@JsonKey(name: '_id') String id,
+      {String id,
       String postId,
       String authorId,
       String authorName,
@@ -778,7 +795,7 @@ abstract class _$$ChatMessageImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: '_id') String id,
+      {String id,
       String postId,
       String authorId,
       String authorName,
@@ -857,7 +874,7 @@ class __$$ChatMessageImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ChatMessageImpl implements _ChatMessage {
   const _$ChatMessageImpl(
-      {@JsonKey(name: '_id') required this.id,
+      {required this.id,
       required this.postId,
       required this.authorId,
       required this.authorName,
@@ -872,7 +889,6 @@ class _$ChatMessageImpl implements _ChatMessage {
       _$$ChatMessageImplFromJson(json);
 
   @override
-  @JsonKey(name: '_id')
   final String id;
   @override
   final String postId;
@@ -957,7 +973,7 @@ class _$ChatMessageImpl implements _ChatMessage {
 
 abstract class _ChatMessage implements ChatMessage {
   const factory _ChatMessage(
-      {@JsonKey(name: '_id') required final String id,
+      {required final String id,
       required final String postId,
       required final String authorId,
       required final String authorName,
@@ -971,7 +987,6 @@ abstract class _ChatMessage implements ChatMessage {
       _$ChatMessageImpl.fromJson;
 
   @override
-  @JsonKey(name: '_id')
   String get id;
   @override
   String get postId;

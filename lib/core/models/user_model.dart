@@ -1,13 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../enums/app_enums.dart';
+
+export '../enums/app_enums.dart';
 
 part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
-enum UserRole {
-  citizen,
-  volunteer,
-  authority,
-}
+// UserRole is imported from app_enums.dart
 
 @freezed
 class User with _$User {
@@ -16,18 +15,40 @@ class User with _$User {
     required String name,
     required String phone,
     required UserRole role,
+    String? email,
     String? state,
+    String? profession,
+    String? address,
+    String? registeredArea,
+    String? registeredAreaId,
+    String? identityDocumentUrl,
+    String? identityDocumentType,
+    String? authorityCode,
+    String? department,
+    String? registrationNumber,
+    List<EmergencyContact>? emergencyContacts,
     @Default(true) bool isAvailable,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 }
 
+@freezed
+class EmergencyContact with _$EmergencyContact {
+  const factory EmergencyContact({
+    required String name,
+    required String phone,
+    required String relation,
+  }) = _EmergencyContact;
+
+  factory EmergencyContact.fromJson(Map<String, dynamic> json) => _$EmergencyContactFromJson(json);
+}
+
 // Mock users for testing
 class MockUsers {
   static const User citizen = User(
     id: 'user-citizen-001',
-    name: 'Akarshak Singh',
+    name: 'Test Citizen',
     phone: '1111111111',
     role: UserRole.citizen,
     state: 'Maharashtra',

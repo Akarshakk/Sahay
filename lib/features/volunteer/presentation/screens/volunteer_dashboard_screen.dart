@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
 import 'volunteer_tasks_screen.dart';
-import 'verification_screen.dart';
+import '../../../feed/presentation/screens/community_feed_screen.dart';
 
 /// Volunteer Dashboard - Premium UI with stats and quick actions
 class VolunteerDashboardScreen extends ConsumerStatefulWidget {
@@ -255,7 +255,7 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
                 gradient: [AppTheme.primaryGreen, const Color(0xFF00C853)],
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const VerificationScreen()),
+                  MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
                 ),
               ),
             ),

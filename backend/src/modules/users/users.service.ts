@@ -29,6 +29,26 @@ export class UsersService {
       fullName: createUserDto.fullName,
       phone: createUserDto.phone,
       role: createUserDto.role || UserRole.CITIZEN,
+
+      // Profile fields
+      profession: createUserDto.profession || null,
+      address: createUserDto.address || null,
+
+      // Area-based assignment
+      registeredArea: createUserDto.registeredArea || null,
+      registeredAreaId: createUserDto.registeredAreaId || null,
+
+      // Identity document
+      identityDocumentUrl: createUserDto.identityDocumentUrl || null,
+      identityDocumentType: (createUserDto.identityDocumentType || null) as User['identityDocumentType'],
+
+      // Authority-specific fields
+      authorityCode: createUserDto.authorityCode || null,
+      department: createUserDto.department || null,
+      registrationNumber: createUserDto.registrationNumber || null,
+
+      // Verification status
+      phoneVerified: false,
       isVerified: false,
       isActive: true,
       verificationCount: 0,

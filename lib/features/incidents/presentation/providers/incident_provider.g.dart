@@ -7,9 +7,9 @@ part of 'incident_provider.dart';
 // **************************************************************************
 
 String _$incidentRepositoryHash() =>
-    r'2c27fb692089dbaca2f3cc6ce9c19db340080e3f';
+    r'6a6f2ec5ebefc44319230ff058f6e3e585bf8290';
 
-/// Repository Provider
+/// Repository Provider - Uses real API
 ///
 /// Copied from [incidentRepository].
 @ProviderFor(incidentRepository)
@@ -64,7 +64,7 @@ final pendingIncidentListProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$PendingIncidentList = AutoDisposeAsyncNotifier<List<IncidentModel>>;
 String _$incidentControllerHash() =>
-    r'6ad6120f18dd5a1618ddfb73ec37374707724daf';
+    r'086f2c0bbfae589135b392365f4d79ac7c35ee78';
 
 /// Incident Controller for Actions
 ///

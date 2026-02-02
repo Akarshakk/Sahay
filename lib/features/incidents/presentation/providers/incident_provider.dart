@@ -1,13 +1,15 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/models/incident_model.dart';
+import '../../../../core/services/api_service.dart';
 import '../../data/repositories/incident_repository.dart';
 
 part 'incident_provider.g.dart';
 
-/// Repository Provider
+/// Repository Provider - Uses real API
 @riverpod
 IIncidentRepository incidentRepository(IncidentRepositoryRef ref) {
-  return MockIncidentRepository();
+  final api = ref.read(apiServiceProvider);
+  return ApiIncidentRepository(api);
 }
 
 /// Incident List Provider
@@ -57,15 +59,12 @@ class IncidentController extends _$IncidentController {
   Future<RepositoryResult<IncidentModel>> submitReport({
     required IncidentModel incident,
   }) async {
-    state = const AsyncLoading();
-
     final repository = ref.read(incidentRepositoryProvider);
     final result = await repository.submitReport(incident);
 
-    // Refresh incident list
+    // Refresh incident list after submission
     ref.invalidate(incidentListProvider);
 
-    state = const AsyncData(null);
     return result;
   }
 

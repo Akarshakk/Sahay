@@ -10,9 +10,13 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
 import 'post_chat_screen.dart';
 import 'create_post_screen.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
 
 class CommunityFeedScreen extends ConsumerStatefulWidget {
-  const CommunityFeedScreen({super.key});
+  /// When true, shows verify button on posts (for volunteers/authorities)
+  final bool canVerify;
+  
+  const CommunityFeedScreen({super.key, this.canVerify = false});
 
   @override
   ConsumerState<CommunityFeedScreen> createState() => _CommunityFeedScreenState();
@@ -139,7 +143,8 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         limit: 50,
       );
 
-      if (result['success'] == true && result['data'] != null) {
+      // Backend returns { data: [...], meta: {...} } without a 'success' wrapper
+      if (result['data'] != null) {
         setState(() {
           _posts = (result['data'] as List)
               .map((json) => FeedPost.fromJson(json))
@@ -149,11 +154,16 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
       }
     } catch (e) {
       print('Error loading feed: $e');
-      // Load demo data when backend is unavailable
       setState(() {
-        _posts = _getDemoFeedPosts();
+        _posts = [];
         _isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to load feed. Please check connection.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -165,7 +175,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         id: 'demo-1',
         content: '🚨 Heavy traffic jam on Western Express Highway near Andheri flyover. Expect 30+ min delays. Suggest taking alternate routes via Link Road.',
         category: 'traffic',
-        location: const FeedLocation(type: 'Point', coordinates: [72.8697, 19.1136]),
+        location: const FeedLocation(latitude: 19.1136, longitude: 72.8697),
         address: 'Andheri West, Mumbai',
         authorName: 'Traffic Updates',
         authorId: 'system',
@@ -176,7 +186,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         id: 'demo-2',
         content: '⚠️ Water supply disruption in Bandra East area. BMC maintenance work in progress. Expected restoration by 6 PM.',
         category: 'infrastructure',
-        location: const FeedLocation(type: 'Point', coordinates: [72.8295, 19.0596]),
+        location: const FeedLocation(latitude: 19.0596, longitude: 72.8295),
         address: 'Bandra East, Mumbai',
         authorName: 'Community Helper',
         authorId: 'volunteer-1',
@@ -187,7 +197,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         id: 'demo-3',
         content: '🔥 Small fire reported near Kurla station. Fire brigade on site. Area being evacuated as precaution. Avoid the area.',
         category: 'emergency',
-        location: const FeedLocation(type: 'Point', coordinates: [72.8826, 19.0728]),
+        location: const FeedLocation(latitude: 19.0728, longitude: 72.8826),
         address: 'Kurla West, Mumbai',
         authorName: 'Emergency Alert',
         authorId: 'authority-1',
@@ -198,7 +208,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         id: 'demo-4',
         content: '☔ Heavy rainfall expected tonight. IMD issues orange alert for Mumbai. Citizens advised to avoid waterlogged areas.',
         category: 'weather',
-        location: const FeedLocation(type: 'Point', coordinates: [72.8777, 19.0760]),
+        location: const FeedLocation(latitude: 19.0760, longitude: 72.8777),
         address: 'Mumbai, Maharashtra',
         authorName: 'Weather Updates',
         authorId: 'system',
@@ -209,7 +219,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         id: 'demo-5',
         content: '✅ Road repair work completed on SV Road near Malad. Traffic now flowing normally. Thank you for your patience!',
         category: 'infrastructure',
-        location: const FeedLocation(type: 'Point', coordinates: [72.8483, 19.1858]),
+        location: const FeedLocation(latitude: 19.1858, longitude: 72.8483),
         address: 'Malad West, Mumbai',
         authorName: 'BMC Updates',
         authorId: 'authority-2',
@@ -217,6 +227,25 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         verificationCount: 12,
       ),
     ];
+  }
+
+  Future<void> _toggleLike(FeedPost post) async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final result = await api.toggleLike(post.id);
+      
+      if (result['success'] == true && result['data'] != null) {
+        final updatedPost = FeedPost.fromJson(result['data']);
+        setState(() {
+          final index = _posts.indexWhere((p) => p.id == post.id);
+          if (index != -1) {
+            _posts[index] = updatedPost;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
+    }
   }
 
   Future<void> _verifyPost(FeedPost post) async {
@@ -434,20 +463,61 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
               const Divider(height: 1),
               const SizedBox(height: 8),
               
+              const SizedBox(height: 12),
+              
               // Actions
               Row(
                 children: [
+                  // Verify button - only shown for volunteers/authorities
+                  if (widget.canVerify) ...[
+                    TextButton.icon(
+                      onPressed: () => _verifyPost(post),
+                      icon: Icon(
+                        Icons.verified,
+                        size: 20,
+                        color: post.verificationCount >= 5 ? AppTheme.primaryGreen : Colors.grey,
+                      ),
+                      label: Text(
+                        'Verify (${post.verificationCount})',
+                        style: TextStyle(
+                          color: post.verificationCount >= 5 ? AppTheme.primaryGreen : Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                  // Verification badge (always shown, read-only for citizens)
+                  if (!widget.canVerify) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.verified,
+                          size: 18,
+                          color: post.verificationCount >= 5 ? AppTheme.primaryGreen : Colors.grey[400],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${post.verificationCount}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: post.verificationCount >= 5 ? AppTheme.primaryGreen : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                   TextButton.icon(
-                    onPressed: () => _verifyPost(post),
+                    onPressed: () => _toggleLike(post),
                     icon: Icon(
-                      Icons.verified,
+                      post.likes.contains(ref.watch(authControllerProvider)?.id) ? Icons.favorite : Icons.favorite_border,
                       size: 20,
-                      color: post.verificationCount >= 5 ? AppTheme.primaryGreen : Colors.grey,
+                      color: post.likes.contains(ref.watch(authControllerProvider)?.id) ? Colors.red : Colors.grey,
                     ),
                     label: Text(
-                      '${post.verificationCount} verified',
+                      '${post.likes.length}',
                       style: TextStyle(
-                        color: post.verificationCount >= 5 ? AppTheme.primaryGreen : Colors.grey[700],
+                        color: post.likes.contains(ref.watch(authControllerProvider)?.id) ? Colors.red : Colors.grey[700],
                       ),
                     ),
                   ),
@@ -462,25 +532,8 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
                       );
                     },
                     icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                    label: const Text('Discuss'),
+                    label: Text('${post.commentsCount} Comments'),
                   ),
-                  if (post.isPromoted)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        '🚨 PROMOTED',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ],

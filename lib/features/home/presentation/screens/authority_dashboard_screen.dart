@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/models/incident_model.dart';
+import '../../../../core/services/audit_service.dart';
+import '../../../../core/providers/area_resources_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../incidents/presentation/providers/incident_provider.dart';
+import '../../../feed/presentation/screens/community_feed_screen.dart';
 
 /// Authority Dashboard - Command Center View
 /// Features: Real-time incident feed, analytics, resource management, broadcast alerts
@@ -50,6 +54,9 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
   }
 
   Widget _buildHeader(user_model.User? user) {
+    // Get user's registered area from state field (which holds area)
+    final registeredArea = user?.state ?? 'All Areas';
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -107,6 +114,31 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 onPressed: () {},
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          // Area Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.location_on, color: Colors.white, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  registeredArea,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -201,13 +233,15 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           children: [
             _buildTab('Live Feed', 0, Icons.feed),
             const SizedBox(width: 8),
-            _buildTab('Heatmap', 1, Icons.map),
+            _buildTab('Community', 1, Icons.people),
             const SizedBox(width: 8),
-            _buildTab('Broadcast', 2, Icons.campaign),
+            _buildTab('Heatmap', 2, Icons.map),
             const SizedBox(width: 8),
-            _buildTab('Analytics', 3, Icons.analytics),
+            _buildTab('Broadcast', 3, Icons.campaign),
             const SizedBox(width: 8),
-            _buildTab('Resources', 4, Icons.inventory),
+            _buildTab('Analytics', 4, Icons.analytics),
+            const SizedBox(width: 8),
+            _buildTab('Resources', 5, Icons.inventory),
           ],
         ),
       ),
@@ -266,12 +300,14 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
       case 0:
         return _buildLiveFeed();
       case 1:
-        return _buildHeatmapView();
+        return const CommunityFeedScreen(canVerify: true);
       case 2:
-        return _buildBroadcastView();
+        return _buildHeatmapView();
       case 3:
-        return _buildAnalyticsView();
+        return _buildBroadcastView();
       case 4:
+        return _buildAnalyticsView();
+      case 5:
         return _buildResources();
       default:
         return _buildLiveFeed();
@@ -425,7 +461,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showIncidentDetails(incident),
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   label: const Text('View Details'),
                   style: OutlinedButton.styleFrom(
@@ -437,7 +473,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showDispatchDialog(incident),
                   icon: const Icon(Icons.send, size: 18),
                   label: const Text('Dispatch'),
                   style: ElevatedButton.styleFrom(
@@ -854,7 +890,14 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           ),
           IconButton(
             icon: const Icon(Icons.arrow_forward_ios, size: 18),
-            onPressed: () {},
+            onPressed: () {
+               ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Manage $title resources feature coming soon'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -925,5 +968,111 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     } else {
       return '${difference.inDays}d ago';
     }
+  }
+
+  void _showIncidentDetails(IncidentModel incident) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Incident #${incident.id.substring(0, 4)}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('Type', incident.type.name.toUpperCase()),
+            _buildDetailRow('Severity', incident.severity.name.toUpperCase()),
+            _buildDetailRow('Status', incident.status.name.toUpperCase()),
+            const SizedBox(height: 12),
+            const Text('Description:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(incident.description),
+            const SizedBox(height: 12),
+            const Text('Location:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('${incident.latitude}, ${incident.longitude}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showDispatchDialog(incident);
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.authorityAccent),
+            child: const Text('Dispatch'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDispatchDialog(IncidentModel incident) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dispatch Units'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Select nearby units to dispatch:'),
+            const SizedBox(height: 16),
+            _buildUnitOption('Police Patrol #12', '0.5 km'),
+            _buildUnitOption('Ambulance #4', '1.2 km'),
+            _buildUnitOption('Fire Engine #2', '3.0 km'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Units dispatched successfully'),
+                  backgroundColor: AppTheme.primaryGreen,
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRed),
+            child: const Text('Confirm Dispatch'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neutralGray),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnitOption(String name, String distance) {
+    return ListTile(
+      leading: const Icon(Icons.local_shipping, color: AppTheme.authorityAccent),
+      title: Text(name),
+      subtitle: Text('$distance away'),
+      trailing: Checkbox(value: true, onChanged: (_) {}),
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+    );
   }
 }

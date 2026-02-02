@@ -43,6 +43,14 @@ class ApiService {
     return response.data;
   }
 
+  Future<void> sendEmailOtp(String email) async {
+    await _dio.post('/auth/send-otp', data: {'email': email});
+  }
+
+  Future<void> verifyEmailOtp(String email, String otp) async {
+    await _dio.post('/auth/verify-otp', data: {'email': email, 'otp': otp});
+  }
+
   // Feed endpoints
   Future<Map<String, dynamic>> createPost(Map<String, dynamic> data) async {
     final response = await _dio.post('/feed/create', data: data);
@@ -86,6 +94,23 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> addComment(String postId, String content) async {
+    final response = await _dio.post('/feed/$postId/comment', data: {
+      'content': content,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getComments(String postId) async {
+    final response = await _dio.get('/feed/$postId/comments');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> toggleLike(String postId) async {
+    final response = await _dio.post('/feed/$postId/like');
+    return response.data;
+  }
+
   // Chat endpoints
   Future<Map<String, dynamic>> sendChatMessage({
     required String postId,
@@ -112,7 +137,6 @@ class ApiService {
     return response.data;
   }
 
-  // Incidents endpoints
   Future<Map<String, dynamic>> getNearbyIncidents({
     required double latitude,
     required double longitude,
@@ -126,9 +150,77 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> createIncident(Map<String, dynamic> data) async {
+    final response = await _dio.post('/incidents', data: data);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getIncidents({int? page, int? limit, String? status}) async {
+    final response = await _dio.get('/incidents', queryParameters: {
+      if (page != null) 'page': page,
+      if (limit != null) 'limit': limit,
+      if (status != null) 'status': status,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> verifyIncident(String incidentId) async {
+    final response = await _dio.patch('/incidents/$incidentId', data: {
+      'incrementVerification': true,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateIncidentStatus(String incidentId, String status) async {
+    final response = await _dio.patch('/incidents/$incidentId', data: {
+      'status': status,
+    });
+    return response.data;
+  }
+
+  // SOS endpoints
+  Future<Map<String, dynamic>> triggerSOS({
+    required double latitude,
+    required double longitude,
+    required String type,
+    String? address,
+    int? batteryLevel,
+  }) async {
+    final response = await _dio.post('/sos/trigger', data: {
+      'latitude': latitude,
+      'longitude': longitude,
+      'type': type,
+      if (address != null) 'address': address,
+      if (batteryLevel != null) 'batteryLevel': batteryLevel,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> addSOSAction(
+    String sosId,
+    String action, {
+    String? details,
+  }) async {
+    final response = await _dio.post('/sos/$sosId/action', data: {
+      'action': action,
+      if (details != null) 'details': details,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getSOSHistory() async {
+    final response = await _dio.get('/sos/history');
+    return response.data;
+  }
+
   // User endpoints
   Future<Map<String, dynamic>> getMyProfile() async {
     final response = await _dio.get('/users/me');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    final response = await _dio.put('/users/me', data: data);
     return response.data;
   }
 

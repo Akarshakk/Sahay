@@ -18,6 +18,8 @@ export enum PostCategory {
   SANITATION = 'sanitation',
   TRAFFIC = 'traffic',
   ENVIRONMENT = 'environment',
+  HEALTH = 'health',
+  ACCIDENT = 'accident',
   OTHER = 'other',
 }
 
@@ -159,4 +161,18 @@ export class VerifyPostDto {
   @IsString()
   @MaxLength(500)
   comment?: string;
+}
+
+/**
+ * DTO for adding a comment
+ */
+export class AddCommentDto {
+  @ApiProperty({
+    example: 'I passed by there an hour ago, it is still broken.',
+    description: 'Comment text',
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(500)
+  content: string;
 }

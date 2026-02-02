@@ -20,6 +20,8 @@ export interface CommunityPost {
     promotedIncidentId?: string;
     promotedAt?: Date;
     isActive: boolean;
+    likes: string[]; // Array of user IDs
+    commentsCount: number;
     createdAt: Date;
     updatedAt: Date;
 }

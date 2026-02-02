@@ -18,7 +18,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { FeedService } from './feed.service';
-import { CreatePostDto, FeedQueryDto, VerifyPostDto } from './dto';
+import { CreatePostDto, FeedQueryDto, VerifyPostDto, AddCommentDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
@@ -207,6 +207,60 @@ export class FeedController {
     return {
       success: true,
       message: 'Post deleted successfully',
+    };
+  }
+
+  /**
+   * POST /feed/:id/comment
+   * Add a comment to a post
+   */
+  @Post(':id/comment')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a comment to a post' })
+  async addComment(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() dto: AddCommentDto,
+  ) {
+    const post = await this.feedService.addComment(id, req.user.id, dto.content);
+    return {
+      success: true,
+      message: 'Comment added successfully',
+      data: post,
+    };
+  }
+
+  /**
+   * GET /feed/:id/comments
+   * Get comments for a post
+   */
+  @Get(':id/comments')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get comments for a post' })
+  async getComments(@Param('id') id: string) {
+    const comments = await this.feedService.getComments(id);
+    return {
+      success: true,
+      data: comments,
+    };
+  }
+
+  /**
+   * POST /feed/:id/like
+   * Toggle like on a post
+   */
+  @Post(':id/like')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle like on a post' })
+  async toggleLike(@Param('id') id: string, @Request() req: any) {
+    const post = await this.feedService.toggleLike(id, req.user.id);
+    return {
+      success: true,
+      message: 'Post like toggled',
+      data: post,
     };
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import '../../../../core/models/incident_model.dart';
 import '../../../../core/enums/app_enums.dart';
+import '../../../../core/services/api_service.dart';
 
 /// Result wrapper for repository operations
 class RepositoryResult<T> {
@@ -61,155 +62,172 @@ abstract class IIncidentRepository {
   Future<RepositoryResult<IncidentModel>> verifyIncident(String incidentId);
 }
 
-/// Mock Incident Repository with Deduplication Logic
-class MockIncidentRepository implements IIncidentRepository {
-  // Web-compatible: removed Connectivity dependency
-  final bool _isOnline = true;
-  
-  // Simulated database
-  final List<IncidentModel> _incidents = [
-    // Existing incidents for deduplication testing
-    IncidentModel(
-      id: 'incident-001',
-      title: 'Armed Robbery',
-      description: 'Armed robbery reported',
-      type: IncidentType.police,
-      severity: SeverityLevel.critical,
-      latitude: 19.0760, // Mumbai coordinates
-      longitude: 72.8777,
-      reportedBy: '9876543210',
-      reportedAt: DateTime.now().subtract(const Duration(minutes: 2)),
-      timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
-      status: IncidentStatus.pending,
-      isSynced: true,
-      mediaUrls: const [],
-      verificationCount: 0,
-    ),
-    IncidentModel(
-      id: 'incident-002',
-      title: 'Medical Emergency',
-      description: 'Heart attack emergency',
-      type: IncidentType.medical,
-      severity: SeverityLevel.critical,
-      latitude: 19.0761, // ~10m from first incident
-      longitude: 72.8778,
-      reportedBy: '9876543211',
-      reportedAt: DateTime.now().subtract(const Duration(minutes: 3)),
-      timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
-      status: IncidentStatus.pending,
-      isSynced: true,
-      mediaUrls: const [],
-      verificationCount: 0,
-    ),
-    IncidentModel(
-      id: 'incident-003',
-      title: 'Fire Incident',
-      description: 'Small kitchen fire',
-      type: IncidentType.fire,
-      severity: SeverityLevel.medium,
-      latitude: 19.1200, // Different location
-      longitude: 72.9000,
-      reportedBy: '9876543212',
-      reportedAt: DateTime.now().subtract(const Duration(hours: 1)),
-      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-      status: IncidentStatus.pending,
-      isSynced: true,
-      mediaUrls: const [],
-      verificationCount: 0,
-    ),
-  ];
+/// API-based Incident Repository (connects to real Firestore backend)
+class ApiIncidentRepository implements IIncidentRepository {
+  final ApiService _api;
 
-  // Offline storage simulation
-  final List<IncidentModel> _offlineQueue = [];
+  ApiIncidentRepository(this._api);
 
   @override
   Future<RepositoryResult<IncidentModel>> submitReport(IncidentModel incident) async {
-    // Web-compatible: assume online for demo
-    final isOnline = _isOnline;
+    try {
+      final result = await _api.createIncident({
+        'title': incident.title,
+        'description': incident.description,
+        'category': incident.type.name,
+        'priority': _severityToPriority(incident.severity),
+        'latitude': incident.latitude,
+        'longitude': incident.longitude,
+        'address': null,
+        'mediaUrls': incident.mediaUrls,
+      });
 
-    if (isOnline) {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Add to "database"
-      _incidents.add(incident);
-      
-      return RepositoryResult.success(incident);
-    } else {
-      // Save to offline queue
-      final offlineIncident = incident.copyWith(isSynced: false);
-      _offlineQueue.add(offlineIncident);
-      
-      return RepositoryResult.offline(offlineIncident);
+      if (result['success'] == true && result['data'] != null) {
+        return RepositoryResult.success(_parseIncident(result['data']));
+      }
+      return RepositoryResult.error(result['message'] ?? 'Failed to submit');
+    } catch (e) {
+      return RepositoryResult.error(e.toString());
+    }
+  }
+
+  @override
+  Future<List<IncidentModel>> getIncidents() async {
+    try {
+      final result = await _api.getIncidents(limit: 50);
+      if (result['success'] == true && result['data'] != null) {
+        final List<dynamic> data = result['data'];
+        return data.map((item) => _parseIncident(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching incidents: $e');
+      return [];
+    }
+  }
+
+  @override
+  Future<List<IncidentModel>> getPendingIncidents() async {
+    try {
+      final result = await _api.getIncidents(status: 'pending', limit: 50);
+      if (result['success'] == true && result['data'] != null) {
+        final List<dynamic> data = result['data'];
+        return data.map((item) => _parseIncident(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching pending incidents: $e');
+      return [];
     }
   }
 
   @override
   Future<RepositoryResult<IncidentModel?>> checkDuplicate(double latitude, double longitude) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      final result = await _api.getNearbyIncidents(
+        latitude: latitude,
+        longitude: longitude,
+        radius: 100, // 100 meter radius for duplicate check
+      );
 
-    final userLocation = Location(latitude, longitude);
-    final fiveMinutesAgo = DateTime.now().subtract(const Duration(minutes: 5));
-
-    // Check for incidents within 100m in last 5 minutes
-    for (final incident in _incidents) {
-      final incidentLocation = Location(incident.latitude, incident.longitude);
-      final distance = userLocation.distanceTo(incidentLocation);
-      
-      if (distance <= 100 && incident.timestamp.isAfter(fiveMinutesAgo)) {
-        return RepositoryResult.success(incident); // Duplicate found
+      if (result['data'] != null && (result['data'] as List).isNotEmpty) {
+        return RepositoryResult.success(_parseIncident(result['data'][0]));
       }
+      return RepositoryResult.success(null);
+    } catch (e) {
+      return RepositoryResult.error(e.toString());
     }
-
-    return RepositoryResult.success(null); // No duplicate
-  }
-
-  @override
-  Future<List<IncidentModel>> getIncidents() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return List.from(_incidents)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-  }
-
-  @override
-  Future<List<IncidentModel>> getPendingIncidents() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return _incidents
-        .where((incident) => incident.status == IncidentStatus.pending && 
-                            (incident.severity == SeverityLevel.low || incident.severity == SeverityLevel.medium))
-        .toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   @override
   Future<RepositoryResult<IncidentModel>> verifyIncident(String incidentId) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    final index = _incidents.indexWhere((i) => i.id == incidentId);
-    if (index == -1) {
-      return RepositoryResult.error('Incident not found');
+    try {
+      final result = await _api.verifyIncident(incidentId);
+      if (result['success'] == true && result['data'] != null) {
+        return RepositoryResult.success(_parseIncident(result['data']));
+      }
+      return RepositoryResult.error(result['message'] ?? 'Failed to verify');
+    } catch (e) {
+      return RepositoryResult.error(e.toString());
     }
-
-    // Update verification count
-    final updatedIncident = _incidents[index].copyWith(
-      verificationCount: _incidents[index].verificationCount + 1,
-      status: _incidents[index].verificationCount + 1 >= 5 
-          ? IncidentStatus.verified
-          : IncidentStatus.pending,
-    );
-
-    _incidents[index] = updatedIncident;
-
-    return RepositoryResult.success(updatedIncident);
   }
 
-  // Helper: Get offline queue
-  List<IncidentModel> getOfflineQueue() => List.from(_offlineQueue);
-
-  // Helper: Sync offline queue (called when network restored)
-  Future<void> syncOfflineQueue() async {
-    for (final incident in _offlineQueue) {
-      _incidents.add(incident.copyWith(isSynced: true));
+  String _severityToPriority(SeverityLevel severity) {
+    switch (severity) {
+      case SeverityLevel.critical:
+        return 'critical';
+      case SeverityLevel.high:
+        return 'high';
+      case SeverityLevel.medium:
+        return 'medium';
+      case SeverityLevel.low:
+        return 'low';
     }
-    _offlineQueue.clear();
+  }
+
+  IncidentModel _parseIncident(Map<String, dynamic> data) {
+    return IncidentModel(
+      id: data['id'] ?? '',
+      title: data['title'] ?? 'Incident',
+      description: data['description'] ?? '',
+      type: _parseIncidentType(data['category']),
+      severity: _parseSeverity(data['priority']),
+      latitude: (data['location']?['latitude'] ?? 0).toDouble(),
+      longitude: (data['location']?['longitude'] ?? 0).toDouble(),
+      reportedBy: data['reporterId'] ?? '',
+      reportedAt: DateTime.tryParse(data['createdAt'] ?? '') ?? DateTime.now(),
+      timestamp: DateTime.tryParse(data['createdAt'] ?? '') ?? DateTime.now(),
+      status: _parseStatus(data['status']),
+      isSynced: true,
+      mediaUrls: List<String>.from(data['mediaUrls'] ?? []),
+      verificationCount: data['verificationCount'] ?? 0,
+    );
+  }
+
+  IncidentType _parseIncidentType(String? category) {
+    switch (category?.toLowerCase()) {
+      case 'police':
+        return IncidentType.police;
+      case 'fire':
+        return IncidentType.fire;
+      case 'medical':
+        return IncidentType.medical;
+      case 'disaster':
+        return IncidentType.disaster;
+      default:
+        return IncidentType.police;
+    }
+  }
+
+  SeverityLevel _parseSeverity(String? priority) {
+    switch (priority?.toLowerCase()) {
+      case 'critical':
+        return SeverityLevel.critical;
+      case 'high':
+        return SeverityLevel.high;
+      case 'medium':
+        return SeverityLevel.medium;
+      case 'low':
+        return SeverityLevel.low;
+      default:
+        return SeverityLevel.medium;
+    }
+  }
+
+  IncidentStatus _parseStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return IncidentStatus.pending;
+      case 'verified':
+        return IncidentStatus.verified;
+      case 'in_progress':
+        return IncidentStatus.inProgress;
+      case 'resolved':
+        return IncidentStatus.resolved;
+      case 'false_alarm':
+        return IncidentStatus.falseAlarm;
+      default:
+        return IncidentStatus.pending;
+    }
   }
 }
