@@ -8,14 +8,15 @@ class WebSocketService {
   bool get isConnected => _socket?.connected ?? false;
 
   void connect(String authToken) {
-    _socket = IO.io(baseUrl, <String, dynamic>{
+    // Connect to /events namespace
+    _socket = IO.io('$baseUrl/events', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
       'auth': {'token': authToken},
     });
 
     _socket?.on('connect', (_) {
-      print('🔌 WebSocket connected');
+      print('🔌 WebSocket connected to /events');
     });
 
     _socket?.on('disconnect', (_) {
@@ -28,10 +29,14 @@ class WebSocketService {
   }
 
   void joinLocation(double latitude, double longitude) {
-    _socket?.emit('joinLocation', {
+    _socket?.emit('subscribeToLocation', {
       'latitude': latitude,
       'longitude': longitude,
     });
+  }
+
+  void joinRegion(String region) {
+    _socket?.emit('subscribeToRegion', region);
   }
 
   void onNewPost(Function(dynamic) callback) {
@@ -48,6 +53,10 @@ class WebSocketService {
 
   void onPostVerified(Function(dynamic) callback) {
     _socket?.on('postVerified', callback);
+  }
+
+  void onEmergencyBroadcast(Function(dynamic) callback) {
+    _socket?.on('emergencyBroadcast', callback);
   }
 
   void disconnect() {

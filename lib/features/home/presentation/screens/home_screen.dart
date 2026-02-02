@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/hardware_trigger_service.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/websocket_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
@@ -21,6 +22,9 @@ import '../../../feed/presentation/screens/community_feed_screen.dart';
 import '../../../volunteer/presentation/screens/volunteer_dashboard_screen.dart';
 import '../../../volunteer/presentation/screens/volunteer_tasks_screen.dart';
 import '../../../volunteer/presentation/screens/resources_screen.dart';
+import '../../../authority/presentation/screens/heatmap_screen.dart';
+import '../../../authority/presentation/screens/analytics_screen.dart';
+import '../../../authority/presentation/screens/broadcast_screen.dart';
 import 'authority_dashboard_screen.dart';
 
 /// Modern Material 3 Home Screen with Role-Based UI
@@ -50,6 +54,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Hardware Trigger Listener
     HardwareTriggerService().onEmergencyTriggered = _submitEmergencySOS;
     HardwareTriggerService().initialize();
+    
+    // Initialize WebSocket
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initWebSocket();
+    });
+  }
+
+  void _initWebSocket() {
+    final user = ref.read(authControllerProvider);
+    final ws = ref.read(webSocketServiceProvider);
+    
+    // Connect
+    if (user != null && !ws.isConnected) {
+      ws.connect(user.id);
+    }
+
+    // Join Region
+    // Fix: Check if user is not null, state is not null, AND state is not empty. 
+    // Uses user!.state! to access the promoted non-null value in the joinRegion call.
+    if (user != null && user.state != null && user.state!.isNotEmpty) {
+      ws.joinRegion(user.state!);
+    }
+
+    // Listen for Broadcasts
+    ws.onEmergencyBroadcast((data) {
+      if (!mounted) return;
+      _showBroadcastDialog(data['data']);
+    });
+  }
+  
+  void _showBroadcastDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppTheme.primaryRed, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('EMERGENCY ALERT', style: TextStyle(color: AppTheme.primaryRed, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data['title'] ?? 'Alert', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text(data['message'] ?? '', style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 16),
+            Text('Region: ${data['region']}', style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+            Text('Priority: ${data['priority']}', style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRed,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('I UNDERSTAND'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -379,143 +451,143 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildAuthorityQuickActions() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          // Authority Dashboard Button (Command Center)
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppTheme.authorityAccent, AppTheme.authorityAccent.withOpacity(0.7)],
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Column(
+      children: [
+        // Authority Dashboard Button (Command Center)
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.authorityAccent, AppTheme.authorityAccent.withOpacity(0.7)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.authorityAccent.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.authorityAccent.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.shield, color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Command Center',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  child: const Icon(Icons.shield, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Command Center',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Text(
-                          'Manage incidents, alerts & analytics',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Text(
+                        'Manage incidents, alerts & analytics',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
-                ],
-              ),
+                ),
+                const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+              ],
             ),
           ),
-          
-          // Verify and Resources (New Row)
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.verified_outlined,
-                  label: 'Verify',
-                  color: AppTheme.primaryOrange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
-                  ),
+        ),
+        
+        // Verify and Resources (New Row)
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionCard(
+                icon: Icons.verified_outlined,
+                label: 'Verify',
+                color: AppTheme.primaryOrange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.inventory_outlined,
-                  label: 'Resources',
-                  color: AppTheme.primaryGreen,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ResourcesScreen()),
-                  ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildQuickActionCard(
+                icon: Icons.inventory_outlined,
+                label: 'Resources',
+                color: AppTheme.primaryGreen,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ResourcesScreen()),
                 ),
               ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
 
-          // Core Authority Tools
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.map_outlined,
-                  label: 'Heatmap',
-                  color: AppTheme.authorityAccent,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen(initialTab: 1)),
-                  ),
+        // Core Authority Tools
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionCard(
+                icon: Icons.map_outlined,
+                label: 'Heatmap',
+                color: AppTheme.authorityAccent,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HeatmapScreen()),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.campaign_outlined,
-                  label: 'Broadcast',
-                  color: AppTheme.primaryOrange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen(initialTab: 2)),
-                  ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildQuickActionCard(
+                icon: Icons.campaign_outlined,
+                label: 'Broadcast',
+                color: AppTheme.primaryOrange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BroadcastScreen()),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.analytics_outlined,
-                  label: 'Analytics',
-                  color: AppTheme.primaryGreen,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen(initialTab: 3)),
-                  ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildQuickActionCard(
+                icon: Icons.analytics_outlined,
+                label: 'Analytics',
+                color: AppTheme.primaryGreen,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildQuickActionCard({
     required IconData icon,

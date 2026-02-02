@@ -30,6 +30,8 @@ mixin _$IncidentModel {
   double get latitude => throw _privateConstructorUsedError;
   double get longitude => throw _privateConstructorUsedError;
   String get reportedBy => throw _privateConstructorUsedError;
+  String? get reporterName => throw _privateConstructorUsedError;
+  String? get reporterPhone => throw _privateConstructorUsedError;
   DateTime get reportedAt => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _incidentStatusFromJson, toJson: _incidentStatusToJson)
@@ -65,6 +67,8 @@ abstract class $IncidentModelCopyWith<$Res> {
       double latitude,
       double longitude,
       String reportedBy,
+      String? reporterName,
+      String? reporterPhone,
       DateTime reportedAt,
       DateTime timestamp,
       @JsonKey(fromJson: _incidentStatusFromJson, toJson: _incidentStatusToJson)
@@ -97,6 +101,8 @@ class _$IncidentModelCopyWithImpl<$Res, $Val extends IncidentModel>
     Object? latitude = null,
     Object? longitude = null,
     Object? reportedBy = null,
+    Object? reporterName = freezed,
+    Object? reporterPhone = freezed,
     Object? reportedAt = null,
     Object? timestamp = null,
     Object? status = null,
@@ -137,6 +143,14 @@ class _$IncidentModelCopyWithImpl<$Res, $Val extends IncidentModel>
           ? _value.reportedBy
           : reportedBy // ignore: cast_nullable_to_non_nullable
               as String,
+      reporterName: freezed == reporterName
+          ? _value.reporterName
+          : reporterName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reporterPhone: freezed == reporterPhone
+          ? _value.reporterPhone
+          : reporterPhone // ignore: cast_nullable_to_non_nullable
+              as String?,
       reportedAt: null == reportedAt
           ? _value.reportedAt
           : reportedAt // ignore: cast_nullable_to_non_nullable
@@ -184,6 +198,8 @@ abstract class _$$IncidentModelImplCopyWith<$Res>
       double latitude,
       double longitude,
       String reportedBy,
+      String? reporterName,
+      String? reporterPhone,
       DateTime reportedAt,
       DateTime timestamp,
       @JsonKey(fromJson: _incidentStatusFromJson, toJson: _incidentStatusToJson)
@@ -214,6 +230,8 @@ class __$$IncidentModelImplCopyWithImpl<$Res>
     Object? latitude = null,
     Object? longitude = null,
     Object? reportedBy = null,
+    Object? reporterName = freezed,
+    Object? reporterPhone = freezed,
     Object? reportedAt = null,
     Object? timestamp = null,
     Object? status = null,
@@ -254,6 +272,14 @@ class __$$IncidentModelImplCopyWithImpl<$Res>
           ? _value.reportedBy
           : reportedBy // ignore: cast_nullable_to_non_nullable
               as String,
+      reporterName: freezed == reporterName
+          ? _value.reporterName
+          : reporterName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reporterPhone: freezed == reporterPhone
+          ? _value.reporterPhone
+          : reporterPhone // ignore: cast_nullable_to_non_nullable
+              as String?,
       reportedAt: null == reportedAt
           ? _value.reportedAt
           : reportedAt // ignore: cast_nullable_to_non_nullable
@@ -296,6 +322,8 @@ class _$IncidentModelImpl implements _IncidentModel {
       required this.latitude,
       required this.longitude,
       required this.reportedBy,
+      this.reporterName,
+      this.reporterPhone,
       required this.reportedAt,
       required this.timestamp,
       @JsonKey(fromJson: _incidentStatusFromJson, toJson: _incidentStatusToJson)
@@ -327,6 +355,10 @@ class _$IncidentModelImpl implements _IncidentModel {
   @override
   final String reportedBy;
   @override
+  final String? reporterName;
+  @override
+  final String? reporterPhone;
+  @override
   final DateTime reportedAt;
   @override
   final DateTime timestamp;
@@ -348,7 +380,7 @@ class _$IncidentModelImpl implements _IncidentModel {
 
   @override
   String toString() {
-    return 'IncidentModel(id: $id, title: $title, description: $description, type: $type, severity: $severity, latitude: $latitude, longitude: $longitude, reportedBy: $reportedBy, reportedAt: $reportedAt, timestamp: $timestamp, status: $status, isSynced: $isSynced, mediaUrls: $mediaUrls, verificationCount: $verificationCount)';
+    return 'IncidentModel(id: $id, title: $title, description: $description, type: $type, severity: $severity, latitude: $latitude, longitude: $longitude, reportedBy: $reportedBy, reporterName: $reporterName, reporterPhone: $reporterPhone, reportedAt: $reportedAt, timestamp: $timestamp, status: $status, isSynced: $isSynced, mediaUrls: $mediaUrls, verificationCount: $verificationCount)';
   }
 
   @override
@@ -369,6 +401,10 @@ class _$IncidentModelImpl implements _IncidentModel {
                 other.longitude == longitude) &&
             (identical(other.reportedBy, reportedBy) ||
                 other.reportedBy == reportedBy) &&
+            (identical(other.reporterName, reporterName) ||
+                other.reporterName == reporterName) &&
+            (identical(other.reporterPhone, reporterPhone) ||
+                other.reporterPhone == reporterPhone) &&
             (identical(other.reportedAt, reportedAt) ||
                 other.reportedAt == reportedAt) &&
             (identical(other.timestamp, timestamp) ||
@@ -394,6 +430,8 @@ class _$IncidentModelImpl implements _IncidentModel {
       latitude,
       longitude,
       reportedBy,
+      reporterName,
+      reporterPhone,
       reportedAt,
       timestamp,
       status,
@@ -429,6 +467,8 @@ abstract class _IncidentModel implements IncidentModel {
       required final double latitude,
       required final double longitude,
       required final String reportedBy,
+      final String? reporterName,
+      final String? reporterPhone,
       required final DateTime reportedAt,
       required final DateTime timestamp,
       @JsonKey(fromJson: _incidentStatusFromJson, toJson: _incidentStatusToJson)
@@ -458,6 +498,10 @@ abstract class _IncidentModel implements IncidentModel {
   double get longitude;
   @override
   String get reportedBy;
+  @override
+  String? get reporterName;
+  @override
+  String? get reporterPhone;
   @override
   DateTime get reportedAt;
   @override

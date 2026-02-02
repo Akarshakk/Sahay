@@ -20,7 +20,7 @@ import { UserRole, IncidentStatus } from '../../common/enums';
 @ApiTags('incidents')
 @Controller('incidents')
 export class IncidentsController {
-  constructor(private readonly incidentsService: IncidentsService) {}
+  constructor(private readonly incidentsService: IncidentsService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -42,7 +42,7 @@ export class IncidentsController {
     @Query('limit') limit = 20,
     @Query('status') status?: IncidentStatus,
   ) {
-    return this.incidentsService.findAll(page, limit, status);
+    return this.incidentsService.findAll(Number(page), Number(limit), status);
   }
 
   @Get('nearby')

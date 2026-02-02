@@ -17,6 +17,7 @@
         "firebase_storage",
         "flutter",
         "flutter_animate",
+        "flutter_map",
         "flutter_riverpod",
         "freezed_annotation",
         "geocoding",
@@ -25,6 +26,7 @@
         "image_picker",
         "intl",
         "json_annotation",
+        "latlong2",
         "local_auth",
         "permission_handler",
         "riverpod_annotation",
@@ -860,6 +862,15 @@
       ]
     },
     {
+      "name": "permission_handler_platform_interface",
+      "version": "4.3.0",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
       "name": "permission_handler_windows",
       "version": "0.2.1",
       "dependencies": [
@@ -868,12 +879,29 @@
       ]
     },
     {
-      "name": "permission_handler_platform_interface",
-      "version": "4.3.0",
+      "name": "permission_handler_html",
+      "version": "0.1.3+5",
       "dependencies": [
         "flutter",
-        "meta",
-        "plugin_platform_interface"
+        "flutter_web_plugins",
+        "permission_handler_platform_interface",
+        "web"
+      ]
+    },
+    {
+      "name": "permission_handler_apple",
+      "version": "9.4.7",
+      "dependencies": [
+        "flutter",
+        "permission_handler_platform_interface"
+      ]
+    },
+    {
+      "name": "permission_handler_android",
+      "version": "13.0.1",
+      "dependencies": [
+        "flutter",
+        "permission_handler_platform_interface"
       ]
     },
     {
@@ -1511,6 +1539,13 @@
       ]
     },
     {
+      "name": "flutter_web_plugins",
+      "version": "0.0.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
       "name": "flutter_plugin_android_lifecycle",
       "version": "2.0.33",
       "dependencies": [
@@ -1559,13 +1594,6 @@
       "dependencies": [
         "cross_file",
         "file_selector_platform_interface",
-        "flutter"
-      ]
-    },
-    {
-      "name": "flutter_web_plugins",
-      "version": "0.0.0",
-      "dependencies": [
         "flutter"
       ]
     },
@@ -1747,29 +1775,75 @@
       "dependencies": []
     },
     {
-      "name": "permission_handler_apple",
-      "version": "9.4.7",
+      "name": "latlong2",
+      "version": "0.9.1",
       "dependencies": [
-        "flutter",
-        "permission_handler_platform_interface"
+        "intl"
       ]
     },
     {
-      "name": "permission_handler_android",
-      "version": "13.0.1",
+      "name": "flutter_map",
+      "version": "6.2.1",
       "dependencies": [
+        "async",
+        "collection",
         "flutter",
-        "permission_handler_platform_interface"
+        "http",
+        "latlong2",
+        "logger",
+        "meta",
+        "polylabel",
+        "proj4dart",
+        "vector_math"
       ]
     },
     {
-      "name": "permission_handler_html",
-      "version": "0.1.3+5",
+      "name": "proj4dart",
+      "version": "2.1.0",
       "dependencies": [
-        "flutter",
-        "flutter_web_plugins",
-        "permission_handler_platform_interface",
-        "web"
+        "meta",
+        "mgrs_dart",
+        "wkt_parser"
+      ]
+    },
+    {
+      "name": "polylabel",
+      "version": "1.0.1",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "wkt_parser",
+      "version": "2.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "mgrs_dart",
+      "version": "2.0.0",
+      "dependencies": [
+        "unicode"
+      ]
+    },
+    {
+      "name": "unicode",
+      "version": "0.3.1",
+      "dependencies": [
+        "lists"
+      ]
+    },
+    {
+      "name": "lists",
+      "version": "1.0.1",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
+      "name": "logger",
+      "version": "2.6.2",
+      "dependencies": [
+        "meta"
       ]
     }
   ],

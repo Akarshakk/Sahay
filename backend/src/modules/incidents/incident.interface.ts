@@ -19,6 +19,8 @@ export interface Incident {
     verificationCount: number;
     promotedAt?: Date;
     reporterId?: string;
+    reporterName?: string;
+    reporterPhone?: string;
     assignedAuthorityId?: string;
     createdAt: Date;
     updatedAt: Date;

@@ -373,8 +373,8 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
             if (value == null || value.trim().isEmpty) {
               return 'Please describe the situation';
             }
-            if (value.trim().length < 10) {
-              return 'Please provide more details (at least 10 characters)';
+            if (value.trim().length < 20) {
+              return 'Please provide more details (at least 20 characters)';
             }
             return null;
           },
@@ -511,7 +511,9 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
       severity: severity,
       latitude: _currentLocation!.latitude,
       longitude: _currentLocation!.longitude,
-      reportedBy: user.phone,
+      reportedBy: user.phone ?? user.id,
+      reporterName: user.name,
+      reporterPhone: user.phone,
       reportedAt: now,
       timestamp: now,
       status: IncidentStatus.pending,

@@ -15,6 +15,7 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
 import { MailModule } from './modules/mail/mail.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { SOSModule } from './modules/sos/sos.module';
+import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { SOSModule } from './modules/sos/sos.module';
     MailModule,
     UploadModule,
     SOSModule,
+    BroadcastsModule,
   ],
   controllers: [],
   providers: [],

@@ -38,6 +38,8 @@ export class IncidentsService {
       address: createIncidentDto.address,
       mediaUrls: createIncidentDto.mediaUrls,
       reporterId,
+      reporterName: createIncidentDto.reporterName,
+      reporterPhone: createIncidentDto.reporterPhone,
       verificationCount: 0,
       createdAt: now,
       updatedAt: now,
@@ -88,26 +90,32 @@ export class IncidentsService {
     limit = 20,
     status?: IncidentStatus,
   ): Promise<{ data: Incident[]; total: number }> {
-    let query: admin.firestore.Query = this.incidentsCollection;
+    try {
+      let query: admin.firestore.Query = this.incidentsCollection;
 
-    if (status) {
-      query = query.where('status', '==', status);
+      if (status) {
+        query = query.where('status', '==', status);
+      }
+
+      query = query.orderBy('createdAt', 'desc').limit(limit).offset((page - 1) * limit);
+
+      const snapshot = await query.get();
+      const data = snapshot.docs.map((doc) => doc.data() as Incident);
+
+      // Get total count (simplified - in production, use a counter document)
+      let countQuery: admin.firestore.Query = this.incidentsCollection;
+      if (status) {
+        countQuery = countQuery.where('status', '==', status);
+      }
+
+      const countSnapshot = await countQuery.count().get();
+      const total = countSnapshot.data().count;
+
+      return { data, total };
+    } catch (error) {
+      this.logger.error(`Error finding incidents: ${error.message}`, error.stack);
+      throw error;
     }
-
-    query = query.orderBy('createdAt', 'desc').limit(limit).offset((page - 1) * limit);
-
-    const snapshot = await query.get();
-    const data = snapshot.docs.map((doc) => doc.data() as Incident);
-
-    // Get total count (simplified - in production, use a counter document)
-    let countQuery: admin.firestore.Query = this.incidentsCollection;
-    if (status) {
-      countQuery = countQuery.where('status', '==', status);
-    }
-    const countSnapshot = await countQuery.count().get();
-    const total = countSnapshot.data().count;
-
-    return { data, total };
   }
 
   async findById(id: string): Promise<Incident> {

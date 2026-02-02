@@ -80,12 +80,15 @@ class ApiIncidentRepository implements IIncidentRepository {
         'longitude': incident.longitude,
         'address': null,
         'mediaUrls': incident.mediaUrls,
+        'reporterName': incident.reporterName,
+        'reporterPhone': incident.reporterPhone,
       });
 
-      if (result['success'] == true && result['data'] != null) {
-        return RepositoryResult.success(_parseIncident(result['data']));
+      // Backend returns the created incident object directly
+      if (result['id'] != null) {
+        return RepositoryResult.success(_parseIncident(result));
       }
-      return RepositoryResult.error(result['message'] ?? 'Failed to submit');
+      return RepositoryResult.error('Failed to submit: Invalid response');
     } catch (e) {
       return RepositoryResult.error(e.toString());
     }
@@ -95,7 +98,8 @@ class ApiIncidentRepository implements IIncidentRepository {
   Future<List<IncidentModel>> getIncidents() async {
     try {
       final result = await _api.getIncidents(limit: 50);
-      if (result['success'] == true && result['data'] != null) {
+      // Backend returns { data: [...], total: N }
+      if (result['data'] != null) {
         final List<dynamic> data = result['data'];
         return data.map((item) => _parseIncident(item)).toList();
       }
@@ -110,7 +114,7 @@ class ApiIncidentRepository implements IIncidentRepository {
   Future<List<IncidentModel>> getPendingIncidents() async {
     try {
       final result = await _api.getIncidents(status: 'pending', limit: 50);
-      if (result['success'] == true && result['data'] != null) {
+      if (result['data'] != null) {
         final List<dynamic> data = result['data'];
         return data.map((item) => _parseIncident(item)).toList();
       }
@@ -130,9 +134,24 @@ class ApiIncidentRepository implements IIncidentRepository {
         radius: 100, // 100 meter radius for duplicate check
       );
 
-      if (result['data'] != null && (result['data'] as List).isNotEmpty) {
-        return RepositoryResult.success(_parseIncident(result['data'][0]));
+      // Backend returns incident list or similar structure
+      // getNearbyIncidents in controller returns Incident[] directly? 
+      // Checking incidents.service.ts findNearby returns Incident[] directly.
+      // So result is List<dynamic> (if Dio parses array) OR it might be wrapped?
+      // usage in api_service 'final response = await _dio.get...'
+      
+      // Look at incidents.controller.ts: findNearby calls findNearby service which returns Incident[]
+      // So result is List<dynamic>
+      if (result is List) {
+         if (result.isNotEmpty) {
+           return RepositoryResult.success(_parseIncident(result[0]));
+         }
+         return RepositoryResult.success(null);
+      } else if (result['data'] != null && (result['data'] as List).isNotEmpty) {
+         // Fallback if it was wrapped
+         return RepositoryResult.success(_parseIncident(result['data'][0]));
       }
+
       return RepositoryResult.success(null);
     } catch (e) {
       return RepositoryResult.error(e.toString());
@@ -143,8 +162,9 @@ class ApiIncidentRepository implements IIncidentRepository {
   Future<RepositoryResult<IncidentModel>> verifyIncident(String incidentId) async {
     try {
       final result = await _api.verifyIncident(incidentId);
-      if (result['success'] == true && result['data'] != null) {
-        return RepositoryResult.success(_parseIncident(result['data']));
+      // Backend returns updated incident object
+      if (result['id'] != null) {
+        return RepositoryResult.success(_parseIncident(result));
       }
       return RepositoryResult.error(result['message'] ?? 'Failed to verify');
     } catch (e) {
@@ -175,13 +195,34 @@ class ApiIncidentRepository implements IIncidentRepository {
       latitude: (data['location']?['latitude'] ?? 0).toDouble(),
       longitude: (data['location']?['longitude'] ?? 0).toDouble(),
       reportedBy: data['reporterId'] ?? '',
-      reportedAt: DateTime.tryParse(data['createdAt'] ?? '') ?? DateTime.now(),
-      timestamp: DateTime.tryParse(data['createdAt'] ?? '') ?? DateTime.now(),
+      reporterName: data['reporterName'],
+      reporterPhone: data['reporterPhone'],
+      reportedAt: _parseDateTime(data['createdAt']),
+      timestamp: _parseDateTime(data['createdAt']),
       status: _parseStatus(data['status']),
       isSynced: true,
       mediaUrls: List<String>.from(data['mediaUrls'] ?? []),
       verificationCount: data['verificationCount'] ?? 0,
     );
+  }
+
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    
+    // Handle ISO String
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    
+    // Handle Firestore Timestamp { _seconds, _nanoseconds }
+    if (value is Map) {
+      if (value['seconds'] != null || value['_seconds'] != null) {
+        final seconds = (value['seconds'] ?? value['_seconds']) as int;
+        return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+      }
+    }
+    
+    return DateTime.now();
   }
 
   IncidentType _parseIncidentType(String? category) {

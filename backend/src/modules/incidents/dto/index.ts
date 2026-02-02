@@ -55,6 +55,16 @@ export class CreateIncidentDto {
   @IsOptional()
   @IsEnum(IncidentPriority)
   priority?: IncidentPriority;
+
+  @ApiPropertyOptional({ example: 'John Doe' })
+  @IsOptional()
+  @IsString()
+  reporterName?: string;
+
+  @ApiPropertyOptional({ example: '+919876543210' })
+  @IsOptional()
+  @IsString()
+  reporterPhone?: string;
 }
 
 export class UpdateIncidentDto {

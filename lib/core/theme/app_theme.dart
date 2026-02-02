@@ -8,6 +8,7 @@ class AppTheme {
   static const Color neutralGray = Color(0xFF424242);
   static const Color backgroundLight = Color(0xFFFAFAFA);
   static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color textDark = Color(0xFF212121); // Primary Text Color
   
   // Role-based accent colors
   static const Color citizenAccent = Color(0xFF1976D2); // Blue

@@ -206,6 +206,7 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<void> logout() async {
     _currentUser = null;
+    _apiService.clearAuthToken();
   }
 
   @override

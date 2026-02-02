@@ -22,6 +22,7 @@ enum IncidentStatus {
   inProgress,
   resolved,
   cancelled,
+  falseAlarm,
 }
 
 enum IncidentSeverity {

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Audit action types for logging
 enum AuditActionType {
@@ -228,3 +229,5 @@ class AuditService {
         .snapshots();
   }
 }
+
+final auditServiceProvider = Provider<AuditService>((ref) => AuditService());

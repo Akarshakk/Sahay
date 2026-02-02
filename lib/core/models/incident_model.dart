@@ -23,6 +23,8 @@ class IncidentModel with _$IncidentModel {
     required double latitude,
     required double longitude,
     required String reportedBy,
+    String? reporterName,
+    String? reporterPhone,
     required DateTime reportedAt,
     required DateTime timestamp,
     @JsonKey(

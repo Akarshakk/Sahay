@@ -54,7 +54,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     // Create a grid cell ID (approximate 2km grid)
     const gridCellId = this.getGridCellId(data.latitude, data.longitude);
-    
+
     client.join(gridCellId);
     this.logger.log(`Client ${client.id} joined room: ${gridCellId}`);
 
@@ -62,11 +62,43 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
+   * Subscribe to regional updates (e.g. "Mumbai Central", "Maharashtra")
+   */
+  @SubscribeMessage('subscribeToRegion')
+  handleRegionSubscription(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() region: string,
+  ) {
+    if (!region) return;
+
+    // Sanitize region name to create room ID
+    const room = `region_${region.toLowerCase().replace(/\s+/g, '_')}`;
+
+    client.join(room);
+    this.logger.log(`Client ${client.id} joined region room: ${room}`);
+
+    return { event: 'subscribedToRegion', data: { room } };
+  }
+
+  /**
+   * Broadcast emergency alert to specific region
+   */
+  broadcastToRegion(region: string, alert: any) {
+    const room = `region_${region.toLowerCase().replace(/\s+/g, '_')}`;
+    this.logger.log(`Broadcasting to room: ${room}`);
+
+    this.server.to(room).emit('emergencyBroadcast', {
+      type: 'EMERGENCY_BROADCAST',
+      data: alert,
+    });
+  }
+
+  /**
    * Broadcast new post to nearby users
    */
   broadcastNewPost(post: any, latitude: number, longitude: number) {
     const gridCellId = this.getGridCellId(latitude, longitude);
-    
+
     this.server.to(gridCellId).emit('newPost', {
       type: 'NEW_POST',
       data: post,

@@ -28,6 +28,11 @@ class ApiService {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
+  void clearAuthToken() {
+    _authToken = null;
+    _dio.options.headers.remove('Authorization');
+  }
+
   // Auth endpoints
   Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
     final response = await _dio.post('/auth/register', data: data);
@@ -175,6 +180,12 @@ class ApiService {
     final response = await _dio.patch('/incidents/$incidentId', data: {
       'status': status,
     });
+    return response.data;
+  }
+
+  // Broadcast endpoints
+  Future<Map<String, dynamic>> sendBroadcast(Map<String, dynamic> data) async {
+    final response = await _dio.post('/broadcasts', data: data);
     return response.data;
   }
 
