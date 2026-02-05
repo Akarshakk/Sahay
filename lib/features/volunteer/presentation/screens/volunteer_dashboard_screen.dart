@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
-import 'volunteer_tasks_screen.dart';
+import '../../../../core/providers/tasks_provider.dart';
+import '../../../../core/providers/badge_provider.dart';
+import '../../../../core/models/badge_model.dart';
+import '../../../../core/models/task_model.dart';
+import 'volunteer_tasks_detailed_screen.dart';
 import '../../../feed/presentation/screens/community_feed_screen.dart';
+import 'all_activities_screen.dart';
+import 'all_badges_screen.dart';
 
-/// Volunteer Dashboard - Premium UI with stats and quick actions
+/// Volunteer Dashboard - Light Theme UI with stats and quick actions
 class VolunteerDashboardScreen extends ConsumerStatefulWidget {
   const VolunteerDashboardScreen({super.key});
 
@@ -36,9 +43,13 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
   @override
   Widget build(BuildContext context) {
     final verificationState = ref.watch(verificationProvider);
+    // Watch region-based tasks for dynamic count
+    final regionTasksAsync = ref.watch(getTasksByRegionProvider('general'));
+    final submissionsAsync = ref.watch(getMySubmissionsProvider);
+    final badgesAsync = ref.watch(badgesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: AppTheme.backgroundLight,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
@@ -48,15 +59,15 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeroStats(verificationState),
+                  _buildHeroStats(verificationState, submissionsAsync, regionTasksAsync),
                   const SizedBox(height: 24),
-                  _buildQuickActions(),
+                  _buildQuickActions(regionTasksAsync),
                   const SizedBox(height: 24),
                   _buildLevelProgress(verificationState),
                   const SizedBox(height: 24),
-                  _buildRecentActivity(verificationState),
+                  _buildRecentActivity(submissionsAsync),
                   const SizedBox(height: 24),
-                  _buildAchievements(),
+                  _buildAchievements(badgesAsync),
                 ],
               ),
             ),
@@ -70,7 +81,7 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     return SliverAppBar(
       expandedHeight: 140,
       pinned: true,
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: Colors.white,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         onPressed: () => Navigator.pop(context),
@@ -83,8 +94,8 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
               end: Alignment.bottomRight,
               colors: [
                 AppTheme.volunteerAccent,
-                AppTheme.volunteerAccent.withOpacity(0.6),
-                const Color(0xFF0A0A1A),
+                AppTheme.volunteerAccent.withOpacity(0.7),
+                AppTheme.primaryGreen,
               ],
             ),
           ),
@@ -137,22 +148,101 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     );
   }
 
-  Widget _buildHeroStats(VerificationState state) {
+  Widget _buildHeroStats(
+      VerificationState state,
+      AsyncValue<List<TaskSubmission>> submissionsAsync,
+      AsyncValue<List<Task>> regionTasksAsync) {
+    // Calculate streak
+    final streak = submissionsAsync.when(
+      data: (submissions) {
+        if (submissions.isEmpty) return 0;
+        final verified = submissions.where((s) => s.status == 'verified').toList();
+        if (verified.isEmpty) return 0;
+
+        final uniqueDates = verified.map((s) {
+          final d = s.createdAt;
+          return '${d.year}-${d.month}-${d.day}';
+        }).toSet();
+
+        int currentStreak = 0;
+        final now = DateTime.now();
+        var checkDate = DateTime(now.year, now.month, now.day);
+        String dateKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
+
+        // Check today
+        if (uniqueDates.contains(dateKey(checkDate))) {
+          currentStreak++;
+        }
+        
+        // Move to yesterday
+        checkDate = checkDate.subtract(const Duration(days: 1));
+
+        // If today missed, check yesterday to see if streak is alive
+        if (currentStreak == 0 && !uniqueDates.contains(dateKey(checkDate))) {
+          return 0;
+        }
+
+        while (uniqueDates.contains(dateKey(checkDate))) {
+          currentStreak++;
+          checkDate = checkDate.subtract(const Duration(days: 1));
+        }
+        return currentStreak;
+      },
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
+
+    // Calculate Points
+    final points = submissionsAsync.when(
+      data: (submissions) {
+         return regionTasksAsync.when(
+           data: (tasks) {
+             int total = 0;
+             for (var sub in submissions) {
+               if (sub.status == 'verified') {
+                 final task = tasks.firstWhere(
+                   (t) => t.id == sub.taskId,
+                   orElse: () => Task(
+                     id: '',
+                     title: '',
+                     description: '',
+                     region: '',
+                     areaId: '',
+                     createdBy: '',
+                     createdAt: DateTime.now(),
+                     updatedAt: DateTime.now(),
+                     rewardPoints: 0, 
+                     assignedTo: [],
+                     priority: 'medium',
+                     status: '',
+                   ), // Empty fallback
+                 );
+                 total += task.rewardPoints;
+               }
+             }
+             // Add local verification points too?
+             // defined in verificationProvider: volunteerPoints tracks "post verifications"
+             // Ideally we sum both task points + post verification points
+             return total + state.volunteerPoints; 
+           },
+           loading: () => state.volunteerPoints,
+           error: (_, __) => state.volunteerPoints,
+         );
+      },
+      loading: () => state.volunteerPoints,
+      error: (_, __) => state.volunteerPoints,
+    );
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1E1E3F),
-            Color(0xFF2D2D5A),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.volunteerAccent.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -170,14 +260,14 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
               _buildVerticalDivider(),
               _buildStatItem(
                 icon: Icons.star,
-                value: state.volunteerPoints.toString(),
+                value: '$points',
                 label: 'Points',
                 color: AppTheme.primaryOrange,
               ),
               _buildVerticalDivider(),
               _buildStatItem(
                 icon: Icons.trending_up,
-                value: '12',
+                value: '$streak',
                 label: 'Streak',
                 color: AppTheme.volunteerAccent,
               ),
@@ -199,7 +289,7 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withOpacity(0.15),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 24),
@@ -215,9 +305,10 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
         ),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Colors.white60,
+            color: Colors.grey[800], // Darker text for better visibility
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -228,11 +319,18 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     return Container(
       height: 60,
       width: 1,
-      color: Colors.white24,
+      color: Colors.grey[200],
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(AsyncValue<List> regionTasksAsync) {
+    // Get pending task count from API
+    final pendingCount = regionTasksAsync.when(
+      data: (tasks) => tasks.where((t) => t.status == 'open').length,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,7 +339,7 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppTheme.textDark,
           ),
         ),
         const SizedBox(height: 16),
@@ -264,11 +362,13 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
               child: _buildActionCard(
                 icon: Icons.task_alt,
                 label: 'My Tasks',
-                subtitle: '3 pending tasks',
+                subtitle: '$pendingCount open tasks',
                 gradient: [AppTheme.volunteerAccent, const Color(0xFF7B68EE)],
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const VolunteerTasksScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const VolunteerTasksDetailedScreen(),
+                  ),
                 ),
               ),
             ),
@@ -339,9 +439,15 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E3F),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,13 +460,13 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: AppTheme.textDark,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.volunteerAccent.withOpacity(0.2),
+                  color: AppTheme.volunteerAccent.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -380,7 +486,7 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
               Container(
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Colors.white10,
+                  color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -401,56 +507,103 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
           const SizedBox(height: 12),
           Text(
             '${100 - (points % 100)} points to Level ${level + 1}',
-            style: const TextStyle(fontSize: 12, color: Colors.white60),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
         ],
       ),
     ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0);
   }
 
-  Widget _buildRecentActivity(VerificationState state) {
+  Widget _buildRecentActivity(AsyncValue<List<TaskSubmission>> submissionsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent Activity',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recent Activity',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDark,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AllActivitiesScreen()),
+                );
+              },
+              child: const Text('View All'),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        ...List.generate(3, (index) => _buildActivityItem(index)),
+        submissionsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, s) => Text('Error loading activity: $e'),
+          data: (submissions) {
+            if (submissions.isEmpty) {
+              return const Text('No recent activity yet.');
+            }
+            // Take top 3
+            final recent = submissions.take(3).toList();
+            return Column(
+              children: recent.map((s) => _buildActivityItem(s)).toList(),
+            );
+          },
+        ),
       ],
     ).animate().fadeIn(delay: 600.ms);
   }
 
-  Widget _buildActivityItem(int index) {
-    final activities = [
-      {'icon': Icons.verified, 'text': 'Verified traffic incident', 'time': '5 min ago', 'color': AppTheme.primaryGreen},
-      {'icon': Icons.task_alt, 'text': 'Completed first aid task', 'time': '1 hour ago', 'color': AppTheme.volunteerAccent},
-      {'icon': Icons.star, 'text': 'Earned 10 points', 'time': '2 hours ago', 'color': AppTheme.primaryOrange},
-    ];
+  Widget _buildActivityItem(TaskSubmission submission) {
+    Color color;
+    IconData icon;
+    String text;
 
-    final activity = activities[index];
+    switch (submission.status.toLowerCase()) {
+      case 'verified':
+        color = AppTheme.primaryGreen;
+        icon = Icons.verified;
+        text = 'Verified Task';
+        break;
+      case 'rejected':
+        color = AppTheme.primaryRed;
+        icon = Icons.cancel;
+        text = 'Task Rejected';
+        break;
+      default:
+        color = AppTheme.volunteerAccent;
+        icon = Icons.timer;
+        text = 'Task Submitted';
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E3F),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: (activity['color'] as Color).withOpacity(0.2),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(activity['icon'] as IconData, color: activity['color'] as Color, size: 20),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -458,16 +611,16 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  activity['text'] as String,
+                  text,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.textDark,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
-                  activity['time'] as String,
-                  style: const TextStyle(
-                    color: Colors.white54,
+                  DateFormat('MMM d, h:mm a').format(submission.createdAt),
+                  style: TextStyle(
+                    color: Colors.grey[500],
                     fontSize: 12,
                   ),
                 ),
@@ -479,61 +632,86 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     );
   }
 
-  Widget _buildAchievements() {
+  Widget _buildAchievements(AsyncValue<List<AchievementBadge>> badgesAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Achievements',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Achievements',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDark,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AllBadgesScreen()),
+                );
+              },
+              child: const Text('See All'),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildAchievementBadge('First Aid Pro', Icons.health_and_safety, true),
-              _buildAchievementBadge('Quick Responder', Icons.flash_on, true),
-              _buildAchievementBadge('Verifier', Icons.verified, true),
-              _buildAchievementBadge('Night Owl', Icons.nights_stay, false),
-              _buildAchievementBadge('100 Tasks', Icons.emoji_events, false),
-            ],
-          ),
+        badgesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, s) => Text('Error loading badges: $e'),
+          data: (badges) {
+            // Filter to show only unlocked first, or maybe just list them
+            // Let's show a mix, but prioritize interesting ones.
+            // Or just show the first 5 defined in provider.
+            // Smoothing: Unlocked first
+            final sortedBadges = List<AchievementBadge>.from(badges)
+              ..sort((a, b) {
+                if (a.isUnlocked && !b.isUnlocked) return -1;
+                if (!a.isUnlocked && b.isUnlocked) return 1;
+                return 0;
+              });
+
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: sortedBadges.map((b) => _buildAchievementBadge(b)).toList(),
+              ),
+            );
+          },
         ),
       ],
     ).animate().fadeIn(delay: 800.ms);
   }
 
-  Widget _buildAchievementBadge(String label, IconData icon, bool unlocked) {
+  Widget _buildAchievementBadge(AchievementBadge badge) {
     return Container(
       width: 100,
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: unlocked ? AppTheme.volunteerAccent.withOpacity(0.2) : const Color(0xFF1E1E3F),
+        color: badge.isUnlocked ? badge.color.withOpacity(0.1) : Colors.grey[100],
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: unlocked ? AppTheme.volunteerAccent : Colors.white10,
+          color: badge.isUnlocked ? badge.color.withOpacity(0.3) : Colors.grey[300]!,
         ),
       ),
       child: Column(
         children: [
           Icon(
-            icon,
-            color: unlocked ? AppTheme.volunteerAccent : Colors.white30,
+            badge.icon,
+            color: badge.isUnlocked ? badge.color : Colors.grey[400],
             size: 32,
           ),
           const SizedBox(height: 8),
           Text(
-            label,
+            badge.name,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 11,
-              color: unlocked ? Colors.white : Colors.white30,
+              color: badge.isUnlocked ? AppTheme.textDark : Colors.grey[500],
             ),
           ),
         ],

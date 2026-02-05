@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/models/user_model.dart';
-import '../../../../core/enums/app_enums.dart';
+import '../../../../core/services/api_service.dart';
 import '../../data/repositories/auth_repository.dart';
 
 part 'auth_provider.g.dart';
 
 // Storage key for persisted user session
 const String _userSessionKey = 'user_session';
+const String _authTokenKey = 'auth_token';
 
 /// Auth State Notifier - keepAlive: true prevents state from resetting on navigation
 @Riverpod(keepAlive: true)
@@ -25,9 +26,25 @@ class AuthController extends _$AuthController {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString(_userSessionKey);
+      final token = prefs.getString(_authTokenKey);
+
       if (userJson != null) {
+        // MIGRATION FIX: If user exists but token is missing/null, 
+        // invalidate session to force re-login
+        if (token == null) {
+          print('DEBUG: Migration detected - User exists but token is null. Clearing session.');
+          await _clearSession();
+          state = null;
+          return;
+        }
+
         final userData = jsonDecode(userJson) as Map<String, dynamic>;
-        state = User.fromJson(userData);
+        final user = User.fromJson(userData);
+        state = user;
+        
+        // SYNC TOKEN WITH API SERVICE
+        ref.read(apiServiceProvider).setAuthToken(token);
+        print('DEBUG: Session restored, token set in ApiService');
       }
     } catch (e) {
       // Session restoration failed, user will need to login again
@@ -41,6 +58,12 @@ class AuthController extends _$AuthController {
       final prefs = await SharedPreferences.getInstance();
       final userJson = jsonEncode(user.toJson());
       await prefs.setString(_userSessionKey, userJson);
+      
+      // Save token explicitly
+      final token = ref.read(apiServiceProvider).authToken;
+      if (token != null) {
+        await prefs.setString(_authTokenKey, token);
+      }
     } catch (e) {
       print('Session save failed: $e');
     }
@@ -51,6 +74,7 @@ class AuthController extends _$AuthController {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userSessionKey);
+      await prefs.remove(_authTokenKey);
     } catch (e) {
       print('Session clear failed: $e');
     }

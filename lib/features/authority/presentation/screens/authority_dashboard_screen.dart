@@ -5,16 +5,19 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import 'manage_tasks_screen.dart' as manage_tasks;
 
 /// Authority Dashboard - Command Center for Authorities
 class AuthorityDashboardScreen extends ConsumerStatefulWidget {
   const AuthorityDashboardScreen({super.key});
 
   @override
-  ConsumerState<AuthorityDashboardScreen> createState() => _AuthorityDashboardScreenState();
+  ConsumerState<AuthorityDashboardScreen> createState() =>
+      _AuthorityDashboardScreenState();
 }
 
-class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScreen> {
+class _AuthorityDashboardScreenState
+    extends ConsumerState<AuthorityDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -23,22 +26,22 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: AppTheme.backgroundLight,
       drawer: _buildDrawer(),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A1A),
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.neutralGray),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Authority Command Center',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
+            icon: const Icon(Icons.menu, color: AppTheme.neutralGray),
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
         ],
@@ -65,7 +68,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
 
   Widget _buildDrawer() {
     return Drawer(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: Colors.white,
       child: SafeArea(
         child: Column(
           children: [
@@ -74,7 +77,10 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppTheme.authorityAccent, AppTheme.authorityAccent.withOpacity(0.7)],
+                  colors: [
+                    AppTheme.authorityAccent,
+                    AppTheme.authorityAccent.withOpacity(0.7)
+                  ],
                 ),
               ),
               child: Row(
@@ -85,7 +91,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.shield, color: Colors.white, size: 32),
+                    child:
+                        const Icon(Icons.shield, color: Colors.white, size: 32),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -116,11 +123,16 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 padding: const EdgeInsets.all(16),
                 children: [
                   _buildDrawerSection('Emergency Contacts'),
-                  _buildDrawerItem(Icons.local_police, 'Police Control Room', '100', Colors.blue),
-                  _buildDrawerItem(Icons.local_fire_department, 'Fire Services', '101', Colors.red),
-                  _buildDrawerItem(Icons.medical_services, 'Ambulance', '102', Colors.green),
-                  _buildDrawerItem(Icons.emergency, 'Disaster Response', '108', Colors.orange),
-                  _buildDrawerItem(Icons.help_outline, 'National Emergency', '112', AppTheme.primaryRed),
+                  _buildDrawerItem(Icons.local_police, 'Police Control Room',
+                      '100', Colors.blue),
+                  _buildDrawerItem(Icons.local_fire_department, 'Fire Services',
+                      '101', Colors.red),
+                  _buildDrawerItem(
+                      Icons.medical_services, 'Ambulance', '102', Colors.green),
+                  _buildDrawerItem(Icons.emergency, 'Disaster Response', '108',
+                      Colors.orange),
+                  _buildDrawerItem(Icons.help_outline, 'National Emergency',
+                      '112', AppTheme.primaryRed),
                   const SizedBox(height: 24),
                   _buildDrawerSection('Quick Actions'),
                   _buildDrawerMenuItem(Icons.map, 'View Heatmap', () {
@@ -130,6 +142,16 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                   _buildDrawerMenuItem(Icons.campaign, 'Broadcast Alert', () {
                     Navigator.pop(context);
                     _showBroadcastForm();
+                  }),
+                  _buildDrawerMenuItem(Icons.assignment, 'Manage Tasks', () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const manage_tasks.AuthorityManageTasksScreen(),
+                      ),
+                    );
                   }),
                   _buildDrawerMenuItem(Icons.analytics, 'Analytics', () {
                     Navigator.pop(context);
@@ -177,8 +199,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Colors.grey[600],
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -187,7 +209,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     );
   }
 
-  Widget _buildDrawerItem(IconData icon, String title, String number, Color color) {
+  Widget _buildDrawerItem(
+      IconData icon, String title, String number, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -202,7 +225,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           ),
           child: Icon(icon, color: color, size: 20),
         ),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
+        title: Text(title,
+            style: const TextStyle(color: AppTheme.textDark, fontSize: 14)),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -211,7 +235,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           ),
           child: Text(
             number,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
         onTap: () => _callEmergency(number),
@@ -226,9 +251,9 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: Colors.white.withOpacity(0.05),
-        leading: Icon(icon, color: Colors.white70, size: 20),
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+        leading: Icon(icon, color: Colors.grey[600], size: 20),
+        title: Text(title, style: const TextStyle(color: AppTheme.textDark)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: onTap,
       ),
     );
@@ -263,7 +288,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -274,7 +300,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('Logout'),
           ),
@@ -290,7 +317,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
         const Text(
           'Quick Emergency Calls',
           style: TextStyle(
-            color: Colors.white,
+            color: AppTheme.textDark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -300,10 +327,14 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildEmergencyButton(Icons.local_police, 'Police', '100', Colors.blue),
-              _buildEmergencyButton(Icons.local_fire_department, 'Fire', '101', Colors.red),
-              _buildEmergencyButton(Icons.medical_services, 'Medical', '102', Colors.green),
-              _buildEmergencyButton(Icons.emergency, 'Rescue', '108', Colors.orange),
+              _buildEmergencyButton(
+                  Icons.local_police, 'Police', '100', Colors.blue),
+              _buildEmergencyButton(
+                  Icons.local_fire_department, 'Fire', '101', Colors.red),
+              _buildEmergencyButton(
+                  Icons.medical_services, 'Medical', '102', Colors.green),
+              _buildEmergencyButton(
+                  Icons.emergency, 'Rescue', '108', Colors.orange),
             ],
           ),
         ),
@@ -311,7 +342,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     ).animate().fadeIn(delay: 100.ms);
   }
 
-  Widget _buildEmergencyButton(IconData icon, String label, String number, Color color) {
+  Widget _buildEmergencyButton(
+      IconData icon, String label, String number, Color color) {
     return GestureDetector(
       onTap: () => _callEmergency(number),
       child: Container(
@@ -333,7 +365,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
             ),
             Text(
               number,
-              style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: color, fontSize: 14, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -445,7 +478,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -485,7 +519,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
         const Text(
           'Quick Actions',
           style: TextStyle(
-            color: Colors.white,
+            color: AppTheme.textDark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -523,13 +557,44 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
               AppTheme.volunteerAccent,
               () => _showVolunteerManagement(),
             ),
+            _buildActionCard(
+              'Manage Tasks',
+              Icons.assignment,
+              Colors.purple,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const manage_tasks.AuthorityManageTasksScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildActionCard(
+              'Verify Submissions',
+              Icons.check_circle,
+              Colors.cyan,
+              () {
+                // Open task management; from there authority can pick a task
+                // and review its submissions with the verification screen.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const manage_tasks.AuthorityManageTasksScreen(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ],
     ).animate().fadeIn(delay: 400.ms);
   }
 
-  Widget _buildActionCard(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionCard(
+      String label, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -578,7 +643,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
             const Text(
               'Recent Alerts',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.textDark,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -591,15 +656,13 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
         ),
         const SizedBox(height: 16),
         ...List.generate(3, (index) => _buildAlertItem(index)),
-        
         const SizedBox(height: 16),
         const Divider(color: Colors.white10),
         const SizedBox(height: 16),
-        
         const Text(
           'Pending Verifications',
           style: TextStyle(
-            color: Colors.white,
+            color: AppTheme.textDark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -623,7 +686,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     ).animate().fadeIn(delay: 600.ms);
   }
 
-  Widget _buildVerificationItem(String title, String loc, String status, IconData icon, Color color) {
+  Widget _buildVerificationItem(
+      String title, String loc, String status, IconData icon, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -649,7 +713,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   loc,
@@ -658,7 +723,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 const SizedBox(height: 4),
                 Text(
                   status,
-                  style: const TextStyle(color: AppTheme.authorityAccent, fontSize: 11),
+                  style: const TextStyle(
+                      color: AppTheme.authorityAccent, fontSize: 11),
                 ),
               ],
             ),
@@ -680,9 +746,24 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
 
   Widget _buildAlertItem(int index) {
     final alerts = [
-      {'type': 'Fire', 'location': 'Sector 22', 'time': '10 min ago', 'severity': 'High'},
-      {'type': 'Traffic', 'location': 'Highway Junction', 'time': '25 min ago', 'severity': 'Medium'},
-      {'type': 'Medical', 'location': 'Central Park', 'time': '1 hour ago', 'severity': 'Low'},
+      {
+        'type': 'Fire',
+        'location': 'Sector 22',
+        'time': '10 min ago',
+        'severity': 'High'
+      },
+      {
+        'type': 'Traffic',
+        'location': 'Highway Junction',
+        'time': '25 min ago',
+        'severity': 'Medium'
+      },
+      {
+        'type': 'Medical',
+        'location': 'Central Park',
+        'time': '1 hour ago',
+        'severity': 'Low'
+      },
     ];
 
     final alert = alerts[index];
@@ -734,13 +815,15 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                     ),
                     Text(
                       alert['time']!,
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: severityColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -763,7 +846,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 child: OutlinedButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Opening incident details...')),
+                      const SnackBar(
+                          content: Text('Opening incident details...')),
                     );
                   },
                   style: OutlinedButton.styleFrom(
@@ -841,7 +925,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.map, size: 80, color: AppTheme.authorityAccent),
+                      Icon(Icons.map,
+                          size: 80, color: AppTheme.authorityAccent),
                       SizedBox(height: 16),
                       Text(
                         'Interactive Heatmap',
@@ -936,7 +1021,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Severity Level', style: TextStyle(color: Colors.white70)),
+              const Text('Severity Level',
+                  style: TextStyle(color: Colors.white70)),
               const SizedBox(height: 8),
               Row(
                 children: ['Low', 'Medium', 'High'].map((level) {
@@ -948,7 +1034,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                           : Colors.green;
                   return Expanded(
                     child: GestureDetector(
-                      onTap: () => setModalState(() => selectedSeverity = level),
+                      onTap: () =>
+                          setModalState(() => selectedSeverity = level),
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1053,7 +1140,10 @@ class AnalyticsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text(
               'Incident Types',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildBarChart(),
@@ -1063,7 +1153,8 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, String change, bool isPositive) {
+  Widget _buildMetricCard(
+      String label, String value, String change, bool isPositive) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1162,7 +1253,10 @@ class AnalyticsScreen extends StatelessWidget {
                           height: 24,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [AppTheme.authorityAccent, AppTheme.primaryGreen],
+                              colors: [
+                                AppTheme.authorityAccent,
+                                AppTheme.primaryGreen
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1174,7 +1268,8 @@ class AnalyticsScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   '${item['value']}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

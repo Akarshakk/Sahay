@@ -53,8 +53,13 @@ class AuthRepository implements IAuthRepository {
   Future<User?> updateProfile(Map<String, dynamic> data) async {
     try {
       final userData = await _apiService.updateProfile(data);
+      print('DEBUG: updateProfile response: ${userData.toString()}');
+      print('DEBUG: emergencyContacts from response: ${userData['emergencyContacts']}');
       
       // Backend returns the User object directly
+      final mappedContacts = _mapContacts(userData['emergencyContacts']);
+      print('DEBUG: Mapped emergency contacts: $mappedContacts');
+      
       _currentUser = User(
         id: userData['id']?.toString() ?? _currentUser?.id ?? '',
         name: userData['fullName'] ?? _currentUser?.name ?? 'User',
@@ -71,11 +76,13 @@ class AuthRepository implements IAuthRepository {
         authorityCode: userData['authorityCode'] ?? _currentUser?.authorityCode,
         department: userData['department'] ?? _currentUser?.department,
         registrationNumber: userData['registrationNumber'] ?? _currentUser?.registrationNumber,
-        emergencyContacts: _mapContacts(userData['emergencyContacts']) ?? _currentUser?.emergencyContacts,
+        emergencyContacts: mappedContacts ?? _currentUser?.emergencyContacts,
       );
       
+      print('DEBUG: Updated user with emergencyContacts: ${_currentUser?.emergencyContacts}');
       return _currentUser;
     } catch (e) {
+      print('ERROR in updateProfile: $e');
       rethrow;
     }
   }
@@ -87,10 +94,18 @@ class AuthRepository implements IAuthRepository {
         'phone': phone,
         'password': password,
       });
+      
+      print('DEBUG: Login response: ${response.toString()}');
 
       // Backend returns: { user: {...}, accessToken: "..." }
       if (response['user'] != null) {
         final userData = response['user'] as Map<String, dynamic>;
+        print('DEBUG: User data from login: ${userData.toString()}');
+        print('DEBUG: Emergency contacts in login response: ${userData['emergencyContacts']}');
+        
+        final mappedContacts = _mapContacts(userData['emergencyContacts']);
+        print('DEBUG: Mapped contacts from login: $mappedContacts');
+        
         _currentUser = User(
           id: userData['id']?.toString() ?? '',
           name: userData['fullName'] ?? 'User',
@@ -103,16 +118,19 @@ class AuthRepository implements IAuthRepository {
           registeredArea: userData['registeredArea'],
           identityDocumentUrl: userData['identityDocumentUrl'],
           identityDocumentType: userData['identityDocumentType'],
-          emergencyContacts: _mapContacts(userData['emergencyContacts']),
+          emergencyContacts: mappedContacts,
         );
 
         if (response['accessToken'] != null) {
           _apiService.setAuthToken(response['accessToken']);
         }
+        
+        print('DEBUG: Login successful. User emergency contacts: ${_currentUser?.emergencyContacts}');
         return _currentUser;
       }
       return null;
     } catch (e) {
+      print('ERROR in login: $e');
       rethrow;
     }
   }

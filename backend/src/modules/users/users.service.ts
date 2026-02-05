@@ -89,17 +89,51 @@ export class UsersService {
     const userRef = this.usersCollection.doc(id);
     const doc = await userRef.get();
 
+    console.log('DEBUG: Updating user', id, JSON.stringify(updateUserDto, null, 2));
+
     if (!doc.exists) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    const updateData = {
-      ...updateUserDto,
-      updatedAt: new Date(),
-    };
+    try {
+      // Build update object with only provided fields
+      const updateData: any = {};
+      
+      // Only include fields that are defined in the DTO
+      if (updateUserDto.fullName !== undefined) updateData.fullName = updateUserDto.fullName;
+      if (updateUserDto.phone !== undefined) updateData.phone = updateUserDto.phone;
+      if (updateUserDto.avatarUrl !== undefined) updateData.avatarUrl = updateUserDto.avatarUrl;
+      if (updateUserDto.profession !== undefined) updateData.profession = updateUserDto.profession;
+      if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address;
+      if (updateUserDto.registeredArea !== undefined) updateData.registeredArea = updateUserDto.registeredArea;
+      if (updateUserDto.registeredAreaId !== undefined) updateData.registeredAreaId = updateUserDto.registeredAreaId;
+      if (updateUserDto.identityDocumentUrl !== undefined) updateData.identityDocumentUrl = updateUserDto.identityDocumentUrl;
+      if (updateUserDto.identityDocumentType !== undefined) updateData.identityDocumentType = updateUserDto.identityDocumentType;
+      
+      // Handle emergency contacts - convert to plain objects
+      if (updateUserDto.emergencyContacts !== undefined) {
+        updateData.emergencyContacts = updateUserDto.emergencyContacts.map(contact => ({
+          name: contact.name,
+          phone: contact.phone,
+          relation: contact.relation,
+        }));
+        console.log('DEBUG: Saving emergency contacts:', JSON.stringify(updateData.emergencyContacts, null, 2));
+      }
+      
+      updateData.updatedAt = new Date();
 
-    await userRef.update(updateData);
-    return this.findById(id);
+      console.log('DEBUG: Final update data:', JSON.stringify(updateData, null, 2));
+      await userRef.update(updateData);
+      console.log('DEBUG: User updated successfully');
+      
+      const updatedUser = await this.findById(id);
+      console.log('DEBUG: Retrieved updated user with emergencyContacts:', JSON.stringify(updatedUser.emergencyContacts, null, 2));
+      console.log('DEBUG: Full updated user being returned:', JSON.stringify(updatedUser, null, 2));
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
   }
 
   async updateLocation(id: string, latitude: number, longitude: number): Promise<User> {

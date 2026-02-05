@@ -89,7 +89,7 @@ class ResourcesScreen extends StatelessWidget {
                 ),
                 Text(
                   status,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppTheme.neutralGray,
                     fontWeight: FontWeight.w500,
                   ),
@@ -97,7 +97,7 @@ class ResourcesScreen extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.chevron_right, color: AppTheme.neutralGray),
+          const Icon(Icons.chevron_right, color: AppTheme.neutralGray),
         ],
       ),
     );

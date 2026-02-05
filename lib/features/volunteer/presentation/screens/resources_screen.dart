@@ -137,21 +137,24 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A1A),
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.neutralGray),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Emergency Resources',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppTheme.textDark,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: AppTheme.neutralGray),
             onPressed: () {},
           ),
         ],
@@ -159,7 +162,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
           controller: _tabController,
           indicatorColor: AppTheme.primaryGreen,
           labelColor: AppTheme.primaryGreen,
-          unselectedLabelColor: Colors.white54,
+          unselectedLabelColor: Colors.grey,
           tabs: const [
             Tab(text: 'All'),
             Tab(text: 'Medical'),
@@ -214,10 +217,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatColumn('$available', 'Available', AppTheme.primaryGreen),
-          Container(width: 1, height: 40, color: Colors.white24),
+          Container(width: 1, height: 40, color: Colors.grey.shade300),
           _buildStatColumn('${total - available}', 'In Use', AppTheme.primaryOrange),
-          Container(width: 1, height: 40, color: Colors.white24),
-          _buildStatColumn('$total', 'Total', Colors.white),
+          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          _buildStatColumn('$total', 'Total', AppTheme.textDark),
         ],
       ),
     ).animate().fadeIn().slideY(begin: -0.2, end: 0);
@@ -236,7 +239,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(color: Colors.grey[600], fontSize: 12),
         ),
       ],
     );
@@ -251,7 +254,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E3F),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -304,15 +307,15 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
         : _resources.where((r) => r.category == category).toList();
 
     if (filtered.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2, size: 64, color: Colors.white24),
-            SizedBox(height: 16),
+            Icon(Icons.inventory_2, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
             Text(
               'No resources in this category',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -332,11 +335,18 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E3F),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: resource.available ? Colors.white10 : Colors.red.withOpacity(0.3),
+          color: resource.available ? Colors.grey.shade200 : Colors.red.withOpacity(0.3),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -357,7 +367,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
             title: Text(
               resource.name,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.textDark,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -367,11 +377,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 14, color: Colors.white54),
+                    Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       resource.location,
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ),
@@ -396,7 +406,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
               ],
             ),
             trailing: IconButton(
-              icon: const Icon(Icons.info_outline, color: Colors.white54, size: 20),
+              icon: Icon(Icons.info_outline, color: Colors.grey[600], size: 20),
               onPressed: () => _showResourceDetails(resource),
             ),
           ),
@@ -408,7 +418,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
               children: [
                 Text(
                   'Stock: ${resource.quantity} units',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
                 ),
                 Row(
                   children: [
@@ -429,13 +439,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white10,
+                        color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${resource.quantity}',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.textDark,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -487,7 +497,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
   void _showResourceDetails(ResourceItem resource) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E3F),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -515,14 +525,14 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
                       Text(
                         resource.name,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.textDark,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         resource.category,
-                        style: const TextStyle(color: Colors.white54),
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -571,16 +581,16 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white54, size: 20),
+          Icon(icon, color: Colors.grey[600], size: 20),
           const SizedBox(width: 12),
           Text(
             '$label:',
-            style: const TextStyle(color: Colors.white54),
+            style: TextStyle(color: Colors.grey[600]),
           ),
           const SizedBox(width: 8),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+            style: const TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -591,38 +601,38 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E3F),
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Request Resources', style: TextStyle(color: Colors.white)),
+        title: const Text('Request Resources', style: TextStyle(color: AppTheme.textDark)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               decoration: InputDecoration(
                 hintText: 'Resource name',
-                hintStyle: const TextStyle(color: Colors.white38),
+                hintStyle: TextStyle(color: Colors.grey[500]),
                 filled: true,
-                fillColor: Colors.white10,
+                fillColor: Colors.grey[100],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: AppTheme.textDark),
             ),
             const SizedBox(height: 12),
             TextField(
               decoration: InputDecoration(
                 hintText: 'Quantity needed',
-                hintStyle: const TextStyle(color: Colors.white38),
+                hintStyle: TextStyle(color: Colors.grey[500]),
                 filled: true,
-                fillColor: Colors.white10,
+                fillColor: Colors.grey[100],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: AppTheme.textDark),
               keyboardType: TextInputType.number,
             ),
           ],
@@ -630,7 +640,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
           ),
           ElevatedButton(
             onPressed: () {

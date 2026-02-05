@@ -8,6 +8,11 @@ export const FIREBASE_APP = 'FIREBASE_APP';
 export const firebaseProvider: Provider = {
   provide: FIREBASE_APP,
   useFactory: () => {
+    // Check if Firebase app already exists to avoid re-initialization
+    if (admin.apps.length > 0) {
+      return admin.apps[0];
+    }
+
     // Try to load from JSON file first (recommended for development)
     const credentialPath = path.join(process.cwd(), 'sahay-ai-firebase.json');
 

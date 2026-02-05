@@ -26,6 +26,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _emailController = TextEditingController();
   final _professionController = TextEditingController();
   final _addressController = TextEditingController();
+  final _registeredAreaController = TextEditingController();
 
   String? _profileImagePath;
   String? _currentLocation;
@@ -58,6 +59,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _emailController.text = user.email ?? profileData.email;
     _professionController.text = user.profession ?? profileData.profession;
     _addressController.text = user.address ?? profileData.address;
+    _registeredAreaController.text = user.registeredArea ?? '';
     _profileImagePath = profileData.profileImagePath;
 
     // Sync profile provider with current user data
@@ -141,6 +143,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _emailController.dispose();
     _professionController.dispose();
     _addressController.dispose();
+    _registeredAreaController.dispose();
     super.dispose();
   }
 
@@ -441,7 +444,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               const SizedBox(height: 16),
 
-              // Address
               _isEditing
                   ? _buildEditableField(
                       controller: _addressController,
@@ -455,6 +457,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ? (user?.address ?? profileData.address)
                           : 'Not set',
                       icon: Icons.home,
+                    ),
+
+              const SizedBox(height: 16),
+
+              // City (Registered Area)
+              _isEditing
+                  ? _buildEditableField(
+                      controller: _registeredAreaController,
+                      label: 'City',
+                      icon: Icons.location_city,
+                    )
+                  : _buildInfoTile(
+                      label: 'City',
+                      value: (user?.registeredArea ?? '').isNotEmpty
+                          ? (user?.registeredArea ?? '')
+                          : 'Not set',
+                      icon: Icons.location_city,
                     ),
 
               const SizedBox(height: 24),
@@ -710,7 +729,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _formatDocumentType(user?.identityDocumentType ?? 'Document'),
+                          _formatDocumentType(user.identityDocumentType ?? 'Document'),
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppTheme.neutralGray,
@@ -729,7 +748,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.visibility, color: AppTheme.primaryRed),
-                    onPressed: () => _viewDocument(user!.identityDocumentUrl!),
+                    onPressed: () => _viewDocument(user.identityDocumentUrl!),
                     tooltip: 'View Document',
                   ),
                 ],
@@ -744,11 +763,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.primaryOrange.withOpacity(0.3)),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Icon(Icons.info_outline, color: AppTheme.primaryOrange, size: 24),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  Icon(Icons.info_outline, color: AppTheme.primaryOrange, size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
                     child: Text(
                       'No documents uploaded yet',
                       style: TextStyle(
@@ -954,38 +973,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _isLoading = true;
     });
 
-    // Save to provider (with persistence)
-    await ref.read(profileProvider.notifier).updateProfile(
-          name: _nameController.text,
-          phone: _phoneController.text,
-          email: _emailController.text,
-          profession: _professionController.text,
-          address: _addressController.text,
-          profileImagePath: _profileImagePath,
-        );
+    // Save to backend first
+    try {
+      await ref.read(authControllerProvider.notifier).updateUser({
+        'fullName': _nameController.text,
+        'phone': _phoneController.text,
+        // Email cannot be updated directly via this endpoint
+        'profession': _professionController.text,
+        'address': _addressController.text,
+        'registeredArea': _registeredAreaController.text,
+      });
 
-    if (!mounted) return;
+      // Then save to local provider (with persistence)
+      await ref.read(profileProvider.notifier).updateProfile(
+            name: _nameController.text,
+            phone: _phoneController.text,
+            email: _emailController.text,
+            profession: _professionController.text,
+            address: _addressController.text,
+            profileImagePath: _profileImagePath,
+          );
 
-    setState(() {
-      _isLoading = false;
-      _isEditing = false;
-    });
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 12),
-            Text('Profile saved successfully!'),
-          ],
+      setState(() {
+        _isLoading = false;
+        _isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Profile saved successfully!'),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
         ),
-        backgroundColor: AppTheme.primaryGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update profile: $e'),
+          backgroundColor: AppTheme.primaryRed,
+        ),
+      );
+    }
   }
 
   List<Color> _getRoleColors(String role) {

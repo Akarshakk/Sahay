@@ -20,11 +20,15 @@ class WebSocketService {
     });
 
     _socket?.on('disconnect', (_) {
-      print('❌ WebSocket disconnected');
+      print('❌ WebSocket disconnected. Attempting to reconnect...');
     });
 
     _socket?.on('error', (error) {
       print('⚠️ WebSocket error: $error');
+    });
+    
+    _socket?.on('reconnect', (_) {
+      print('🔄 WebSocket reconnected');
     });
   }
 

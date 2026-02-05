@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/hardware_trigger_service.dart';
 import '../../../../core/services/api_service.dart';
@@ -11,7 +13,6 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/models/incident_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../incidents/presentation/providers/incident_provider.dart';
 import '../../../incidents/presentation/screens/incident_report_form_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../emergency_contacts/presentation/screens/e_contact_screen.dart';
@@ -20,7 +21,7 @@ import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../../faq/presentation/screens/top_questions_screen.dart';
 import '../../../feed/presentation/screens/community_feed_screen.dart';
 import '../../../volunteer/presentation/screens/volunteer_dashboard_screen.dart';
-import '../../../volunteer/presentation/screens/volunteer_tasks_screen.dart';
+import '../../../volunteer/presentation/screens/volunteer_tasks_detailed_screen.dart';
 import '../../../volunteer/presentation/screens/resources_screen.dart';
 import '../../../authority/presentation/screens/heatmap_screen.dart';
 import '../../../authority/presentation/screens/analytics_screen.dart';
@@ -48,9 +49,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const double _defaultLatitude = 19.0760;
   static const double _defaultLongitude = 72.8777;
   
+  List<Map<String, dynamic>> _notifications = [];
+  
   @override
   void initState() {
     super.initState();
+    _loadNotifications();
     // Hardware Trigger Listener
     HardwareTriggerService().onEmergencyTriggered = _submitEmergencySOS;
     HardwareTriggerService().initialize();
@@ -71,15 +75,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // Join Region
-    // Fix: Check if user is not null, state is not null, AND state is not empty. 
-    // Uses user!.state! to access the promoted non-null value in the joinRegion call.
-    if (user != null && user.state != null && user.state!.isNotEmpty) {
-      ws.joinRegion(user.state!);
+    if (user != null) {
+      if (user.registeredArea != null && user.registeredArea!.isNotEmpty) {
+        ws.joinRegion(user.registeredArea!);
+        _fetchMissedBroadcasts(user.registeredArea!);
+      } else if (user.state != null && user.state!.isNotEmpty) {
+        ws.joinRegion(user.state!);
+        _fetchMissedBroadcasts(user.state!);
+      }
     }
 
     // Listen for Broadcasts
     ws.onEmergencyBroadcast((data) {
       if (!mounted) return;
+      _saveNotification(data['data']);
       _showBroadcastDialog(data['data']);
     });
   }
@@ -91,11 +100,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: AppTheme.primaryRed, size: 28),
-            const SizedBox(width: 12),
-            const Expanded(child: Text('EMERGENCY ALERT', style: TextStyle(color: AppTheme.primaryRed, fontWeight: FontWeight.bold))),
+            Icon(Icons.warning_amber_rounded, color: AppTheme.primaryRed, size: 28),
+            SizedBox(width: 12),
+            Expanded(child: Text('EMERGENCY ALERT', style: TextStyle(color: AppTheme.primaryRed, fontWeight: FontWeight.bold))),
           ],
         ),
         content: Column(
@@ -415,7 +424,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.volunteerAccent,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const VolunteerTasksScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const VolunteerTasksDetailedScreen(),
+                    ),
                   ),
                 ),
               ),
@@ -910,117 +921,129 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// Trigger Emergency SOS - Shows emergency call/SMS options
-  Future<void> _triggerEmergencySOS() async {
-    // Get current location
-    final locationData = ref.read(currentLocationProvider).valueOrNull;
-    final locationText = locationData != null 
-        ? '📍 ${locationData.address}\n(${locationData.latitude.toStringAsFixed(4)}, ${locationData.longitude.toStringAsFixed(4)})'
-        : '📍 Location unavailable';
+ // Trigger Emergency SOS - Shows emergency call/SMS options
+Future<void> _triggerEmergencySOS() async {
+  // Get current location
+  final locationData = ref.read(currentLocationProvider).valueOrNull;
+  final locationText = locationData != null 
+      ? '📍 ${locationData.address}\n(${locationData.latitude.toStringAsFixed(4)}, ${locationData.longitude.toStringAsFixed(4)})'
+      : '📍 Location unavailable';
 
-    // Show Emergency Dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryRed.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.emergency, color: AppTheme.primaryRed, size: 28),
-            ),
-            const SizedBox(width: 12),
-            const Text('Emergency SOS', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              locationText,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 16),
-            
-            // Trigger Alert Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _submitEmergencySOS();
-                },
-                icon: const Icon(Icons.notifications_active),
-                label: const Text('TRIGGER SOS ALERT (LOG HISTORY)'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+  // Load custom numbers
+  final user = ref.read(authControllerProvider);
+  final userId = user?.id ?? 'guest';
+  final prefs = await SharedPreferences.getInstance();
+  final policeNum = prefs.getString('${userId}_sos_police') ?? '112';
+  final fireNum = prefs.getString('${userId}_sos_fire') ?? '101';
+  final ambulanceNum = prefs.getString('${userId}_sos_ambulance') ?? '108';
+  final womenNum = prefs.getString('${userId}_sos_women') ?? '181';
 
-            const Text('Select emergency service to call:', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            // Emergency Call Buttons
-            _buildEmergencyCallButton(
-              icon: Icons.local_police,
-              label: 'Police',
-              number: '112',
-              color: const Color(0xFF1565C0),
+  if (!mounted) return;
+
+  // Show Emergency Dialog
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryRed.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 8),
-            _buildEmergencyCallButton(
-              icon: Icons.local_fire_department,
-              label: 'Fire Brigade',
-              number: '101',
-              color: const Color(0xFFD32F2F),
-            ),
-            const SizedBox(height: 8),
-            _buildEmergencyCallButton(
-              icon: Icons.medical_services,
-              label: 'Ambulance',
-              number: '108',
-              color: const Color(0xFFE53935),
-            ),
-            const SizedBox(height: 8),
-            _buildEmergencyCallButton(
-              icon: Icons.woman,
-              label: 'Women Helpline',
-              number: '181',
-              color: const Color(0xFF8E24AA),
-            ),
-            const SizedBox(height: 16),
-            // SMS Button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _sendEmergencySMS(locationData),
-                icon: const Icon(Icons.sms),
-                label: const Text('Send SMS to Emergency Contacts'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primaryRed,
-                  side: const BorderSide(color: AppTheme.primaryRed),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+            child: const Icon(Icons.emergency, color: AppTheme.primaryRed, size: 28),
+          ),
+          const SizedBox(width: 12),
+          const Text('Emergency SOS', style: TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            locationText,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 16),
+          
+          // Trigger Alert Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _submitEmergencySOS();
+              },
+              icon: const Icon(Icons.notifications_active),
+              label: const Text('TRIGGER SOS ALERT (LOG HISTORY)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+          ),
+          const SizedBox(height: 16),
+
+          const Text('Select emergency service to call:', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          // Emergency Call Buttons
+          _buildEmergencyCallButton(
+            icon: Icons.local_police,
+            label: 'Police ($policeNum)',
+            number: policeNum,
+            color: const Color(0xFF1565C0),
+          ),
+          const SizedBox(height: 8),
+          _buildEmergencyCallButton(
+            icon: Icons.local_fire_department,
+            label: 'Fire Brigade ($fireNum)',
+            number: fireNum,
+            color: const Color(0xFFD32F2F),
+          ),
+          const SizedBox(height: 8),
+          _buildEmergencyCallButton(
+            icon: Icons.medical_services,
+            label: 'Ambulance ($ambulanceNum)',
+            number: ambulanceNum,
+            color: const Color(0xFFE53935),
+          ),
+          const SizedBox(height: 8),
+          _buildEmergencyCallButton(
+            icon: Icons.woman,
+            label: 'Women Helpline ($womenNum)',
+            number: womenNum,
+            color: const Color(0xFF8E24AA),
+          ),
+          const SizedBox(height: 16),
+          // SMS Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _sendEmergencySMS(locationData),
+              icon: const Icon(Icons.sms),
+              label: const Text('Send SMS to Emergency Contacts'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryRed,
+                side: const BorderSide(color: AppTheme.primaryRed),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
           ),
         ],
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ],
+    ),
+  );
+}
 
   /// Build emergency call button
   Widget _buildEmergencyCallButton({
@@ -1474,51 +1497,182 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Notifications',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const Divider(),
-            _buildNotificationItem(
-              icon: Icons.warning_amber,
-              title: 'High Alert: Heavy Rain Warning',
-              subtitle: 'Mumbai region - Take precautions',
-              time: '10 min ago',
-              color: AppTheme.primaryOrange,
-            ),
-            _buildNotificationItem(
-              icon: Icons.check_circle,
-              title: 'SOS Resolved',
-              subtitle: 'Your report #123 has been resolved',
-              time: '1 hour ago',
-              color: AppTheme.primaryGreen,
-            ),
-            _buildNotificationItem(
-              icon: Icons.campaign,
-              title: 'Community Alert',
-              subtitle: 'Traffic diversion on Western Express',
-              time: '3 hours ago',
-              color: AppTheme.citizenAccent,
-            ),
-          ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Notifications',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const Divider(),
+              if (_notifications.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      'No new notifications',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                )
+              else
+                ..._notifications.map((n) => _buildNotificationItem(
+                  icon: Icons.warning_amber,
+                  title: n['title'] ?? 'Alert',
+                  subtitle: n['message'] ?? '',
+                  time: _formatTime(DateTime.tryParse(n['time'] ?? '') ?? DateTime.now()),
+                  color: (n['priority'] == 'High' || n['priority'] == 'Critical') 
+                      ? AppTheme.primaryRed 
+                      : AppTheme.primaryOrange,
+                )),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _fetchMissedBroadcasts(String region) async {
+    try {
+      final broadcasts = await ref.read(apiServiceProvider).getBroadcasts(region);
+      bool shownDialog = false; // Only show one dialog to avoid stacking
+
+      // Sort by newest first
+      if (broadcasts.isNotEmpty) {
+        broadcasts.sort((a, b) {
+          DateTime? timeA;
+          DateTime? timeB;
+          
+          // Handle Firestore Timestamp format
+          if (a['createdAt'] is Map) {
+            final int? secondsA = a['createdAt']['_seconds'];
+            if (secondsA != null) {
+              timeA = DateTime.fromMillisecondsSinceEpoch(secondsA * 1000);
+            }
+          } else if (a['createdAt'] is String) {
+            timeA = DateTime.tryParse(a['createdAt']);
+          }
+          
+          if (b['createdAt'] is Map) {
+            final int? secondsB = b['createdAt']['_seconds'];
+            if (secondsB != null) {
+              timeB = DateTime.fromMillisecondsSinceEpoch(secondsB * 1000);
+            }
+          } else if (b['createdAt'] is String) {
+            timeB = DateTime.tryParse(b['createdAt']);
+          }
+          
+          if (timeA == null || timeB == null) return 0;
+          return timeB.compareTo(timeA);
+        });
+      }
+
+      print('DEBUG: Fetched ${broadcasts.length} broadcasts for region $region');
+      
+      for (var b in broadcasts) {
+        // Check if already saved
+        final prefs = await SharedPreferences.getInstance();
+        final List<String> list = prefs.getStringList('notifications') ?? [];
+        bool exists = list.any((n) {
+          final decoded = jsonDecode(n);
+          return decoded['title'] == b['title'] && decoded['message'] == b['message'];
+        });
+        
+        if (!exists) {
+           _saveNotification(b);
+        }
+
+        // Check if active (less than 1 hour old)
+        if (!shownDialog && b['createdAt'] != null) {
+          DateTime? createdAt;
+          if (b['createdAt'] is String) {
+            createdAt = DateTime.tryParse(b['createdAt']);
+          } else if (b['createdAt'] is Map) {
+             // Handle Firestore Timestamp
+             final int? seconds = b['createdAt']['_seconds'];
+             if (seconds != null) {
+               createdAt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+             }
+          }
+
+          if (createdAt != null) {
+            final now = DateTime.now();
+            final difference = now.difference(createdAt.toLocal()); // Convert UTC to Local for comparison
+            
+            print('DEBUG: Broadcast "${b['title']}" Created: ${createdAt.toLocal()}, Now: $now, Diff (min): ${difference.inMinutes}');
+            
+            // Show dialog for broadcasts from the last 24 hours that haven't been shown yet
+            if (difference.inHours < 24 && difference.inMinutes >= 0) {
+              // Check if this broadcast was already shown
+              final prefs = await SharedPreferences.getInstance();
+              final shownBroadcasts = prefs.getStringList('shown_broadcasts') ?? [];
+              
+              if (!shownBroadcasts.contains(b['id'])) {
+                print('DEBUG: Showing dialog for "${b['title']}"');
+                _showBroadcastDialog(b);
+                
+                // Mark this broadcast as shown
+                shownBroadcasts.add(b['id']);
+                await prefs.setStringList('shown_broadcasts', shownBroadcasts);
+                shownDialog = true;
+              } else {
+                print('DEBUG: Broadcast already shown before.');
+              }
+            } else {
+               print('DEBUG: Skipping dialog. Too old or in future.');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Failed to fetch broadcasts: $e');
+    }
+  }
+
+  Future<void> _loadNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> list = prefs.getStringList('notifications') ?? [];
+    setState(() {
+      _notifications = list.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+    });
+  }
+
+  Future<void> _saveNotification(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> list = prefs.getStringList('notifications') ?? [];
+    
+    final notification = {
+      'title': data['title'],
+      'message': data['message'],
+      'region': data['region'],
+      'priority': data['priority'],
+      'time': DateTime.now().toIso8601String(),
+      'read': false,
+    };
+    
+    list.insert(0, jsonEncode(notification)); // Add to top
+    if (list.length > 20) list.removeLast(); // Limit to 20
+    
+    await prefs.setStringList('notifications', list);
+    
+    if (mounted) {
+      setState(() {
+        _notifications = list.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+      });
+    }
   }
 
   Widget _buildNotificationItem({

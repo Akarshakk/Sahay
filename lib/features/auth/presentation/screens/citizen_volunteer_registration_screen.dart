@@ -486,7 +486,7 @@ class _CitizenVolunteerRegistrationScreenState
                       ),
                     ),
                     child: DropdownButtonFormField<String>(
-                      value: _selectedAreaId,
+                      initialValue: _selectedAreaId,
                       decoration: const InputDecoration(
                         labelText: 'Select Area *',
                         hintText: 'Choose your volunteer area',

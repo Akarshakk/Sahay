@@ -16,6 +16,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { SOSModule } from './modules/sos/sos.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
     UploadModule,
     SOSModule,
     BroadcastsModule,
+    TasksModule,
   ],
   controllers: [],
   providers: [],

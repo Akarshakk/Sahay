@@ -58,7 +58,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
       children: [
         Row(
           children: [
-            Text(
+            const Text(
               'Identity Document',
               style: TextStyle(
                 fontSize: 16,
@@ -67,7 +67,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
               ),
             ),
             if (widget.required)
-              Text(
+              const Text(
                 ' *',
                 style: TextStyle(
                   color: AppTheme.primaryRed,
@@ -94,7 +94,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
             border: Border.all(color: AppTheme.neutralGray.withValues(alpha: 0.2)),
           ),
           child: DropdownButtonFormField<String>(
-            value: _selectedDocumentType,
+            initialValue: _selectedDocumentType,
             decoration: InputDecoration(
               prefixIcon: Icon(Icons.description_outlined, color: widget.accentColor),
               border: InputBorder.none,

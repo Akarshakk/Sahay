@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -102,7 +101,7 @@ class _BroadcastScreenState extends ConsumerState<BroadcastScreen> {
             const Text('Priority Level', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedPriority,
+              initialValue: _selectedPriority,
               items: ['Low', 'Medium', 'High', 'Critical']
                   .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                   .toList(),
@@ -152,7 +151,7 @@ class _BroadcastScreenState extends ConsumerState<BroadcastScreen> {
       
       // Get current user's region
       final user = ref.read(authControllerProvider);
-      final region = user?.state ?? 'Unknown Region';
+      final region = user?.registeredArea ?? 'Unknown Region';
 
       final result = await api.sendBroadcast({
         'title': _titleController.text.trim(),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/enums/app_enums.dart';
 import '../../../../core/services/api_service.dart';
 
 /// SOS History Screen - Show previous SOS incidents

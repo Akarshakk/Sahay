@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
@@ -289,7 +288,7 @@ class _AuthorityRegistrationScreenState
                     border: Border.all(color: AppTheme.neutralGray.withValues(alpha: 0.2)),
                   ),
                   child: DropdownButtonFormField<String>(
-                    value: _selectedDocumentType,
+                    initialValue: _selectedDocumentType,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.description_outlined, color: AppTheme.authorityAccent),
                       border: InputBorder.none,

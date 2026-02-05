@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Settings Screen
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -61,6 +63,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _showVolunteerInfo();
             },
           ).animate().fadeIn(delay: 200.ms),
+          
+          const SizedBox(height: 8),
+
+          // Emergency Numbers
+          _buildSettingItem(
+            title: 'Emergency Numbers',
+            onTap: () {
+              _showEmergencyNumbersDialog();
+            },
+          ).animate().fadeIn(delay: 250.ms),
           
           const SizedBox(height: 8),
           
@@ -425,6 +437,78 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Delete Account'),
           ),
         ],
+      ),
+    );
+  }
+
+
+  Future<void> _showEmergencyNumbersDialog() async {
+    final user = ref.read(authControllerProvider);
+    final userId = user?.id ?? 'guest';
+    final prefs = await SharedPreferences.getInstance();
+    
+    final policeController = TextEditingController(text: prefs.getString('${userId}_sos_police') ?? '112');
+    final fireController = TextEditingController(text: prefs.getString('${userId}_sos_fire') ?? '101');
+    final ambulanceController = TextEditingController(text: prefs.getString('${userId}_sos_ambulance') ?? '108');
+    final womenController = TextEditingController(text: prefs.getString('${userId}_sos_women') ?? '181');
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Emergency Numbers'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildNumberField('Police', policeController, Icons.local_police),
+              const SizedBox(height: 12),
+              _buildNumberField('Fire Brigade', fireController, Icons.local_fire_department),
+              const SizedBox(height: 12),
+              _buildNumberField('Ambulance', ambulanceController, Icons.medical_services),
+              const SizedBox(height: 12),
+              _buildNumberField('Women Helpline', womenController, Icons.woman),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await prefs.setString('${userId}_sos_police', policeController.text);
+              await prefs.setString('${userId}_sos_fire', fireController.text);
+              await prefs.setString('${userId}_sos_ambulance', ambulanceController.text);
+              await prefs.setString('${userId}_sos_women', womenController.text);
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Emergency numbers saved!'),
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRed),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberField(String label, TextEditingController controller, IconData icon) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: AppTheme.primaryRed),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

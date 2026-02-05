@@ -6,7 +6,6 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/models/incident_model.dart';
 import '../../../../core/services/audit_service.dart';
-import '../../../../core/providers/area_resources_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../incidents/presentation/providers/incident_provider.dart';
 import '../../../feed/presentation/screens/community_feed_screen.dart';
@@ -14,6 +13,7 @@ import '../../../authority/presentation/screens/heatmap_screen.dart';
 import '../../../authority/presentation/screens/analytics_screen.dart';
 import '../../../authority/presentation/screens/broadcast_screen.dart';
 import '../../../authority/presentation/screens/resources_screen.dart';
+import '../../../authority/presentation/screens/manage_tasks_screen.dart';
 import 'package:intl/intl.dart';
 
 /// Authority Dashboard - Command Center View
@@ -165,6 +165,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnalyticsScreen()))),
           _buildMenuButton(context, 'Resources', Icons.inventory, Colors.indigo, 
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ResourcesScreen()))),
+          _buildMenuButton(context, 'Manage\nTasks', Icons.assignment, Colors.purple, 
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthorityManageTasksScreen()))),
         ],
       ),
     );

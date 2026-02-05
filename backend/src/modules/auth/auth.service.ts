@@ -96,6 +96,9 @@ export class AuthService {
     }
 
     const token = this.generateToken(user.id, user.email, user.role);
+    
+    console.log('DEBUG: User found during login:', user.id);
+    console.log('DEBUG: Emergency contacts from user:', JSON.stringify(user.emergencyContacts, null, 2));
 
     return {
       user: {
@@ -109,6 +112,7 @@ export class AuthService {
         registeredArea: user.registeredArea,
         identityDocumentUrl: user.identityDocumentUrl,
         identityDocumentType: user.identityDocumentType,
+        emergencyContacts: user.emergencyContacts,
       },
       accessToken: token,
     };

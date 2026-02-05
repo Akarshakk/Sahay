@@ -16,7 +16,14 @@ export class UploadController {
     @Post()
     @UseInterceptors(FileInterceptor('file', {
         storage: diskStorage({
-            destination: uploadDir,
+            destination: (req, file, cb) => {
+                const folder = (req.query.folder || 'all_documents').toString().replace(/[^a-zA-Z0-9_]/g, '');
+                const uploadPath = join(process.cwd(), 'uploads', folder);
+                if (!fs.existsSync(uploadPath)) {
+                    fs.mkdirSync(uploadPath, { recursive: true });
+                }
+                cb(null, uploadPath);
+            },
             filename: (req, file, cb) => {
                 const username = (req.query.username || req.body?.username || 'user').toString().replace(/[^a-zA-Z0-9]/g, '_');
                 const docType = (req.query.documentType || req.body?.documentType || 'document').toString();
@@ -37,35 +44,19 @@ export class UploadController {
         @UploadedFile() file: Express.Multer.File,
         @Query('username') username?: string,
         @Query('documentType') documentType?: string,
+        @Query('folder') folder?: string,
     ) {
         if (!file) {
             throw new BadRequestException('File is missing');
         }
 
-        // Clean up old files for this user and doc type
-        const safeUsername = (username || 'user').replace(/[^a-zA-Z0-9]/g, '_');
-        const safeDocType = (documentType || 'document');
-
-        try {
-            const files = fs.readdirSync(uploadDir);
-            const userDocPattern = new RegExp(`^${safeUsername}_${safeDocType}_\\d+\\.(jpg|jpeg|png|pdf)$`);
-
-            for (const existingFile of files) {
-                // Delete if matches pattern AND is not the file we just uploaded
-                if (existingFile.match(userDocPattern) && existingFile !== file.filename) {
-                    fs.unlinkSync(join(uploadDir, existingFile));
-                    console.log(`Deleted old document: ${existingFile}`);
-                }
-            }
-        } catch (e) {
-            console.error('Error cleaning up old files:', e);
-        }
+        const safeFolder = (folder || 'all_documents').replace(/[^a-zA-Z0-9_]/g, '');
 
         return {
-            url: `http://localhost:3000/uploads/all_documents/${file.filename}`,
+            url: `http://localhost:3000/uploads/${safeFolder}/${file.filename}`,
             filename: file.filename,
             originalName: file.originalname,
-            documentType: safeDocType,
+            documentType: documentType || 'document',
         };
     }
 

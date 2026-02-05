@@ -7,9 +7,26 @@ import {
   IsNumber,
   Min,
   Max,
+  ValidateNested,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { UserRole } from '../../../common/enums';
+
+export class EmergencyContactDto {
+  @ApiProperty({ example: 'Dad' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ example: '+919876543210' })
+  @IsString()
+  phone: string;
+
+  @ApiProperty({ example: 'Father' })
+  @IsString()
+  relation: string;
+}
 
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -111,6 +128,16 @@ export class UpdateUserDto {
   @IsString()
   address?: string;
 
+  @ApiPropertyOptional({ example: 'Mumbai Central' })
+  @IsOptional()
+  @IsString()
+  registeredArea?: string;
+
+  @ApiPropertyOptional({ example: 'mumbai-central' })
+  @IsOptional()
+  @IsString()
+  registeredAreaId?: string;
+
   @ApiPropertyOptional({ example: 'https://storage.googleapis.com/...' })
   @IsOptional()
   @IsString()
@@ -123,11 +150,10 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ example: [{ name: 'Dad', phone: '+919876543210', relation: 'Father' }] })
   @IsOptional()
-  emergencyContacts?: {
-    name: string;
-    phone: string;
-    relation: string;
-  }[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EmergencyContactDto)
+  emergencyContacts?: EmergencyContactDto[];
 }
 
 export class UpdateLocationDto {

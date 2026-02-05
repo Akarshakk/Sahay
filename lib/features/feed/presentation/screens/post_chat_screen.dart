@@ -338,7 +338,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
+                const Row(
                   children: [
                       /*
                       InkWell(

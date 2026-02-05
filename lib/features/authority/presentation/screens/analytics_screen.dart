@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/incident_model.dart';
 import '../../../../core/enums/app_enums.dart';
@@ -79,7 +78,7 @@ class _AnalyticsView extends StatelessWidget {
         // Type Breakdown
         const Text('Incident Types', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        ...typeStats.entries.map((e) => _buildTypeBar(e.key, e.value, total)).toList(),
+        ...typeStats.entries.map((e) => _buildTypeBar(e.key, e.value, total)),
       ],
     ).animate().fadeIn();
   }
@@ -113,7 +112,7 @@ class _AnalyticsView extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppTheme.neutralGray,
               fontWeight: FontWeight.w500,

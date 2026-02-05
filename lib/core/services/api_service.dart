@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/task_model.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:3000/api/v1';
@@ -22,6 +23,8 @@ class ApiService {
       responseBody: true,
     ));
   }
+
+  String? get authToken => _authToken;
 
   void setAuthToken(String token) {
     _authToken = token;
@@ -189,6 +192,19 @@ class ApiService {
     return response.data;
   }
 
+  Future<List<dynamic>> getBroadcasts(String region) async {
+    final response = await _dio.get('/broadcasts', queryParameters: {'region': region});
+    // Backend returns generic array or object depending on implementation. 
+    // BroadcastsController.findAll returns `this.broadcastsService.findAll(region)`.
+    // Assuming it returns a list of broadcasts.
+    if (response.data is List) {
+      return response.data;
+    } else if (response.data is Map && response.data['data'] is List) {
+        return response.data['data'];
+    }
+    return [];
+  }
+
   // SOS endpoints
   Future<Map<String, dynamic>> triggerSOS({
     required double latitude,
@@ -244,6 +260,211 @@ class ApiService {
       'longitude': longitude,
     });
     return response.data;
+  }
+
+  // Upload endpoints
+  Future<String> uploadFile(String filePath, {String folder = 'documents', List<int>? fileBytes, String? fileName}) async {
+    final String name = fileName ?? filePath.split('/').last;
+    
+    MultipartFile file;
+    if (fileBytes != null) {
+      file = MultipartFile.fromBytes(fileBytes, filename: name);
+    } else {
+      file = await MultipartFile.fromFile(filePath, filename: name);
+    }
+
+    final formData = FormData.fromMap({
+      "file": file,
+    });
+
+    final response = await _dio.post(
+      '/upload',
+      data: formData,
+      queryParameters: {'folder': folder},
+    );
+    // Returns { url: "...", filename: "...", ... }
+    return response.data['url'] as String;
+  }
+
+  // Task endpoints
+  Future<Task> createTask({
+    required String title,
+    required String description,
+    required String region,
+    required String areaId,
+    required int rewardPoints,
+    String priority = 'medium',
+    String? imageUrl,
+    List<String>? assignedTo,
+    DateTime? deadline,
+  }) async {
+    final response = await _dio.post('/tasks', data: {
+      'title': title,
+      'description': description,
+      'region': region,
+      'areaId': areaId,
+      'rewardPoints': rewardPoints,
+      'priority': priority,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (assignedTo != null && assignedTo.isNotEmpty) 'assignedTo': assignedTo,
+      if (deadline != null) 'deadline': deadline.toIso8601String(),
+    });
+    return Task.fromJson(response.data['data'] ?? response.data);
+  }
+
+  Future<List<Task>> getMyTasks() async {
+    final response = await _dio.get('/tasks/my');
+    // Handle both formats: direct array [] or wrapped {data: []}
+    final rawData = response.data;
+    final List<dynamic> data = rawData is List 
+        ? rawData 
+        : (rawData['data'] ?? []);
+    return data.map((item) => Task.fromJson(item)).toList();
+  }
+
+  Future<List<Task>> getTasksByRegion(String region) async {
+    try {
+      final response = await _dio.get('/tasks/region/$region');
+      final rawData = response.data;
+      List<dynamic> data = [];
+      
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('data')) {
+        data = rawData['data'] is List ? rawData['data'] : [];
+      }
+      
+      return data.map((item) => Task.fromJson(item)).toList();
+    } catch (e) {
+      print('ERROR in getTasksByRegion: $e');
+      return [];
+    }
+  }
+
+  Future<List<Task>> getAssignedTasks() async {
+    try {
+      final response = await _dio.get('/tasks/assigned');
+      final rawData = response.data;
+      List<dynamic> data = [];
+      
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('data')) {
+        data = rawData['data'] is List ? rawData['data'] : [];
+      }
+      
+      return data.map((item) => Task.fromJson(item)).toList();
+    } catch (e) {
+      print('ERROR in getAssignedTasks: $e');
+      return [];
+    }
+  }
+
+  Future<Task> getTask(String taskId) async {
+    final response = await _dio.get('/tasks/$taskId');
+    return Task.fromJson(response.data['data'] ?? response.data);
+  }
+
+  Future<Task> updateTask(
+    String taskId, {
+    String? title,
+    String? description,
+    String? priority,
+    int? rewardPoints,
+    List<String>? assignedTo,
+    String? status,
+  }) async {
+    final Map<String, dynamic> body = {};
+    if (title != null) body['title'] = title;
+    if (description != null) body['description'] = description;
+    if (priority != null) body['priority'] = priority;
+    if (rewardPoints != null) body['rewardPoints'] = rewardPoints;
+    if (assignedTo != null) body['assignedTo'] = assignedTo;
+    if (status != null) body['status'] = status;
+
+    final response = await _dio.put('/tasks/$taskId', data: body);
+    return Task.fromJson(response.data['data'] ?? response.data);
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await _dio.delete('/tasks/$taskId');
+  }
+
+  Future<TaskSubmission> submitTask({
+    required String taskId,
+    required String submissionImageUrl,
+    String? submissionNotes,
+  }) async {
+    print('DEBUG submitTask Headers: ${_dio.options.headers}');
+    print('DEBUG submitTask Auth Token: $_authToken');
+    
+    final response = await _dio.post('/tasks/$taskId/submit', data: {
+      'taskId': taskId,
+      'submissionImageUrl': submissionImageUrl,
+      if (submissionNotes != null) 'submissionNotes': submissionNotes,
+    });
+    return TaskSubmission.fromJson(response.data['data'] ?? response.data);
+  }
+
+  Future<List<TaskSubmission>> getTaskSubmissions(String taskId) async {
+    try {
+      final response = await _dio.get('/tasks/$taskId/submissions');
+      final rawData = response.data;
+      List<dynamic> data = [];
+      
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('data')) {
+        data = rawData['data'] is List ? rawData['data'] : [];
+      }
+      
+      return data.map((item) => TaskSubmission.fromJson(item)).toList();
+    } catch (e) {
+      print('ERROR in getTaskSubmissions: $e');
+      return [];
+    }
+  }
+
+  Future<List<TaskSubmission>> getMySubmissions() async {
+    try {
+      final response = await _dio.get('/tasks/my/submissions');
+      print('DEBUG getMySubmissions RESPONSE: ${response.data}'); // LOG COMPLETE JSON
+      
+      final rawData = response.data;
+      List<dynamic> data = [];
+      
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('data')) {
+        // Only access ['data'] if it is a Map
+        data = rawData['data'] is List ? rawData['data'] : [];
+      } else {
+        print('WARN getMySubmissions: Unexpected response format: $rawData');
+        return [];
+      }
+      
+      return data.map((item) {
+        // print('DEBUG processing submission item: $item');
+        return TaskSubmission.fromJson(item);
+      }).toList();
+    } catch (e) {
+      print('ERROR in getMySubmissions: $e');
+      // Return empty list on error to prevent UI crash
+      return [];
+    }
+  }
+
+  Future<TaskSubmission> verifySubmission({
+    required String submissionId,
+    required String status,
+    String? notes,
+  }) async {
+    final response = await _dio.post('/tasks/submissions/$submissionId/verify', data: {
+      'submissionId': submissionId,
+      'status': status,
+      if (notes != null) 'notes': notes,
+    });
+    return TaskSubmission.fromJson(response.data['data'] ?? response.data);
   }
 }
 

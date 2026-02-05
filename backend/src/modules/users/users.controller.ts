@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -30,7 +31,13 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update current user profile' })
   async updateCurrentUser(@Request() req: any, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(req.user.id, updateUserDto);
+    try {
+      console.log('DEBUG: updateCurrentUser called with:', JSON.stringify(updateUserDto, null, 2));
+      return await this.usersService.update(req.user.id, updateUserDto);
+    } catch (error) {
+      console.error('Error in updateCurrentUser:', error);
+      throw error;
+    }
   }
 
   @Put('me/location')

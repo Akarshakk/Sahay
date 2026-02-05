@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚀 Setting up CivicSync Backend..."
+echo "🚀 Setting up Sahay Backend..."
 
 # Colors for output
 RED='\033[0;31m'

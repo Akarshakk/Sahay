@@ -348,6 +348,29 @@
       ]
     },
     {
+      "name": "latlong2",
+      "version": "0.9.1",
+      "dependencies": [
+        "intl"
+      ]
+    },
+    {
+      "name": "flutter_map",
+      "version": "6.2.1",
+      "dependencies": [
+        "async",
+        "collection",
+        "flutter",
+        "http",
+        "latlong2",
+        "logger",
+        "meta",
+        "polylabel",
+        "proj4dart",
+        "vector_math"
+      ]
+    },
+    {
       "name": "dio",
       "version": "5.9.0",
       "dependencies": [
@@ -1357,6 +1380,29 @@
       ]
     },
     {
+      "name": "proj4dart",
+      "version": "2.1.0",
+      "dependencies": [
+        "meta",
+        "mgrs_dart",
+        "wkt_parser"
+      ]
+    },
+    {
+      "name": "polylabel",
+      "version": "1.0.1",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "logger",
+      "version": "2.6.2",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
       "name": "dio_web_adapter",
       "version": "2.1.1",
       "dependencies": [
@@ -1666,6 +1712,18 @@
       ]
     },
     {
+      "name": "wkt_parser",
+      "version": "2.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "mgrs_dart",
+      "version": "2.0.0",
+      "dependencies": [
+        "unicode"
+      ]
+    },
+    {
       "name": "fixnum",
       "version": "1.1.1",
       "dependencies": []
@@ -1770,62 +1828,6 @@
       ]
     },
     {
-      "name": "synchronized",
-      "version": "3.4.0",
-      "dependencies": []
-    },
-    {
-      "name": "latlong2",
-      "version": "0.9.1",
-      "dependencies": [
-        "intl"
-      ]
-    },
-    {
-      "name": "flutter_map",
-      "version": "6.2.1",
-      "dependencies": [
-        "async",
-        "collection",
-        "flutter",
-        "http",
-        "latlong2",
-        "logger",
-        "meta",
-        "polylabel",
-        "proj4dart",
-        "vector_math"
-      ]
-    },
-    {
-      "name": "proj4dart",
-      "version": "2.1.0",
-      "dependencies": [
-        "meta",
-        "mgrs_dart",
-        "wkt_parser"
-      ]
-    },
-    {
-      "name": "polylabel",
-      "version": "1.0.1",
-      "dependencies": [
-        "collection"
-      ]
-    },
-    {
-      "name": "wkt_parser",
-      "version": "2.0.0",
-      "dependencies": []
-    },
-    {
-      "name": "mgrs_dart",
-      "version": "2.0.0",
-      "dependencies": [
-        "unicode"
-      ]
-    },
-    {
       "name": "unicode",
       "version": "0.3.1",
       "dependencies": [
@@ -1833,15 +1835,13 @@
       ]
     },
     {
-      "name": "lists",
-      "version": "1.0.1",
-      "dependencies": [
-        "meta"
-      ]
+      "name": "synchronized",
+      "version": "3.4.0",
+      "dependencies": []
     },
     {
-      "name": "logger",
-      "version": "2.6.2",
+      "name": "lists",
+      "version": "1.0.1",
       "dependencies": [
         "meta"
       ]
