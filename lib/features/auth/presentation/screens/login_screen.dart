@@ -11,6 +11,7 @@ import '../../../../core/widgets/ashoka_chakra.dart';
 import '../providers/auth_provider.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import 'registration_screen.dart';
+import 'terms_and_conditions_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -28,6 +29,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   bool _canUseBiometrics = false;
   bool _hasSavedCredentials = false;
+  bool _agreedToTerms = false;
   String? _savedPhone;
 
   @override
@@ -395,16 +397,91 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
+
+                        // Terms Agreement Checkbox
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: _agreedToTerms,
+                                onChanged: _isLoading
+                                    ? null
+                                    : (value) {
+                                        setState(() {
+                                          _agreedToTerms = value ?? false;
+                                        });
+                                      },
+                                activeColor: AppTheme.primaryRed,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _agreedToTerms = !_agreedToTerms;
+                                  });
+                                },
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppTheme.neutralGray,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: 'I agree to the '),
+                                      WidgetSpan(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const TermsAndConditionsScreen(),
+                                              ),
+                                            );
+                                          },
+                                          child: const Text(
+                                            'Terms and Conditions',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: AppTheme.primaryRed,
+                                              fontWeight: FontWeight.bold,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
 
                         // Login Button
                         SizedBox(
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleLogin,
+                            onPressed: (_isLoading || !_agreedToTerms)
+                                ? null
+                                : _handleLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryRed,
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  AppTheme.neutralGray.withValues(alpha: 0.3),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -546,18 +623,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _buildTestCredential(
                             '9876543212', 'test1234', 'Authority'),
                       ],
-                    ),
-                  ).animate().fadeIn(delay: 800.ms),
-
-                  const SizedBox(height: 8),
-
-                  // Terms
-                  Text(
-                    'By continuing, you agree to the Sahay app\nterms and conditions',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ).animate().fadeIn(delay: 800.ms),
 
