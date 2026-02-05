@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/ashoka_chakra.dart';
 import '../../../../core/enums/app_enums.dart';
 import 'otp_verification_screen.dart';
+import 'terms_and_conditions_screen.dart';
 
 /// Initial Registration Screen - Choose User Type
 class RegistrationScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class RegistrationScreen extends ConsumerStatefulWidget {
 
 class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   UserRole? _selectedRole;
+  bool _agreedToTerms = false;
 
   @override
   Widget build(BuildContext context) {
@@ -117,18 +119,103 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 color: AppTheme.authorityAccent,
               ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2, end: 0),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              // Terms Agreement Checkbox
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _agreedToTerms
+                        ? AppTheme.primaryGreen
+                        : AppTheme.neutralGray.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: _agreedToTerms,
+                        onChanged: (value) {
+                          setState(() {
+                            _agreedToTerms = value ?? false;
+                          });
+                        },
+                        activeColor: AppTheme.primaryGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _agreedToTerms = !_agreedToTerms;
+                          });
+                        },
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.neutralGray,
+                            ),
+                            children: [
+                              const TextSpan(
+                                  text: 'I have read and agree to the '),
+                              WidgetSpan(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const TermsAndConditionsScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Terms and Conditions',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppTheme.primaryRed,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const TextSpan(
+                                  text:
+                                      ' including privacy policy and emergency services disclaimer.'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 650.ms),
+
+              const SizedBox(height: 24),
 
               // Continue Button
               SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _selectedRole == null ? null : _handleContinue,
+                  onPressed:
+                      (_selectedRole == null || !_agreedToTerms) ? null : _handleContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryRed,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor:
-                        AppTheme.neutralGray.withOpacity(0.3),
+                        AppTheme.neutralGray.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
