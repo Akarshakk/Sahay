@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
 
@@ -20,18 +21,41 @@ class HardwareTriggerService {
   // Callback to trigger SOS
   Function()? onEmergencyTriggered;
 
+  StreamSubscription<double>? _volumeSubscription;
+  double? _lastVolume;
+
   Future<void> initialize() async {
     try {
-      developer.log(
-          'HardwareTriggerService initialized (web mode - limited functionality)');
+      developer.log('HardwareTriggerService initializing...');
+      
+      // Initialize Volume Controller
+      await FlutterVolumeController.updateShowSystemUI(false);
+      
+      // Listen to volume changes
+      _volumeSubscription = FlutterVolumeController.addListener((volume) {
+        _handleVolumeChange(volume);
+      });
+      
+      // Get initial volume
+      _lastVolume = await FlutterVolumeController.getVolume();
+      
+      developer.log('HardwareTriggerService initialized and listening');
     } catch (e) {
       developer.log('Error initializing hardware trigger: $e');
     }
   }
 
+  void _handleVolumeChange(double newVolume) {
+    // Detect change (press)
+    if (_lastVolume != null && newVolume != _lastVolume) {
+        simulateVolumePress();
+    }
+    _lastVolume = newVolume;
+  }
+
   void simulateVolumePress() {
     _volumeUpPressCount++;
-    developer.log('Volume button pressed: $_volumeUpPressCount/$TRIGGER_COUNT');
+    developer.log('Volume button pressed (detected): $_volumeUpPressCount/$TRIGGER_COUNT');
 
     // Cancel previous reset timer
     _resetTimer?.cancel();
@@ -50,7 +74,7 @@ class HardwareTriggerService {
   }
 
   void _triggerEmergency() {
-    // Haptic feedback (may not work on web)
+    // Haptic feedback
     HapticFeedback.heavyImpact();
 
     // Trigger callback
@@ -61,6 +85,9 @@ class HardwareTriggerService {
 
   void dispose() {
     _resetTimer?.cancel();
+    _volumeSubscription?.cancel();
+    FlutterVolumeController.removeListener();
+    FlutterVolumeController.updateShowSystemUI(true);
   }
 }
 

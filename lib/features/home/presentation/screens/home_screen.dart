@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:background_sms/background_sms.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/hardware_trigger_service.dart';
@@ -56,7 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     _loadNotifications();
     // Hardware Trigger Listener
-    HardwareTriggerService().onEmergencyTriggered = _submitEmergencySOS;
+    HardwareTriggerService().onEmergencyTriggered = _startSOSCountdown;
     HardwareTriggerService().initialize();
     
     // Initialize WebSocket
@@ -1078,8 +1082,17 @@ Future<void> _triggerEmergencySOS() async {
     );
   }
 
-  /// Make emergency phone call
+  /// Make emergency phone call (Direct)
   Future<void> _makeEmergencyCall(String number) async {
+    try {
+      // Try direct call first
+      bool? res = await FlutterPhoneDirectCaller.callNumber(number);
+      if (res == true) return;
+    } catch (e) {
+       debugPrint('Direct call failed: $e');
+    }
+
+    // Fallback to URL Launcher
     final Uri phoneUri = Uri(scheme: 'tel', path: number);
     try {
       if (await canLaunchUrl(phoneUri)) {
@@ -1092,7 +1105,7 @@ Future<void> _triggerEmergencySOS() async {
     }
   }
 
-  /// Send emergency SMS with location
+  /// Send emergency SMS with location (Direct/Background)
   Future<void> _sendEmergencySMS(LocationData? location) async {
     final String message = location != null
         ? 'EMERGENCY SOS! I need help. My location: ${location.address} (${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)})'
@@ -1101,6 +1114,26 @@ Future<void> _triggerEmergencySOS() async {
     // Default emergency contacts (Police control room)
     const String emergencyNumber = '112';
     
+    // Check permission
+    if (await Permission.sms.isGranted) {
+      try {
+        final result = await BackgroundSms.sendMessage(
+          phoneNumber: emergencyNumber, 
+          message: message,
+        );
+        if (result == SmsStatus.sent) {
+          if (!mounted) return;
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('SMS Sent Automatically'), backgroundColor: Colors.green),
+          );
+          return;
+        }
+      } catch (e) {
+        debugPrint('Direct SMS failed: $e');
+      }
+    }
+
+    // Fallback to URL Launcher
     final Uri smsUri = Uri(
       scheme: 'sms',
       path: emergencyNumber,
@@ -1146,9 +1179,8 @@ Future<void> _triggerEmergencySOS() async {
         ),
       );
       
-      // 3. Send SMS automatically (optional, keeps existing logic)
+      // 3. Send SMS automatically
       // _sendEmergencySMS(location); 
-
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1158,6 +1190,107 @@ Future<void> _triggerEmergencySOS() async {
         ),
       );
     }
+  }
+
+  /// Start SOS Countdown Dialog
+  void _startSOSCountdown() {
+    int countdown = 5;
+    Timer? timer;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          // Initialize timer once
+          timer ??= Timer.periodic(const Duration(seconds: 1), (t) {
+            if (countdown > 1) {
+              setState(() => countdown--);
+            } else {
+              t.cancel();
+              Navigator.pop(context);
+              _executeSOSSequence();
+            }
+          });
+
+          return AlertDialog(
+            backgroundColor: AppTheme.primaryRed,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.white),
+                const SizedBox(height: 16),
+                const Text(
+                  'SOS TRIGGERED',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sending alerts in',
+                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '$countdown',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 72,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ).animate(target: countdown.toDouble()).scale(
+                  begin: const Offset(1.5, 1.5),
+                  end: const Offset(1.0, 1.0),
+                  duration: 300.ms,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      timer?.cancel();
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryRed,
+                    ),
+                    child: const Text('CANCEL SOS', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ).then((_) => timer?.cancel());
+  }
+
+  /// Execute SOS Sequence (API + SMS + Call)
+  Future<void> _executeSOSSequence() async {
+    // 1. Trigger API (Police)
+    await _submitEmergencySOS();
+    
+    // Get location for SMS
+    final location = ref.read(currentLocationProvider).valueOrNull;
+
+    // 2. Send SMS to Contacts
+    if (mounted) {
+        _sendEmergencySMS(location);
+    }
+
+    // 3. Call Police automatically
+    final user = ref.read(authControllerProvider);
+    final userId = user?.id ?? 'guest';
+    final prefs = await SharedPreferences.getInstance();
+    final policeNum = prefs.getString('${userId}_sos_police') ?? '112';
+    
+    _makeEmergencyCall(policeNum);
   }
 
 

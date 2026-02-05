@@ -36,7 +36,7 @@ export class SOSService {
                 longitude: dto.longitude,
             },
             address: dto.address || '',
-            batteryLevel: dto.batteryLevel,
+            ...(dto.batteryLevel !== undefined && { batteryLevel: dto.batteryLevel }),
             actions: [],
             createdAt: now,
         };

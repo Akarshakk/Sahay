@@ -7,6 +7,7 @@
       "name": "sahay",
       "version": "6.1.0+1",
       "dependencies": [
+        "background_sms",
         "cached_network_image",
         "cloud_firestore",
         "cupertino_icons",
@@ -18,7 +19,9 @@
         "flutter",
         "flutter_animate",
         "flutter_map",
+        "flutter_phone_direct_caller",
         "flutter_riverpod",
+        "flutter_volume_controller",
         "freezed_annotation",
         "geocoding",
         "geolocator",
@@ -158,6 +161,28 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "flutter_phone_direct_caller",
+      "version": "2.2.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "background_sms",
+      "version": "0.0.4",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "flutter_volume_controller",
+      "version": "1.3.4",
+      "dependencies": [
+        "flutter",
+        "flutter_plugin_android_lifecycle"
       ]
     },
     {
@@ -885,6 +910,13 @@
       ]
     },
     {
+      "name": "flutter_plugin_android_lifecycle",
+      "version": "2.0.33",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
       "name": "permission_handler_platform_interface",
       "version": "4.3.0",
       "dependencies": [
@@ -1587,13 +1619,6 @@
     {
       "name": "flutter_web_plugins",
       "version": "0.0.0",
-      "dependencies": [
-        "flutter"
-      ]
-    },
-    {
-      "name": "flutter_plugin_android_lifecycle",
-      "version": "2.0.33",
       "dependencies": [
         "flutter"
       ]

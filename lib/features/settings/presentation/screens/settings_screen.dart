@@ -244,92 +244,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _showDevicePermissions() async {
-    // Show loading dialog
-    showDialog(
+    await showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    // Check permissions
-    final locationStatus = await Permission.location.status;
-    final cameraStatus = await Permission.camera.status;
-    final microphoneStatus = await Permission.microphone.status;
-    final notificationStatus = await Permission.notification.status;
-
-    if (!mounted) return;
-    Navigator.pop(context); // Close loading
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Device Permissions'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   _PermissionItem(
-                    icon: Icons.location_on,
-                    title: 'Location',
-                    description: 'Required for emergency services',
-                    status: _getPermissionStatusText(locationStatus),
-                    isGranted: locationStatus.isGranted,
-                    onRequest: () async {
-                      final status = await Permission.location.request();
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _PermissionItem(
-                    icon: Icons.camera_alt,
-                    title: 'Camera',
-                    description: 'To capture incident photos',
-                    status: _getPermissionStatusText(cameraStatus),
-                    isGranted: cameraStatus.isGranted,
-                    onRequest: () async {
-                      final status = await Permission.camera.request();
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _PermissionItem(
-                    icon: Icons.mic,
-                    title: 'Microphone',
-                    description: 'For voice SOS alerts',
-                    status: _getPermissionStatusText(microphoneStatus),
-                    isGranted: microphoneStatus.isGranted,
-                    onRequest: () async {
-                      final status = await Permission.microphone.request();
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _PermissionItem(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    description: 'Emergency alerts and updates',
-                    status: _getPermissionStatusText(notificationStatus),
-                    isGranted: notificationStatus.isGranted,
-                    onRequest: () async {
-                      final status = await Permission.notification.request();
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-            ],
-          );
-        }
-      ),
+      builder: (context) => const _PermissionsDialog(),
     );
   }
 
@@ -339,6 +256,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (status.isPermanentlyDenied) return 'Permanently Denied';
     return 'Restricted';
   }
+
+  // ... (rest of methods)
+
+
+
 
   void _showDisclaimer() {
     showDialog(
@@ -514,72 +436,172 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-class _PermissionItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final String status;
-  final bool isGranted;
-  final VoidCallback? onRequest;
 
-  const _PermissionItem({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.status,
-    required this.isGranted,
-    this.onRequest,
-  });
+class _PermissionsDialog extends StatefulWidget {
+  const _PermissionsDialog();
+
+  @override
+  State<_PermissionsDialog> createState() => _PermissionsDialogState();
+}
+
+class _PermissionsDialogState extends State<_PermissionsDialog> {
+  // Permission statuses
+  PermissionStatus _locationStatus = PermissionStatus.denied;
+  PermissionStatus _cameraStatus = PermissionStatus.denied;
+  PermissionStatus _microphoneStatus = PermissionStatus.denied;
+  PermissionStatus _notificationStatus = PermissionStatus.denied;
+  PermissionStatus _smsStatus = PermissionStatus.denied;
+  PermissionStatus _phoneStatus = PermissionStatus.denied;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    final loc = await Permission.location.status;
+    final cam = await Permission.camera.status;
+    final mic = await Permission.microphone.status;
+    final not = await Permission.notification.status;
+    final sms = await Permission.sms.status;
+    final phone = await Permission.phone.status;
+
+    if (mounted) {
+      setState(() {
+        _locationStatus = loc;
+        _cameraStatus = cam;
+        _microphoneStatus = mic;
+        _notificationStatus = not;
+        _smsStatus = sms;
+        _phoneStatus = phone;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handlePermissionChange(Permission permission, bool currentValue) async {
+    if (currentValue) {
+      // Permission is currently GRANTED, trying to disable
+      // Cannot disable programmatically, must go to settings
+      _showSettingsDialog('To disable this permission, please go to App Settings.');
+    } else {
+      // Permission is currently DENIED, trying to enable
+      final status = await permission.request();
+      
+      if (status.isPermanentlyDenied) {
+         _showSettingsDialog('Permission is permanently denied. Please enable it in App Settings.');
+      } else {
+        await _checkPermissions();
+      }
+    }
+  }
+
+  void _showSettingsDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Open Settings'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+             style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRed),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: isGranted ? AppTheme.primaryGreen : AppTheme.neutralGray,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+    return AlertDialog(
+      title: const Text('Device Permissions'),
+      content: _isLoading 
+          ? const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()))
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   _buildToggle(
+                    icon: Icons.location_on,
+                    title: 'Location',
+                    subtitle: 'Required for emergency services',
+                    value: _locationStatus.isGranted,
+                    onChanged: (v) => _handlePermissionChange(Permission.location, _locationStatus.isGranted),
+                  ),
+                  _buildToggle(
+                    icon: Icons.camera_alt,
+                    title: 'Camera',
+                    subtitle: 'To capture incident photos',
+                    value: _cameraStatus.isGranted,
+                    onChanged: (v) => _handlePermissionChange(Permission.camera, _cameraStatus.isGranted),
+                  ),
+                  _buildToggle(
+                    icon: Icons.mic,
+                    title: 'Microphone',
+                    subtitle: 'For voice SOS alerts',
+                    value: _microphoneStatus.isGranted,
+                    onChanged: (v) => _handlePermissionChange(Permission.microphone, _microphoneStatus.isGranted),
+                  ),
+                  _buildToggle(
+                    icon: Icons.notifications,
+                    title: 'Notifications',
+                    subtitle: 'Emergency alerts and updates',
+                    value: _notificationStatus.isGranted,
+                    onChanged: (v) => _handlePermissionChange(Permission.notification, _notificationStatus.isGranted),
+                  ),
+                   _buildToggle(
+                    icon: Icons.sms,
+                    title: 'SMS',
+                    subtitle: 'To send direct SOS messages',
+                    value: _smsStatus.isGranted,
+                    onChanged: (v) => _handlePermissionChange(Permission.sms, _smsStatus.isGranted),
+                  ),
+                   _buildToggle(
+                    icon: Icons.phone,
+                    title: 'Phone',
+                    subtitle: 'To make direct emergency calls',
+                    value: _phoneStatus.isGranted,
+                    onChanged: (v) => _handlePermissionChange(Permission.phone, _phoneStatus.isGranted),
+                  ),
+
+                ],
               ),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.neutralGray.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (isGranted)
-          const Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 20)
-        else
-          TextButton(
-            onPressed: onRequest,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 30),
             ),
-            child: Text(
-              status,
-              style: const TextStyle(
-                color: AppTheme.primaryRed,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
       ],
+    );
+  }
+
+  Widget _buildToggle({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppTheme.primaryGreen,
+      secondary: Icon(icon, color: value ? AppTheme.primaryGreen : Colors.grey),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      contentPadding: EdgeInsets.zero,
     );
   }
 }
