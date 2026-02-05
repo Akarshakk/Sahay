@@ -53,9 +53,15 @@ export class AuthService {
       fullName: registerDto.fullName,
       phone: registerDto.phone,
       role: registerDto.role,
+      dob: registerDto.dob,
 
       profession: registerDto.profession,
       address: registerDto.address,
+
+      // Location fields
+      state: registerDto.state,
+      district: registerDto.district,
+      city: registerDto.city,
 
       registeredArea: registerDto.registeredArea,
       registeredAreaId: registerDto.registeredAreaId,

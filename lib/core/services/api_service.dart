@@ -240,6 +240,24 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> getActiveSOSAlerts() async {
+    final response = await _dio.get('/sos/active');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getNearbySOSAlerts({
+    required double latitude,
+    required double longitude,
+    double radius = 5.0,
+  }) async {
+    final response = await _dio.get('/sos/nearby', queryParameters: {
+      'latitude': latitude,
+      'longitude': longitude,
+      'radius': radius,
+    });
+    return response.data;
+  }
+
   // User endpoints
   Future<Map<String, dynamic>> getMyProfile() async {
     final response = await _dio.get('/users/me');

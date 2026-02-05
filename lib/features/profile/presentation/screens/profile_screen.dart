@@ -27,6 +27,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _professionController = TextEditingController();
   final _addressController = TextEditingController();
   final _registeredAreaController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _cityController = TextEditingController();
 
   String? _profileImagePath;
   String? _currentLocation;
@@ -60,6 +63,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _professionController.text = user.profession ?? profileData.profession;
     _addressController.text = user.address ?? profileData.address;
     _registeredAreaController.text = user.registeredArea ?? '';
+    _stateController.text = user.state ?? profileData.state;
+    _districtController.text = user.district ?? profileData.district;
+    _cityController.text = user.city ?? profileData.city;
     _profileImagePath = profileData.profileImagePath;
 
     // Sync profile provider with current user data
@@ -144,6 +150,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _professionController.dispose();
     _addressController.dispose();
     _registeredAreaController.dispose();
+    _stateController.dispose();
+    _districtController.dispose();
+    _cityController.dispose();
     super.dispose();
   }
 
@@ -461,19 +470,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               const SizedBox(height: 16),
 
-              // City (Registered Area)
+              // State
               _isEditing
                   ? _buildEditableField(
-                      controller: _registeredAreaController,
-                      label: 'City',
+                      controller: _stateController,
+                      label: 'State',
+                      icon: Icons.map,
+                    )
+                  : _buildInfoTile(
+                      label: 'State',
+                      value: (user?.state ?? profileData.state).isNotEmpty
+                          ? (user?.state ?? profileData.state)
+                          : 'Not set',
+                      icon: Icons.map,
+                    ),
+
+              const SizedBox(height: 16),
+
+              // District
+              _isEditing
+                  ? _buildEditableField(
+                      controller: _districtController,
+                      label: 'District',
                       icon: Icons.location_city,
                     )
                   : _buildInfoTile(
-                      label: 'City',
-                      value: (user?.registeredArea ?? '').isNotEmpty
-                          ? (user?.registeredArea ?? '')
+                      label: 'District',
+                      value: (user?.district ?? profileData.district).isNotEmpty
+                          ? (user?.district ?? profileData.district)
                           : 'Not set',
                       icon: Icons.location_city,
+                    ),
+
+              const SizedBox(height: 16),
+
+              // City
+              _isEditing
+                  ? _buildEditableField(
+                      controller: _cityController,
+                      label: 'City',
+                      icon: Icons.location_on,
+                    )
+                  : _buildInfoTile(
+                      label: 'City',
+                      value: (user?.city ?? profileData.city).isNotEmpty
+                          ? (user?.city ?? profileData.city)
+                          : 'Not set',
+                      icon: Icons.location_on,
                     ),
 
               const SizedBox(height: 24),
@@ -981,7 +1024,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         // Email cannot be updated directly via this endpoint
         'profession': _professionController.text,
         'address': _addressController.text,
-        'registeredArea': _registeredAreaController.text,
+        'state': _stateController.text,
+        'district': _districtController.text,
+        'city': _cityController.text,
+        'registeredArea': _cityController.text, // Use city as registered area
       });
 
       // Then save to local provider (with persistence)
@@ -991,6 +1037,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             email: _emailController.text,
             profession: _professionController.text,
             address: _addressController.text,
+            stateVal: _stateController.text,
+            district: _districtController.text,
+            city: _cityController.text,
             profileImagePath: _profileImagePath,
           );
 

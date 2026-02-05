@@ -30,6 +30,7 @@ import '../../../volunteer/presentation/screens/resources_screen.dart';
 import '../../../authority/presentation/screens/heatmap_screen.dart';
 import '../../../authority/presentation/screens/analytics_screen.dart';
 import '../../../authority/presentation/screens/broadcast_screen.dart';
+import '../../../sos/presentation/screens/sos_countdown_screen.dart';
 import 'authority_dashboard_screen.dart';
 
 /// Modern Material 3 Home Screen with Role-Based UI
@@ -59,8 +60,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _loadNotifications();
-    // Hardware Trigger Listener
-    HardwareTriggerService().onEmergencyTriggered = _startSOSCountdown;
+    // Hardware Trigger Listener - Navigate to SOS countdown screen
+    HardwareTriggerService().onEmergencyTriggered = _triggerEmergencySOS;
     HardwareTriggerService().initialize();
     
     // Initialize WebSocket
@@ -915,18 +916,117 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showIncidentReportDialog(IncidentType type) {
-    // Navigate to full Incident Report Form
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => IncidentReportFormScreen(incidentType: type),
+    // Map IncidentType to EmergencyType
+    EmergencyType getEmergencyType() {
+      switch (type) {
+        case IncidentType.police:
+          return EmergencyType.police;
+        case IncidentType.fire:
+          return EmergencyType.fire;
+        case IncidentType.medical:
+          return EmergencyType.medical;
+        case IncidentType.disaster:
+          return EmergencyType.disaster;
+        case IncidentType.woman:
+          return EmergencyType.women;
+        case IncidentType.child:
+          return EmergencyType.child;
+        case IncidentType.elderly:
+          return EmergencyType.elderly;
+        case IncidentType.railway:
+          return EmergencyType.railway;
+        default:
+          return EmergencyType.police;
+      }
+    }
+    
+    final emergencyType = getEmergencyType();
+    
+    // Show dialog with options
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '${type.name.toUpperCase()} Services',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'What would you like to do?',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            
+            // Report Incident Option
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => IncidentReportFormScreen(incidentType: type),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.report),
+                label: const Text('Report an Incident'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: AppTheme.primaryRed),
+                  foregroundColor: AppTheme.primaryRed,
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // SOS Option
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SOSCountdownScreen(
+                        emergencyType: emergencyType,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.sos),
+                label: Text('SOS - Call ${emergencyType.number}'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: AppTheme.primaryRed,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Trigger Emergency SOS - Shows emergency call/SMS options
- // Trigger Emergency SOS - Shows emergency call/SMS options
-Future<void> _triggerEmergencySOS() async {
+  /// Trigger Emergency SOS - Navigate to countdown screen
+  Future<void> _triggerEmergencySOS() async {
+    // Navigate to the SOS countdown screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SOSCountdownScreen(),
+      ),
+    );
+  }
+  
+  /// Legacy SOS Dialog - Shows emergency call/SMS options
+  Future<void> _showEmergencyOptions() async {
   // Get current location
   final locationData = ref.read(currentLocationProvider).valueOrNull;
   final locationText = locationData != null 

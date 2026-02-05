@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -225,13 +227,108 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
   }
 
   Future<void> _addContact(int index) async {
-    final result = await showDialog<EmergencyContact>(
+    // Request contacts permission
+    final status = await Permission.contacts.request();
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contacts permission is required to add emergency contacts'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+      }
+      return;
+    }
+
+    List<Contact> contactsWithPhones = [];
+    
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryRed),
+        ),
+      );
+      
+      // Get all contacts with phone numbers
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+      
+      // Filter contacts that have phone numbers
+      contactsWithPhones = contacts.where((c) => c.phones.isNotEmpty).toList();
+      
+      // Dismiss loading
+      if (mounted) Navigator.of(context).pop();
+      
+    } catch (e) {
+      // Dismiss loading if still showing
+      if (mounted) Navigator.of(context).pop();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading contacts: $e'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+      }
+      return;
+    }
+    
+    if (contactsWithPhones.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No contacts with phone numbers found'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Show contact picker dialog
+    final selectedContact = await showModalBottomSheet<Contact>(
       context: context,
-      builder: (context) => _ContactDialog(contactIndex: index + 1),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _ContactPickerSheet(contacts: contactsWithPhones),
     );
     
-    if (result != null) {
-      await _updateContacts((currentContacts) => [...currentContacts, result]);
+    if (selectedContact == null || !mounted) return;
+    
+    // Get phone number (remove non-digits, take last 10 digits)
+    String phoneNumber = selectedContact.phones.first.number.replaceAll(RegExp(r'[^0-9]'), '');
+    if (phoneNumber.length > 10) {
+      phoneNumber = phoneNumber.substring(phoneNumber.length - 10);
+    }
+    
+    // Get contact name
+    final contactName = selectedContact.displayName;
+    
+    // Show dialog to enter relation only
+    final relation = await showDialog<String>(
+      context: context,
+      builder: (context) => _RelationDialog(
+        contactName: contactName,
+        phoneNumber: phoneNumber,
+      ),
+    );
+    
+    if (relation != null && relation.isNotEmpty && mounted) {
+      final newContact = EmergencyContact(
+        name: contactName,
+        phone: phoneNumber,
+        relation: relation,
+      );
+      await _updateContacts((currentContacts) => [...currentContacts, newContact]);
     }
   }
 
@@ -452,5 +549,342 @@ class _ContactDialogState extends State<_ContactDialog> {
     );
     
     Navigator.pop(context, contact);
+  }
+}
+
+/// Relation Dialog - Only asks for relation after contact is picked
+class _RelationDialog extends StatefulWidget {
+  final String contactName;
+  final String phoneNumber;
+
+  const _RelationDialog({
+    required this.contactName,
+    required this.phoneNumber,
+  });
+
+  @override
+  State<_RelationDialog> createState() => _RelationDialogState();
+}
+
+class _RelationDialogState extends State<_RelationDialog> {
+  final _relationController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  
+  final List<String> _commonRelations = [
+    'Father',
+    'Mother',
+    'Spouse',
+    'Brother',
+    'Sister',
+    'Friend',
+    'Colleague',
+    'Neighbor',
+  ];
+
+  @override
+  void dispose() {
+    _relationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Add Relation'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Show selected contact info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.contactName.isNotEmpty 
+                            ? widget.contactName[0].toUpperCase() 
+                            : '?',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryGreen,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.contactName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '+91 ${widget.phoneNumber}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.check_circle, color: AppTheme.primaryGreen),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            const Text(
+              'Select or enter relation:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Quick select relations
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _commonRelations.map((relation) {
+                final isSelected = _relationController.text == relation;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _relationController.text = relation;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? AppTheme.primaryRed 
+                          : AppTheme.primaryRed.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      relation,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : AppTheme.primaryRed,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Or type custom relation
+            TextFormField(
+              controller: _relationController,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Or type relation',
+                prefixIcon: const Icon(Icons.family_restroom, color: AppTheme.primaryRed),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter or select a relation';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, _relationController.text.trim());
+            }
+          },
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRed),
+          child: const Text('Add Contact'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Contact Picker Sheet - Shows searchable list of contacts
+class _ContactPickerSheet extends StatefulWidget {
+  final List<Contact> contacts;
+
+  const _ContactPickerSheet({required this.contacts});
+
+  @override
+  State<_ContactPickerSheet> createState() => _ContactPickerSheetState();
+}
+
+class _ContactPickerSheetState extends State<_ContactPickerSheet> {
+  final _searchController = TextEditingController();
+  List<Contact> _filteredContacts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredContacts = widget.contacts;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterContacts(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredContacts = widget.contacts;
+      } else {
+        _filteredContacts = widget.contacts
+            .where((c) => c.displayName.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            // Title
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Select Contact',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.neutralGray,
+                ),
+              ),
+            ),
+            
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filterContacts,
+                decoration: InputDecoration(
+                  hintText: 'Search contacts...',
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.primaryRed),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.primaryRed),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+            ),
+            
+            // Contact list
+            Expanded(
+              child: _filteredContacts.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No contacts found',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      itemCount: _filteredContacts.length,
+                      itemBuilder: (context, index) {
+                        final contact = _filteredContacts[index];
+                        final phone = contact.phones.isNotEmpty 
+                            ? contact.phones.first.number 
+                            : 'No phone';
+                        
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: AppTheme.primaryRed.withOpacity(0.1),
+                            child: Text(
+                              contact.displayName.isNotEmpty 
+                                  ? contact.displayName[0].toUpperCase() 
+                                  : '?',
+                              style: const TextStyle(
+                                color: AppTheme.primaryRed,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            contact.displayName,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            phone,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          ),
+                          onTap: () => Navigator.pop(context, contact),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

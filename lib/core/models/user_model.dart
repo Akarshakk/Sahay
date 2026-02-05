@@ -17,6 +17,8 @@ class User with _$User {
     required UserRole role,
     String? email,
     String? state,
+    String? district,
+    String? city,
     String? profession,
     String? address,
     String? registeredArea,

@@ -33,6 +33,12 @@ export class UsersService {
       // Profile fields
       profession: createUserDto.profession || null,
       address: createUserDto.address || null,
+      dob: createUserDto.dob || null,
+
+      // Location fields
+      state: createUserDto.state || null,
+      district: createUserDto.district || null,
+      city: createUserDto.city || null,
 
       // Area-based assignment
       registeredArea: createUserDto.registeredArea || null,

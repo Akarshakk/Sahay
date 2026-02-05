@@ -78,7 +78,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Upload your government ID for verification',
+          'Upload Government ID',
           style: TextStyle(
             color: AppTheme.neutralGray.withValues(alpha: 0.6),
             fontSize: 12,

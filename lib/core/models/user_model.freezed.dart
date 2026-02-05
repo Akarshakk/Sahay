@@ -26,6 +26,8 @@ mixin _$User {
   UserRole get role => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
   String? get state => throw _privateConstructorUsedError;
+  String? get district => throw _privateConstructorUsedError;
+  String? get city => throw _privateConstructorUsedError;
   String? get profession => throw _privateConstructorUsedError;
   String? get address => throw _privateConstructorUsedError;
   String? get registeredArea => throw _privateConstructorUsedError;
@@ -60,6 +62,8 @@ abstract class $UserCopyWith<$Res> {
       UserRole role,
       String? email,
       String? state,
+      String? district,
+      String? city,
       String? profession,
       String? address,
       String? registeredArea,
@@ -94,6 +98,8 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? role = null,
     Object? email = freezed,
     Object? state = freezed,
+    Object? district = freezed,
+    Object? city = freezed,
     Object? profession = freezed,
     Object? address = freezed,
     Object? registeredArea = freezed,
@@ -130,6 +136,14 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
       state: freezed == state
           ? _value.state
           : state // ignore: cast_nullable_to_non_nullable
+              as String?,
+      district: freezed == district
+          ? _value.district
+          : district // ignore: cast_nullable_to_non_nullable
+              as String?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
               as String?,
       profession: freezed == profession
           ? _value.profession
@@ -193,6 +207,8 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       UserRole role,
       String? email,
       String? state,
+      String? district,
+      String? city,
       String? profession,
       String? address,
       String? registeredArea,
@@ -224,6 +240,8 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? role = null,
     Object? email = freezed,
     Object? state = freezed,
+    Object? district = freezed,
+    Object? city = freezed,
     Object? profession = freezed,
     Object? address = freezed,
     Object? registeredArea = freezed,
@@ -260,6 +278,14 @@ class __$$UserImplCopyWithImpl<$Res>
       state: freezed == state
           ? _value.state
           : state // ignore: cast_nullable_to_non_nullable
+              as String?,
+      district: freezed == district
+          ? _value.district
+          : district // ignore: cast_nullable_to_non_nullable
+              as String?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
               as String?,
       profession: freezed == profession
           ? _value.profession
@@ -319,6 +345,8 @@ class _$UserImpl implements _User {
       required this.role,
       this.email,
       this.state,
+      this.district,
+      this.city,
       this.profession,
       this.address,
       this.registeredArea,
@@ -347,6 +375,10 @@ class _$UserImpl implements _User {
   final String? email;
   @override
   final String? state;
+  @override
+  final String? district;
+  @override
+  final String? city;
   @override
   final String? profession;
   @override
@@ -382,7 +414,7 @@ class _$UserImpl implements _User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, phone: $phone, role: $role, email: $email, state: $state, profession: $profession, address: $address, registeredArea: $registeredArea, registeredAreaId: $registeredAreaId, identityDocumentUrl: $identityDocumentUrl, identityDocumentType: $identityDocumentType, authorityCode: $authorityCode, department: $department, registrationNumber: $registrationNumber, emergencyContacts: $emergencyContacts, isAvailable: $isAvailable)';
+    return 'User(id: $id, name: $name, phone: $phone, role: $role, email: $email, state: $state, district: $district, city: $city, profession: $profession, address: $address, registeredArea: $registeredArea, registeredAreaId: $registeredAreaId, identityDocumentUrl: $identityDocumentUrl, identityDocumentType: $identityDocumentType, authorityCode: $authorityCode, department: $department, registrationNumber: $registrationNumber, emergencyContacts: $emergencyContacts, isAvailable: $isAvailable)';
   }
 
   @override
@@ -396,6 +428,9 @@ class _$UserImpl implements _User {
             (identical(other.role, role) || other.role == role) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.state, state) || other.state == state) &&
+            (identical(other.district, district) ||
+                other.district == district) &&
+            (identical(other.city, city) || other.city == city) &&
             (identical(other.profession, profession) ||
                 other.profession == profession) &&
             (identical(other.address, address) || other.address == address) &&
@@ -421,25 +456,28 @@ class _$UserImpl implements _User {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      name,
-      phone,
-      role,
-      email,
-      state,
-      profession,
-      address,
-      registeredArea,
-      registeredAreaId,
-      identityDocumentUrl,
-      identityDocumentType,
-      authorityCode,
-      department,
-      registrationNumber,
-      const DeepCollectionEquality().hash(_emergencyContacts),
-      isAvailable);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        name,
+        phone,
+        role,
+        email,
+        state,
+        district,
+        city,
+        profession,
+        address,
+        registeredArea,
+        registeredAreaId,
+        identityDocumentUrl,
+        identityDocumentType,
+        authorityCode,
+        department,
+        registrationNumber,
+        const DeepCollectionEquality().hash(_emergencyContacts),
+        isAvailable
+      ]);
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.
@@ -465,6 +503,8 @@ abstract class _User implements User {
       required final UserRole role,
       final String? email,
       final String? state,
+      final String? district,
+      final String? city,
       final String? profession,
       final String? address,
       final String? registeredArea,
@@ -491,6 +531,10 @@ abstract class _User implements User {
   String? get email;
   @override
   String? get state;
+  @override
+  String? get district;
+  @override
+  String? get city;
   @override
   String? get profession;
   @override

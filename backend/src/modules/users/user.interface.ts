@@ -11,6 +11,12 @@ export interface User {
     avatarUrl?: string | null;
     profession?: string | null;          // User's profession
     address?: string | null;             // User's home address
+    dob?: string | null;                 // Date of birth
+
+    // Location fields
+    state?: string | null;               // State name
+    district?: string | null;            // District name
+    city?: string | null;                // City name
 
     // Area-based assignment (for volunteers/authorities)
     registeredArea?: string | null;      // Area name like "Mumbai Central"
