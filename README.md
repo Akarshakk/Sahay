@@ -150,4 +150,4 @@ MIT License - feel free to use for hackathons and projects!
 
 ---
 
-**Built with ❤️ for crisis response and community safety**
+**Built with ❤️ for crisis response and community safety by Team Code4Change**
