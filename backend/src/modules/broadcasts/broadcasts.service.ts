@@ -41,8 +41,12 @@ export class BroadcastsService {
     }
 
     async findAll(region: string) {
+        // Only return broadcasts from the last 12 hours
+        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
         const snapshot = await this.broadcastsCollection
             .where('region', '==', region)
+            .where('createdAt', '>=', twelveHoursAgo)
             .orderBy('createdAt', 'desc')
             .limit(20)
             .get();

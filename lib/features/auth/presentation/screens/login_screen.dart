@@ -25,6 +25,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final LocalAuthentication _localAuth = LocalAuthentication();
+  
+  // Focus nodes for Enter key navigation
+  final _phoneFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _canUseBiometrics = false;
@@ -153,6 +157,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
+    _phoneFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -320,9 +326,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         TextFormField(
                           controller: _phoneController,
+                          focusNode: _phoneFocusNode,
                           keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.next,
                           maxLength: 10,
                           enabled: !_isLoading,
+                          onFieldSubmitted: (_) {
+                            _passwordFocusNode.requestFocus();
+                          },
                           style:
                               TextStyle(color: AppTheme.getTextColor(context)),
                           decoration: InputDecoration(
@@ -366,8 +377,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         TextFormField(
                           controller: _passwordController,
+                          focusNode: _passwordFocusNode,
                           obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
                           enabled: !_isLoading,
+                          onFieldSubmitted: (_) {
+                            if (_agreedToTerms && !_isLoading) {
+                              _handleLogin();
+                            }
+                          },
                           style:
                               TextStyle(color: AppTheme.getTextColor(context)),
                           decoration: InputDecoration(
