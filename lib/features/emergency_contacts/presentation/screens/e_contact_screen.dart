@@ -23,12 +23,12 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     final contacts = user?.emergencyContacts ?? [];
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.getCardColor(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.neutralGray),
+          icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -75,9 +75,9 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
                 ],
               ),
             ).animate().fadeIn(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Contact Slots
             ListView.builder(
               shrinkWrap: true,
@@ -85,13 +85,16 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
               itemCount: 5,
               itemBuilder: (context, index) {
                 final hasContact = index < contacts.length;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: hasContact
                       ? _buildContactCard(contacts[index], index)
                       : _buildEmptyContactSlot(index),
-                ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: -0.2, end: 0);
+                )
+                    .animate()
+                    .fadeIn(delay: (index * 100).ms)
+                    .slideX(begin: -0.2, end: 0);
               },
             ),
           ],
@@ -104,7 +107,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.3)),
       ),
@@ -138,28 +141,30 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
                   children: [
                     Text(
                       contact.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.neutralGray,
+                        color: AppTheme.getTextColor(context),
                       ),
                     ),
                     Text(
                       contact.relation,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.neutralGray.withOpacity(0.6),
+                        color: AppTheme.getSecondaryTextColor(context),
                       ),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit, color: AppTheme.primaryRed, size: 20),
+                icon: const Icon(Icons.edit,
+                    color: AppTheme.primaryRed, size: 20),
                 onPressed: () => _editContact(contact, index),
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: AppTheme.primaryRed, size: 20),
+                icon: const Icon(Icons.delete,
+                    color: AppTheme.primaryRed, size: 20),
                 onPressed: () => _deleteContact(index),
               ),
             ],
@@ -171,9 +176,9 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
               const SizedBox(width: 8),
               Text(
                 '+91 ${contact.phone}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.neutralGray,
+                  color: AppTheme.getSecondaryTextColor(context),
                 ),
               ),
             ],
@@ -189,10 +194,10 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.getCardColor(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppTheme.neutralGray.withOpacity(0.2),
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.2),
             style: BorderStyle.solid,
           ),
         ),
@@ -233,7 +238,8 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Contacts permission is required to add emergency contacts'),
+            content: Text(
+                'Contacts permission is required to add emergency contacts'),
             backgroundColor: AppTheme.primaryRed,
           ),
         );
@@ -242,7 +248,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     }
 
     List<Contact> contactsWithPhones = [];
-    
+
     try {
       // Show loading indicator
       showDialog(
@@ -252,23 +258,22 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
           child: CircularProgressIndicator(color: AppTheme.primaryRed),
         ),
       );
-      
+
       // Get all contacts with phone numbers
       final contacts = await FlutterContacts.getContacts(
         withProperties: true,
         withPhoto: false,
       );
-      
+
       // Filter contacts that have phone numbers
       contactsWithPhones = contacts.where((c) => c.phones.isNotEmpty).toList();
-      
+
       // Dismiss loading
       if (mounted) Navigator.of(context).pop();
-      
     } catch (e) {
       // Dismiss loading if still showing
       if (mounted) Navigator.of(context).pop();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -279,7 +284,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
       }
       return;
     }
-    
+
     if (contactsWithPhones.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -291,7 +296,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
       }
       return;
     }
-    
+
     // Show contact picker dialog
     final selectedContact = await showModalBottomSheet<Contact>(
       context: context,
@@ -301,18 +306,19 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
       ),
       builder: (context) => _ContactPickerSheet(contacts: contactsWithPhones),
     );
-    
+
     if (selectedContact == null || !mounted) return;
-    
+
     // Get phone number (remove non-digits, take last 10 digits)
-    String phoneNumber = selectedContact.phones.first.number.replaceAll(RegExp(r'[^0-9]'), '');
+    String phoneNumber =
+        selectedContact.phones.first.number.replaceAll(RegExp(r'[^0-9]'), '');
     if (phoneNumber.length > 10) {
       phoneNumber = phoneNumber.substring(phoneNumber.length - 10);
     }
-    
+
     // Get contact name
     final contactName = selectedContact.displayName;
-    
+
     // Show dialog to enter relation only
     final relation = await showDialog<String>(
       context: context,
@@ -321,14 +327,15 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
         phoneNumber: phoneNumber,
       ),
     );
-    
+
     if (relation != null && relation.isNotEmpty && mounted) {
       final newContact = EmergencyContact(
         name: contactName,
         phone: phoneNumber,
         relation: relation,
       );
-      await _updateContacts((currentContacts) => [...currentContacts, newContact]);
+      await _updateContacts(
+          (currentContacts) => [...currentContacts, newContact]);
     }
   }
 
@@ -340,7 +347,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
         contactIndex: index + 1,
       ),
     );
-    
+
     if (result != null) {
       await _updateContacts((currentContacts) {
         final newContacts = List<EmergencyContact>.from(currentContacts);
@@ -371,7 +378,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
         ],
       ),
     );
-    
+
     if (confirm == true) {
       await _updateContacts((currentContacts) {
         final newContacts = List<EmergencyContact>.from(currentContacts);
@@ -381,7 +388,8 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     }
   }
 
-  Future<void> _updateContacts(List<EmergencyContact> Function(List<EmergencyContact>) updateFn) async {
+  Future<void> _updateContacts(
+      List<EmergencyContact> Function(List<EmergencyContact>) updateFn) async {
     final user = ref.read(authControllerProvider);
     if (user == null) return;
 
@@ -390,11 +398,13 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
 
     try {
       // Map back to JSON for API update
-      final contactsJson = updatedContacts.map((c) => {
-        'name': c.name,
-        'phone': c.phone,
-        'relation': c.relation,
-      }).toList();
+      final contactsJson = updatedContacts
+          .map((c) => {
+                'name': c.name,
+                'phone': c.phone,
+                'relation': c.relation,
+              })
+          .toList();
 
       await ref.read(authControllerProvider.notifier).updateUser({
         'emergencyContacts': contactsJson,
@@ -446,7 +456,8 @@ class _ContactDialogState extends State<_ContactDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.contact?.name ?? '');
     _phoneController = TextEditingController(text: widget.contact?.phone ?? '');
-    _relationController = TextEditingController(text: widget.contact?.relation ?? '');
+    _relationController =
+        TextEditingController(text: widget.contact?.relation ?? '');
   }
 
   @override
@@ -508,7 +519,8 @@ class _ContactDialogState extends State<_ContactDialog> {
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Relation (e.g., Father, Mother)',
-                  prefixIcon: Icon(Icons.family_restroom, color: AppTheme.primaryRed),
+                  prefixIcon:
+                      Icon(Icons.family_restroom, color: AppTheme.primaryRed),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -541,13 +553,13 @@ class _ContactDialogState extends State<_ContactDialog> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     final contact = EmergencyContact(
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       relation: _relationController.text.trim(),
     );
-    
+
     Navigator.pop(context, contact);
   }
 }
@@ -569,7 +581,7 @@ class _RelationDialog extends StatefulWidget {
 class _RelationDialogState extends State<_RelationDialog> {
   final _relationController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   final List<String> _commonRelations = [
     'Father',
     'Mother',
@@ -616,8 +628,8 @@ class _RelationDialogState extends State<_RelationDialog> {
                     ),
                     child: Center(
                       child: Text(
-                        widget.contactName.isNotEmpty 
-                            ? widget.contactName[0].toUpperCase() 
+                        widget.contactName.isNotEmpty
+                            ? widget.contactName[0].toUpperCase()
                             : '?',
                         style: const TextStyle(
                           fontSize: 18,
@@ -653,16 +665,16 @@ class _RelationDialogState extends State<_RelationDialog> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             const Text(
               'Select or enter relation:',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Quick select relations
             Wrap(
               spacing: 8,
@@ -676,10 +688,11 @@ class _RelationDialogState extends State<_RelationDialog> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected 
-                          ? AppTheme.primaryRed 
+                      color: isSelected
+                          ? AppTheme.primaryRed
                           : AppTheme.primaryRed.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -694,17 +707,19 @@ class _RelationDialogState extends State<_RelationDialog> {
                 );
               }).toList(),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Or type custom relation
             TextFormField(
               controller: _relationController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 labelText: 'Or type relation',
-                prefixIcon: const Icon(Icons.family_restroom, color: AppTheme.primaryRed),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.family_restroom,
+                    color: AppTheme.primaryRed),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -767,7 +782,8 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
         _filteredContacts = widget.contacts;
       } else {
         _filteredContacts = widget.contacts
-            .where((c) => c.displayName.toLowerCase().contains(query.toLowerCase()))
+            .where((c) =>
+                c.displayName.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });
@@ -781,9 +797,9 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -797,7 +813,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
+
             // Title
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -810,7 +826,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                 ),
               ),
             ),
-            
+
             // Search bar
             Padding(
               padding: const EdgeInsets.all(16),
@@ -819,7 +835,8 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                 onChanged: _filterContacts,
                 decoration: InputDecoration(
                   hintText: 'Search contacts...',
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.primaryRed),
+                  prefixIcon:
+                      const Icon(Icons.search, color: AppTheme.primaryRed),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey[300]!),
@@ -837,7 +854,7 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                 ),
               ),
             ),
-            
+
             // Contact list
             Expanded(
               child: _filteredContacts.isEmpty
@@ -852,16 +869,17 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                       itemCount: _filteredContacts.length,
                       itemBuilder: (context, index) {
                         final contact = _filteredContacts[index];
-                        final phone = contact.phones.isNotEmpty 
-                            ? contact.phones.first.number 
+                        final phone = contact.phones.isNotEmpty
+                            ? contact.phones.first.number
                             : 'No phone';
-                        
+
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.primaryRed.withOpacity(0.1),
+                            backgroundColor:
+                                AppTheme.primaryRed.withOpacity(0.1),
                             child: Text(
-                              contact.displayName.isNotEmpty 
-                                  ? contact.displayName[0].toUpperCase() 
+                              contact.displayName.isNotEmpty
+                                  ? contact.displayName[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(
                                 color: AppTheme.primaryRed,
@@ -875,7 +893,8 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
                           ),
                           subtitle: Text(
                             phone,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 12),
                           ),
                           onTap: () => Navigator.pop(context, contact),
                         );
