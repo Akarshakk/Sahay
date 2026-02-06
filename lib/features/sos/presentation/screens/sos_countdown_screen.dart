@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import 'sos_active_screen.dart';
 
 /// Emergency type for SOS - determines which number to call
@@ -43,14 +45,13 @@ class _SOSCountdownScreenState extends ConsumerState<SOSCountdownScreen>
     with SingleTickerProviderStateMixin {
   int _countdown = 5;
   Timer? _timer;
-  bool _silentCommunication = false;
+  bool _sendSMSToContacts = false;
   bool _requireVolunteerAssistance = true;
   late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    _silentCommunication = widget.silentMode;
     _requireVolunteerAssistance = widget.requireVolunteerAssistance;
     
     _pulseController = AnimationController(
@@ -75,18 +76,53 @@ class _SOSCountdownScreenState extends ConsumerState<SOSCountdownScreen>
   }
 
   void _triggerSOS() {
+    // If SMS to contacts is enabled, open SMS app first
+    if (_sendSMSToContacts) {
+      _openSMSWithEmergencyMessage();
+    }
+    
     // Navigate to active SOS screen
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => SOSActiveScreen(
-          silentMode: _silentCommunication,
+          silentMode: false,
           requireVolunteerAssistance: _requireVolunteerAssistance,
           emergencyNumber: widget.emergencyType.number,
           emergencyLabel: widget.emergencyType.label,
         ),
       ),
     );
+  }
+  
+  Future<void> _openSMSWithEmergencyMessage() async {
+    final user = ref.read(authControllerProvider);
+    final emergencyContacts = user?.emergencyContacts ?? [];
+    
+    if (emergencyContacts.isEmpty) {
+      return;
+    }
+    
+    // Get all phone numbers
+    final phoneNumbers = emergencyContacts.map((c) => c.phone).join(',');
+    
+    // Create emergency message
+    final message = 'EMERGENCY SOS! I need help. This is an emergency alert from ${user?.name ?? "me"} via Sahay app. Please call me or contact emergency services. Emergency type: ${widget.emergencyType.label}.';
+    
+    // Create SMS URI
+    final smsUri = Uri(
+      scheme: 'sms',
+      path: phoneNumbers,
+      queryParameters: {'body': message},
+    );
+    
+    try {
+      if (await canLaunchUrl(smsUri)) {
+        await launchUrl(smsUri);
+      }
+    } catch (e) {
+      debugPrint('Failed to open SMS: $e');
+    }
   }
 
   void _immediateTrigger() {
@@ -216,7 +252,7 @@ class _SOSCountdownScreenState extends ConsumerState<SOSCountdownScreen>
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Silent Communication Option
+                  // Send SMS to E-Contacts Option
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -224,15 +260,20 @@ class _SOSCountdownScreenState extends ConsumerState<SOSCountdownScreen>
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: CheckboxListTile(
-                      value: _silentCommunication,
+                      value: _sendSMSToContacts,
                       onChanged: (value) {
-                        setState(() => _silentCommunication = value ?? false);
+                        setState(() => _sendSMSToContacts = value ?? false);
                       },
-                      title: const Row(
+                      title: Row(
                         children: [
-                          Icon(Icons.volume_off, color: AppTheme.primaryRed),
-                          SizedBox(width: 12),
-                          Text('Silent Communication'),
+                          const Icon(Icons.sms, color: AppTheme.primaryRed),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: const Text(
+                              'Send SMS to E-Contacts',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                       controlAffinity: ListTileControlAffinity.trailing,
@@ -254,11 +295,16 @@ class _SOSCountdownScreenState extends ConsumerState<SOSCountdownScreen>
                       onChanged: (value) {
                         setState(() => _requireVolunteerAssistance = value ?? true);
                       },
-                      title: const Row(
+                      title: Row(
                         children: [
-                          Icon(Icons.people, color: AppTheme.primaryRed),
-                          SizedBox(width: 12),
-                          Text('Require volunteer Assistance'),
+                          const Icon(Icons.people, color: AppTheme.primaryRed),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: const Text(
+                              'Require volunteer Assistance',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                       controlAffinity: ListTileControlAffinity.trailing,

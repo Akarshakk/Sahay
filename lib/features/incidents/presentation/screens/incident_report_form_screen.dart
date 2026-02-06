@@ -373,9 +373,6 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
             if (value == null || value.trim().isEmpty) {
               return 'Please describe the situation';
             }
-            if (value.trim().length < 20) {
-              return 'Please provide more details (at least 20 characters)';
-            }
             return null;
           },
         ),

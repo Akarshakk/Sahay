@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -227,14 +228,56 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
   }
 
   Future<void> _addContact(int index) async {
-    // Request contacts permission
-    final status = await Permission.contacts.request();
+    // On web, contacts access is not available - show manual entry dialog
+    if (kIsWeb) {
+      final result = await showDialog<EmergencyContact>(
+        context: context,
+        builder: (context) => _ContactDialog(
+          contact: null,
+          contactIndex: index + 1,
+        ),
+      );
+      
+      if (result != null && mounted) {
+        await _updateContacts((currentContacts) => [...currentContacts, result]);
+      }
+      return;
+    }
+    
+    // Request contacts permission (mobile only)
+    PermissionStatus status;
+    try {
+      status = await Permission.contacts.request();
+    } catch (e) {
+      debugPrint('Permission request error: $e');
+      // Fallback to manual entry
+      if (mounted) {
+        final result = await showDialog<EmergencyContact>(
+          context: context,
+          builder: (context) => _ContactDialog(
+            contact: null,
+            contactIndex: index + 1,
+          ),
+        );
+        
+        if (result != null && mounted) {
+          await _updateContacts((currentContacts) => [...currentContacts, result]);
+        }
+      }
+      return;
+    }
+    
     if (!status.isGranted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Contacts permission is required to add emergency contacts'),
+          SnackBar(
+            content: const Text('Contacts permission is required to add emergency contacts'),
             backgroundColor: AppTheme.primaryRed,
+            action: SnackBarAction(
+              label: 'Settings',
+              textColor: Colors.white,
+              onPressed: () => openAppSettings(),
+            ),
           ),
         );
       }
@@ -244,14 +287,18 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
     List<Contact> contactsWithPhones = [];
     
     try {
+      debugPrint('Loading contacts from device...');
+      
       // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryRed),
-        ),
-      );
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryRed),
+          ),
+        );
+      }
       
       // Get all contacts with phone numbers
       final contacts = await FlutterContacts.getContacts(
@@ -259,15 +306,25 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
         withPhoto: false,
       );
       
+      debugPrint('Found ${contacts.length} total contacts');
+      
       // Filter contacts that have phone numbers
       contactsWithPhones = contacts.where((c) => c.phones.isNotEmpty).toList();
       
+      debugPrint('Found ${contactsWithPhones.length} contacts with phone numbers');
+      
       // Dismiss loading
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
     } catch (e) {
+      debugPrint('Error loading contacts: $e');
+      
       // Dismiss loading if still showing
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -383,10 +440,15 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
 
   Future<void> _updateContacts(List<EmergencyContact> Function(List<EmergencyContact>) updateFn) async {
     final user = ref.read(authControllerProvider);
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('Cannot update contacts: user is null');
+      return;
+    }
 
     final currentContacts = user.emergencyContacts ?? [];
     final updatedContacts = updateFn(currentContacts);
+    
+    debugPrint('Updating contacts: ${updatedContacts.length} contacts');
 
     try {
       // Map back to JSON for API update
@@ -395,10 +457,14 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
         'phone': c.phone,
         'relation': c.relation,
       }).toList();
+      
+      debugPrint('Sending contacts to API: $contactsJson');
 
       await ref.read(authControllerProvider.notifier).updateUser({
         'emergencyContacts': contactsJson,
       });
+      
+      debugPrint('Contacts updated successfully');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -409,6 +475,7 @@ class _EContactScreenState extends ConsumerState<EContactScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Failed to update contacts: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

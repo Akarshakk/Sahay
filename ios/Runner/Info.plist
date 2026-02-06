@@ -49,5 +49,7 @@
 	<string>Sahay needs access to speech recognition to convert your voice message to text for SOS alerts.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sahay needs access to the microphone to record your voice message for SOS alerts.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Sahay needs access to your contacts to add emergency contacts who will be notified during SOS alerts.</string>
 </dict>
 </plist>
