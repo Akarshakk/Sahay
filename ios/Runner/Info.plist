@@ -53,5 +53,7 @@
 	<string>Sahay needs your location to send help to your precise location during emergencies and to show nearby community alerts.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Sahay needs your location to send help to your precise location during emergencies and to show nearby community alerts.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Sahay needs access to your contacts to add emergency contacts who will be notified during SOS alerts.</string>
 </dict>
 </plist>
