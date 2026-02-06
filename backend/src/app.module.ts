@@ -17,6 +17,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { SOSModule } from './modules/sos/sos.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
     SOSModule,
     BroadcastsModule,
     TasksModule,
+    WhatsAppModule,  // WhatsApp Chatbot (Twilio)
   ],
   controllers: [],
   providers: [],

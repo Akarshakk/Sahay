@@ -1847,8 +1847,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             
             print('DEBUG: Broadcast "${b['title']}" Created: ${createdAt.toLocal()}, Now: $now, Diff (min): ${difference.inMinutes}');
             
-            // Show dialog for broadcasts from the last 24 hours that haven't been shown yet
-            if (difference.inHours < 24 && difference.inMinutes >= 0) {
+            // Show dialog for broadcasts from the last 12 hours that haven't been shown yet
+            if (difference.inHours < 12 && difference.inMinutes >= 0) {
               // Check if this broadcast was already shown
               final prefs = await SharedPreferences.getInstance();
               final shownBroadcasts = prefs.getStringList('shown_broadcasts') ?? [];
