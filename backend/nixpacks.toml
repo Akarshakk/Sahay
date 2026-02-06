@@ -1,0 +1,13 @@
+# Nixpacks Configuration for Sahay Backend
+
+# We explicitly list packages to ensure they are available in the PATH
+[phases.setup]
+nixPkgs = ["nodejs", "npm", "ffmpeg", "python3"]
+
+[phases.install]
+# Use npm install (safer than ci for cross-platform)
+# Use python3 -m pip to ensure we use the correct pip
+cmds = ["npm install", "python3 -m pip install -r requirements.txt"]
+
+[start]
+cmd = "npm run start:prod"
