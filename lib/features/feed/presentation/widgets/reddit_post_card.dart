@@ -6,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/models/feed_post_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../screens/post_chat_screen.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class RedditPostCard extends ConsumerWidget {
   final FeedPost post;
@@ -29,6 +30,8 @@ class RedditPostCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = AppTheme.isDarkMode(context);
+    final userId = ref.watch(authControllerProvider)?.id;
+    final isLiked = userId != null && post.likes.contains(userId);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -245,9 +248,7 @@ class RedditPostCard extends ConsumerWidget {
                         icon: Icons.arrow_upward_rounded,
                         label: '${post.likes.length}',
                         onTap: onLike,
-                        color: post.likes.isNotEmpty
-                            ? AppTheme.primaryBrand
-                            : null, // Todo: check if current user liked properly
+                        color: isLiked ? AppTheme.primaryBrand : null,
                       ),
                       _buildActionButton(
                         context,

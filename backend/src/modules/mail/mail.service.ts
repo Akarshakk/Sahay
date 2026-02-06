@@ -32,6 +32,16 @@ export class MailService {
 
     async sendOtp(email: string, otp: string) {
         const from = this.configService.get('SMTP_FROM') || '"CivicSync" <noreply@civicsync.com>';
+        const host = this.configService.get('SMTP_HOST');
+
+        // Fallback for development if SMTP is not configured
+        if (!host) {
+            this.logger.warn(`SMTP_HOST not set. Mocking email to ${email}`);
+            this.logger.log(`===============================================`);
+            this.logger.log(`🔐 OTP for ${email}: ${otp}`);
+            this.logger.log(`===============================================`);
+            return true;
+        }
 
         try {
             const info = await this.transporter.sendMail({

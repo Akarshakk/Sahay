@@ -292,6 +292,56 @@ class ApiService {
     return response.data;
   }
 
+  // Get SOS by ID
+  Future<Map<String, dynamic>> getSOSById(String sosId) async {
+    final response = await _dio.get('/sos/$sosId');
+    return response.data;
+  }
+
+  // Get all responders for an SOS
+  Future<Map<String, dynamic>> getSOSResponders(String sosId) async {
+    final response = await _dio.get('/sos/$sosId/responders');
+    return response.data;
+  }
+
+  // Get nearby volunteers and authorities
+  Future<Map<String, dynamic>> getNearbyResponders({
+    required double latitude,
+    required double longitude,
+    double radius = 10.0,
+  }) async {
+    final response = await _dio.get('/sos/responders/nearby', queryParameters: {
+      'latitude': latitude,
+      'longitude': longitude,
+      'radius': radius,
+    });
+    return response.data;
+  }
+
+  // Volunteer responds to SOS (clicks Help)
+  Future<Map<String, dynamic>> volunteerRespondToSOS(
+    String sosId, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    final response = await _dio.post('/sos/$sosId/volunteer-respond', data: {
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+    });
+    return response.data;
+  }
+
+  // Authority dispatches resources to SOS
+  Future<Map<String, dynamic>> authorityDispatchToSOS(
+    String sosId, {
+    required List<Map<String, dynamic>> resources,
+  }) async {
+    final response = await _dio.post('/sos/$sosId/authority-dispatch', data: {
+      'resources': resources,
+    });
+    return response.data;
+  }
+
   // User endpoints
   Future<Map<String, dynamic>> getMyProfile() async {
     final response = await _dio.get('/users/me');

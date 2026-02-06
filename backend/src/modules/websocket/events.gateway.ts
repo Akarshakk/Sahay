@@ -154,18 +154,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const gridCellId = this.getGridCellId(data.latitude, data.longitude);
     const sosRoom = `sos_${gridCellId}`;
-    
+
     client.join(sosRoom);
     client.join('sos_global'); // Also join global SOS room
-    
+
     // Join adjacent cells for wider coverage
     const adjacentCells = this.getAdjacentCells(data.latitude, data.longitude);
     adjacentCells.forEach((cellId) => {
       client.join(`sos_${cellId}`);
     });
-    
+
     this.logger.log(`Client ${client.id} subscribed to SOS alerts in room: ${sosRoom}`);
-    
+
     return { event: 'subscribedToSOS', data: { room: sosRoom } };
   }
 
@@ -175,13 +175,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   broadcastNewSOS(sosLog: any) {
     const { latitude, longitude } = sosLog.location;
     const gridCellId = this.getGridCellId(latitude, longitude);
-    
+
     // Broadcast to the grid cell and adjacent cells
     this.server.to(`sos_${gridCellId}`).emit('newSOS', {
       type: 'NEW_SOS',
       data: sosLog,
     });
-    
+
     const adjacentCells = this.getAdjacentCells(latitude, longitude);
     adjacentCells.forEach((cellId) => {
       this.server.to(`sos_${cellId}`).emit('newSOS', {
@@ -189,13 +189,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: sosLog,
       });
     });
-    
+
     // Also broadcast to global SOS room (for authorities)
     this.server.to('sos_global').emit('newSOS', {
       type: 'NEW_SOS',
       data: sosLog,
     });
-    
+
     this.logger.log(`🚨 SOS Alert broadcasted: ${sosLog.id}`);
   }
 
@@ -207,12 +207,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       type: 'SOS_UPDATED',
       data: sosLog,
     });
-    
+
     // Also broadcast to location-based rooms
     if (sosLog.location) {
       const { latitude, longitude } = sosLog.location;
       const gridCellId = this.getGridCellId(latitude, longitude);
-      
+
       this.server.to(`sos_${gridCellId}`).emit('sosUpdated', {
         type: 'SOS_UPDATED',
         data: sosLog,
@@ -228,17 +228,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       type: 'SOS_RESOLVED',
       data: sosLog,
     });
-    
+
     if (sosLog.location) {
       const { latitude, longitude } = sosLog.location;
       const gridCellId = this.getGridCellId(latitude, longitude);
-      
+
       this.server.to(`sos_${gridCellId}`).emit('sosResolved', {
         type: 'SOS_RESOLVED',
         data: sosLog,
       });
     }
-    
+
     this.logger.log(`✅ SOS Resolved: ${sosLog.id}`);
   }
 
@@ -270,4 +270,96 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     return cells;
   }
+
+  /**
+   * Broadcast when a volunteer responds to an SOS (clicks "Help")
+   */
+  broadcastVolunteerResponse(sosLog: any, volunteerResponse: any) {
+    // Broadcast to the SOS creator (citizen)
+    this.server.emit('volunteerResponding', {
+      type: 'VOLUNTEER_RESPONDING',
+      data: {
+        sosId: sosLog.id,
+        volunteer: volunteerResponse,
+        allVolunteers: sosLog.respondingVolunteers || [],
+      },
+    });
+
+    // Also broadcast to location-based rooms
+    if (sosLog.location) {
+      const { latitude, longitude } = sosLog.location;
+      const gridCellId = this.getGridCellId(latitude, longitude);
+
+      this.server.to(`sos_${gridCellId}`).emit('volunteerResponding', {
+        type: 'VOLUNTEER_RESPONDING',
+        data: {
+          sosId: sosLog.id,
+          volunteer: volunteerResponse,
+        },
+      });
+    }
+
+    this.logger.log(`🙋 Volunteer ${volunteerResponse.odableName} responding to SOS: ${sosLog.id}`);
+  }
+
+  /**
+   * Broadcast when an authority dispatches resources to an SOS
+   */
+  broadcastAuthorityDispatch(sosLog: any, authorityDispatch: any) {
+    // Broadcast to all connected clients (especially the citizen)
+    this.server.emit('authorityDispatched', {
+      type: 'AUTHORITY_DISPATCHED',
+      data: {
+        sosId: sosLog.id,
+        dispatch: authorityDispatch,
+        allDispatches: sosLog.authorityDispatches || [],
+      },
+    });
+
+    // Also broadcast to location-based rooms
+    if (sosLog.location) {
+      const { latitude, longitude } = sosLog.location;
+      const gridCellId = this.getGridCellId(latitude, longitude);
+
+      this.server.to(`sos_${gridCellId}`).emit('authorityDispatched', {
+        type: 'AUTHORITY_DISPATCHED',
+        data: {
+          sosId: sosLog.id,
+          dispatch: authorityDispatch,
+        },
+      });
+    }
+
+    this.logger.log(`🚓 Authority ${authorityDispatch.authorityName} dispatched resources to SOS: ${sosLog.id}`);
+  }
+
+  /**
+   * Subscribe as volunteer/authority to receive SOS alerts
+   */
+  @SubscribeMessage('subscribeAsResponder')
+  handleResponderSubscription(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { userId: string; role: string; latitude: number; longitude: number },
+  ) {
+    // Join role-specific room
+    const roleRoom = `responders_${data.role.toLowerCase()}`;
+    client.join(roleRoom);
+
+    // Join location-based SOS room
+    const gridCellId = this.getGridCellId(data.latitude, data.longitude);
+    const sosRoom = `sos_${gridCellId}`;
+    client.join(sosRoom);
+    client.join('sos_global');
+
+    // Join adjacent cells for 10km coverage
+    const adjacentCells = this.getAdjacentCells(data.latitude, data.longitude);
+    adjacentCells.forEach((cellId) => {
+      client.join(`sos_${cellId}`);
+    });
+
+    this.logger.log(`Client ${client.id} (${data.role}) subscribed as responder in room: ${sosRoom}`);
+
+    return { event: 'subscribedAsResponder', data: { room: sosRoom, roleRoom } };
+  }
 }
+

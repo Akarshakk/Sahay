@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -19,14 +23,45 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   String _selectedCategory = 'other';
   String? _address;
   bool _isLoading = false;
+  XFile? _pickedImage; // Use XFile for cross-platform support
 
   final List<Map<String, dynamic>> _categories = [
-    {'value': 'infrastructure', 'label': 'Infrastructure', 'icon': Icons.construction, 'color': Colors.orange},
-    {'value': 'safety', 'label': 'Safety', 'icon': Icons.warning, 'color': Colors.red},
-    {'value': 'health', 'label': 'Health', 'icon': Icons.local_hospital, 'color': Colors.blue},
-    {'value': 'environment', 'label': 'Environment', 'icon': Icons.eco, 'color': Colors.green},
-    {'value': 'accident', 'label': 'Accident', 'icon': Icons.car_crash, 'color': Colors.deepOrange},
-    {'value': 'other', 'label': 'Other', 'icon': Icons.info, 'color': Colors.grey},
+    {
+      'value': 'infrastructure',
+      'label': 'Infrastructure',
+      'icon': Icons.construction,
+      'color': Colors.orange
+    },
+    {
+      'value': 'safety',
+      'label': 'Safety',
+      'icon': Icons.warning,
+      'color': Colors.red
+    },
+    {
+      'value': 'health',
+      'label': 'Health',
+      'icon': Icons.local_hospital,
+      'color': Colors.blue
+    },
+    {
+      'value': 'environment',
+      'label': 'Environment',
+      'icon': Icons.eco,
+      'color': Colors.green
+    },
+    {
+      'value': 'accident',
+      'label': 'Accident',
+      'icon': Icons.car_crash,
+      'color': Colors.deepOrange
+    },
+    {
+      'value': 'other',
+      'label': 'Other',
+      'icon': Icons.info,
+      'color': Colors.grey
+    },
   ];
 
   @override
@@ -37,13 +72,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   Future<void> _loadAddress() async {
     if (widget.currentPosition == null) return;
-    
+
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         widget.currentPosition!.latitude,
         widget.currentPosition!.longitude,
       );
-      
+
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
         final parts = <String>[];
@@ -53,7 +88,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         if (place.locality != null && place.locality!.isNotEmpty) {
           parts.add(place.locality!);
         }
-        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+        if (place.administrativeArea != null &&
+            place.administrativeArea!.isNotEmpty) {
           parts.add(place.administrativeArea!);
         }
         if (parts.isNotEmpty) {
@@ -64,6 +100,39 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       }
     } catch (e) {
       // Geocoding may fail on web/emulator - that's okay
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+    if (pickedFile != null) {
+      setState(() {
+        _pickedImage = pickedFile;
+      });
     }
   }
 
@@ -85,6 +154,28 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     setState(() => _isLoading = true);
 
     try {
+      List<String> mediaUrls = [];
+
+      // Upload image if selected
+      if (_pickedImage != null) {
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('feed_images')
+            .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+        if (kIsWeb) {
+          // For web, we must upload bytes
+          final bytes = await _pickedImage!.readAsBytes();
+          await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+        } else {
+          // For mobile, putFile is more efficient
+          await ref.putFile(File(_pickedImage!.path));
+        }
+
+        final url = await ref.getDownloadURL();
+        mediaUrls.add(url);
+      }
+
       final api = ref.read(apiServiceProvider);
       final result = await api.createPost({
         'content': _contentController.text.trim(),
@@ -92,6 +183,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         'latitude': widget.currentPosition!.latitude,
         'longitude': widget.currentPosition!.longitude,
         'address': _address,
+        'mediaUrls': mediaUrls,
       });
 
       if (result['success'] == true) {
@@ -106,9 +198,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         }
       }
     } catch (e) {
-      // Offline mode - show success with queue indicator
+      print('Error creating post: $e');
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.pop(context, true); // Still pop for demo purposes if offline
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('📡 Post saved! Will sync when online.'),
@@ -187,7 +279,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) {
-                      setState(() => _selectedCategory = cat['value'] as String);
+                      setState(
+                          () => _selectedCategory = cat['value'] as String);
                     }
                   },
                   selectedColor: cat['color'] as Color,
@@ -199,9 +292,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 );
               }).toList(),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Content
             const Text(
               'Description',
@@ -215,7 +308,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               controller: _contentController,
               maxLines: 6,
               decoration: InputDecoration(
-                hintText: 'Describe what you\'re reporting...\n\nBe specific and clear to help others verify.',
+                hintText:
+                    'Describe what you\'re reporting...\n\nBe specific and clear to help others verify.',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey[300]!),
@@ -225,9 +319,96 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 contentPadding: const EdgeInsets.all(16),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
+            // Image Upload Section
+            const Text(
+              'Add Photo',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: _pickImage,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: _pickedImage != null
+                    ? Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: kIsWeb
+                                ? Image.network(
+                                    _pickedImage!.path,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.file(
+                                    File(_pickedImage!.path),
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _pickedImage = null;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_a_photo_outlined,
+                            size: 40,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap to upload image',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // Location info
             Container(
               padding: const EdgeInsets.all(16),
@@ -270,9 +451,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Info banner
             Container(
               padding: const EdgeInsets.all(12),
