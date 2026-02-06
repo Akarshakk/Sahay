@@ -88,6 +88,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ws.joinRegion(user.state!);
         _fetchMissedBroadcasts(user.state!);
       }
+      
+      // Subscribe to SOS alerts for volunteers and authorities
+      if (user.role == UserRole.volunteer || user.role == UserRole.authority) {
+        final location = ref.read(currentLocationProvider).valueOrNull;
+        if (location != null) {
+          ws.subscribeToSOSAlerts(location.latitude, location.longitude);
+        }
+        
+        // Listen for new SOS alerts
+        ws.onNewSOS((data) {
+          if (!mounted) return;
+          _showSOSAlertDialog(data);
+        });
+        
+        // Listen for SOS updates (including new messages)
+        ws.onSOSUpdated((data) {
+          if (!mounted) return;
+          _showSOSUpdateSnackbar(data);
+        });
+      }
     }
 
     // Listen for Broadcasts
@@ -136,6 +156,238 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+  }
+
+  void _showSOSAlertDialog(dynamic data) {
+    final sosData = data is Map ? data : {};
+    final String sosId = sosData['id']?.toString() ?? 'Unknown';
+    final String type = sosData['type']?.toString() ?? 'EMERGENCY';
+    final String? message = sosData['message']?.toString();
+    final String? address = sosData['address']?.toString();
+    final double? latitude = sosData['latitude'] is num ? (sosData['latitude'] as num).toDouble() : null;
+    final double? longitude = sosData['longitude'] is num ? (sosData['longitude'] as num).toDouble() : null;
+    final String? userName = sosData['userName']?.toString();
+    final String? userPhone = sosData['userPhone']?.toString();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryRed.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.sos, color: AppTheme.primaryRed, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'SOS ALERT!',
+                style: TextStyle(
+                  color: AppTheme.primaryRed,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User info if available
+              if (userName != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              
+              // Emergency type
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  type,
+                  style: const TextStyle(
+                    color: AppTheme.primaryRed,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Message if present
+              if (message != null && message.isNotEmpty) ...[
+                const Text(
+                  'Message:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    message,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              
+              // Location
+              const Text(
+                'Location:',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (address != null && address.isNotEmpty)
+                      Text(address, style: const TextStyle(fontSize: 14)),
+                    if (latitude != null && longitude != null)
+                      Text(
+                        'Coordinates: ${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              Text(
+                'SOS ID: $sosId',
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Dismiss'),
+          ),
+          if (userPhone != null)
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final Uri phoneUri = Uri(scheme: 'tel', path: userPhone);
+                try {
+                  if (await canLaunchUrl(phoneUri)) {
+                    await launchUrl(phoneUri);
+                  }
+                } catch (e) {
+                  debugPrint('Failed to call: $e');
+                }
+              },
+              icon: const Icon(Icons.phone, size: 18),
+              label: const Text('Call'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to map or location - can be enhanced
+              if (latitude != null && longitude != null) {
+                _openMapLocation(latitude, longitude, address);
+              }
+            },
+            icon: const Icon(Icons.map, size: 18),
+            label: const Text('View Map'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRed,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showSOSUpdateSnackbar(dynamic data) {
+    final sosData = data is Map ? data : {};
+    final String? message = sosData['message']?.toString();
+    final String action = sosData['action']?.toString() ?? 'Update';
+    
+    String snackMessage = 'SOS Alert Updated';
+    if (action == 'MESSAGE_SENT' && message != null) {
+      snackMessage = 'New SOS Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}';
+    } else if (action == 'MARKED_SAFE') {
+      snackMessage = 'User has marked themselves as safe';
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.sos, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(snackMessage)),
+          ],
+        ),
+        backgroundColor: action == 'MARKED_SAFE' ? AppTheme.primaryGreen : AppTheme.primaryRed,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'View',
+          textColor: Colors.white,
+          onPressed: () {
+            _showSOSAlertDialog(data);
+          },
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _openMapLocation(double lat, double lng, String? address) async {
+    final Uri mapsUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    try {
+      if (await canLaunchUrl(mapsUri)) {
+        await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location: ${address ?? '$lat, $lng'}')),
+        );
+      }
+    }
   }
 
   @override

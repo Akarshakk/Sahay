@@ -1,7 +1,7 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SOSService } from './sos.service';
-import { CreateSOSDto, AddSOSActionDto } from './dto';
+import { CreateSOSDto, AddSOSActionDto, UpdateSOSDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('sos')
@@ -33,6 +33,21 @@ export class SOSController {
         return {
             success: true,
             message: 'Action logged',
+            data: log,
+        };
+    }
+
+    @Patch(':id')
+    @ApiOperation({ summary: 'Update SOS log (message, status)' })
+    async updateSOS(
+        @Param('id') id: string,
+        @Request() req: any,
+        @Body() dto: UpdateSOSDto,
+    ) {
+        const log = await this.sosService.update(id, req.user.id, dto);
+        return {
+            success: true,
+            message: 'SOS updated',
             data: log,
         };
     }

@@ -17,6 +17,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { SOSModule } from './modules/sos/sos.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { TranscriptionModule } from './modules/transcription/transcription.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
     SOSModule,
     BroadcastsModule,
     TasksModule,
+    TranscriptionModule,
   ],
   controllers: [],
   providers: [],

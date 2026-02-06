@@ -10,6 +10,7 @@ export interface SOSLog {
         longitude: number;
     };
     address?: string;
+    message?: string;
     batteryLevel?: number;
     actions: {
         timestamp: Date;

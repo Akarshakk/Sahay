@@ -211,6 +211,7 @@ class ApiService {
     required double longitude,
     required String type,
     String? address,
+    String? message,
     int? batteryLevel,
   }) async {
     final response = await _dio.post('/sos/trigger', data: {
@@ -218,7 +219,18 @@ class ApiService {
       'longitude': longitude,
       'type': type,
       if (address != null) 'address': address,
+      if (message != null) 'message': message,
       if (batteryLevel != null) 'batteryLevel': batteryLevel,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateSOSMessage(
+    String sosId,
+    String message,
+  ) async {
+    final response = await _dio.patch('/sos/$sosId', data: {
+      'message': message,
     });
     return response.data;
   }

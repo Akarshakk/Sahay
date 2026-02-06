@@ -1,0 +1,15 @@
+# Whisper Speech-to-Text Dependencies
+# Install with: pip install -r requirements.txt
+
+# OpenAI Whisper for speech recognition
+openai-whisper>=20231117
+
+# Required for audio processing
+# Note: FFmpeg must also be installed on the system
+# - macOS: brew install ffmpeg
+# - Ubuntu: sudo apt install ffmpeg
+# - Windows: winget install Gyan.FFmpeg
+
+# Optional: For faster inference on GPU
+# torch>=2.0.0
+# torchaudio>=2.0.0

@@ -17,6 +17,11 @@ export class CreateSOSDto {
     address?: string;
 
     @ApiProperty({ required: false })
+    @IsString()
+    @IsOptional()
+    message?: string;
+
+    @ApiProperty({ required: false })
     @IsNumber()
     @IsOptional()
     batteryLevel?: number;
@@ -24,6 +29,18 @@ export class CreateSOSDto {
     @ApiProperty({ enum: ['POLICE', 'AMBULANCE', 'FIRE', 'CONTACTS', 'Custom'] })
     @IsString()
     type: 'POLICE' | 'AMBULANCE' | 'FIRE' | 'CONTACTS' | 'Custom';
+}
+
+export class UpdateSOSDto {
+    @ApiProperty({ required: false })
+    @IsString()
+    @IsOptional()
+    message?: string;
+
+    @ApiProperty({ required: false, enum: ['TRIGGERED', 'RESOLVED', 'FALSE_ALARM'] })
+    @IsString()
+    @IsOptional()
+    status?: 'TRIGGERED' | 'RESOLVED' | 'FALSE_ALARM';
 }
 
 export class AddSOSActionDto {

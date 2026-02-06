@@ -2,7 +2,7 @@ import { Injectable, Logger, Inject, NotFoundException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { FIREBASE_APP } from '../../firebase';
 import { SOSLog } from './sos.interface';
-import { CreateSOSDto, AddSOSActionDto } from './dto';
+import { CreateSOSDto, AddSOSActionDto, UpdateSOSDto } from './dto';
 import { UsersService } from '../users/users.service';
 import { EventsGateway } from '../websocket/events.gateway';
 
@@ -38,6 +38,7 @@ export class SOSService {
                 longitude: dto.longitude,
             },
             address: dto.address || '',
+            ...(dto.message !== undefined && { message: dto.message }),
             ...(dto.batteryLevel !== undefined && { batteryLevel: dto.batteryLevel }),
             actions: [],
             createdAt: now,
@@ -91,6 +92,36 @@ export class SOSService {
         } else {
             this.eventsGateway.broadcastSOSUpdate(updatedSosLog);
         }
+        
+        return updatedSosLog;
+    }
+
+    async update(sosId: string, userId: string, dto: UpdateSOSDto): Promise<SOSLog> {
+        const sosRef = this.sosCollection.doc(sosId);
+        const doc = await sosRef.get();
+
+        if (!doc.exists) {
+            throw new NotFoundException(`SOS Log with ID ${sosId} not found`);
+        }
+
+        const sosLog = doc.data() as SOSLog;
+        
+        const updateData: any = {};
+        if (dto.message !== undefined) {
+            updateData.message = dto.message;
+        }
+        if (dto.status !== undefined) {
+            updateData.status = dto.status;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            await sosRef.update(updateData);
+        }
+
+        const updatedSosLog = (await sosRef.get()).data() as SOSLog;
+        
+        // Broadcast update via WebSocket
+        this.eventsGateway.broadcastSOSUpdate(updatedSosLog);
         
         return updatedSosLog;
     }
