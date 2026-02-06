@@ -9,8 +9,8 @@ class ApiService {
     if (kIsWeb) {
       return 'http://localhost:3000/api/v1';
     } else {
-      // Your PC's IP address - change this if your network changes
-      return 'http://10.1.19.96:3000/api/v1';
+      // USB Debugging (requires 'adb reverse tcp:3000 tcp:3000')
+      return 'http://127.0.0.1:3000/api/v1';
     }
   }
 
@@ -19,7 +19,7 @@ class ApiService {
 
   ApiService()
       : _dio = Dio(BaseOptions(
-          baseUrl: kIsWeb ? 'http://localhost:3000/api/v1' : 'http://10.1.19.96:3000/api/v1',
+          baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
           headers: {
@@ -52,12 +52,25 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> login(Map<String, dynamic> data) async {
-    final response = await _dio.post('/auth/login', data: data);
-    if (response.data['success'] == true &&
-        response.data['data']?['token'] != null) {
-      setAuthToken(response.data['data']['token']);
+    print('DEBUG: Attempting login to ${_dio.options.baseUrl}/auth/login');
+    print('DEBUG: Login Payload: $data');
+    try {
+      final response = await _dio.post('/auth/login', data: data);
+      print('DEBUG: Login Response: ${response.statusCode} - ${response.data}');
+      if (response.data['success'] == true &&
+          response.data['data']?['token'] != null) {
+        setAuthToken(response.data['data']['token']);
+      }
+      return response.data;
+    } catch (e) {
+      print('DEBUG: Login Error: $e');
+      if (e is DioException) {
+        print('DEBUG: DioError Type: ${e.type}');
+        print('DEBUG: DioError Message: ${e.message}');
+        print('DEBUG: DioError Response: ${e.response}');
+      }
+      rethrow;
     }
-    return response.data;
   }
 
   Future<void> sendEmailOtp(String email) async {
