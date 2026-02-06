@@ -143,8 +143,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-
-
   Future<void> _saveCredentials(String phone, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('saved_phone', phone);
@@ -296,7 +294,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.getCardColor(context),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -310,12 +308,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Phone Number Field
-                        const Text(
+                        Text(
                           'Phone Number',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.neutralGray,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -325,13 +323,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           keyboardType: TextInputType.phone,
                           maxLength: 10,
                           enabled: !_isLoading,
+                          style:
+                              TextStyle(color: AppTheme.getTextColor(context)),
                           decoration: InputDecoration(
                             hintText: 'Enter your 10-digit phone number',
+                            hintStyle: TextStyle(
+                                color: AppTheme.getSecondaryTextColor(context)
+                                    .withOpacity(0.5)),
                             prefixIcon: const Icon(Icons.phone,
                                 color: AppTheme.primaryRed),
                             counterText: '',
                             filled: true,
-                            fillColor: AppTheme.backgroundLight,
+                            fillColor: AppTheme.getBackgroundColor(context),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -351,12 +354,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 16),
 
                         // Password Field
-                        const Text(
+                        Text(
                           'Password',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.neutralGray,
+                            color: AppTheme.getSecondaryTextColor(context),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -365,8 +368,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           enabled: !_isLoading,
+                          style:
+                              TextStyle(color: AppTheme.getTextColor(context)),
                           decoration: InputDecoration(
                             hintText: 'Enter your password',
+                            hintStyle: TextStyle(
+                                color: AppTheme.getSecondaryTextColor(context)
+                                    .withOpacity(0.5)),
                             prefixIcon: const Icon(Icons.lock,
                                 color: AppTheme.primaryRed),
                             suffixIcon: IconButton(
@@ -374,7 +382,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 _obscurePassword
                                     ? Icons.visibility_off
                                     : Icons.visibility,
-                                color: AppTheme.neutralGray,
+                                color: AppTheme.getSecondaryTextColor(context),
                               ),
                               onPressed: () {
                                 setState(() {
@@ -383,7 +391,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               },
                             ),
                             filled: true,
-                            fillColor: AppTheme.backgroundLight,
+                            fillColor: AppTheme.getBackgroundColor(context),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -513,24 +521,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             children: [
                               Expanded(
                                 child: Divider(
-                                    color:
-                                        AppTheme.neutralGray.withValues(alpha: 0.3)),
+                                    color: AppTheme.neutralGray
+                                        .withValues(alpha: 0.3)),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
                                   'or',
                                   style: TextStyle(
-                                    color:
-                                        AppTheme.neutralGray.withValues(alpha: 0.6),
+                                    color: AppTheme.neutralGray
+                                        .withValues(alpha: 0.6),
                                     fontSize: 14,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                    color:
-                                        AppTheme.neutralGray.withValues(alpha: 0.3)),
+                                    color: AppTheme.neutralGray
+                                        .withValues(alpha: 0.3)),
                               ),
                             ],
                           ),
