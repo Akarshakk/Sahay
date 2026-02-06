@@ -1,9 +1,10 @@
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WebSocketService {
   IO.Socket? _socket;
-  final String baseUrl = 'http://localhost:3000';
+  final String baseUrl = kIsWeb ? 'http://localhost:3000' : 'http://10.1.19.96:3000';
   
   bool get isConnected => _socket?.connected ?? false;
 
@@ -84,6 +85,26 @@ class WebSocketService {
     });
   }
 
+  // Subscribe as responder (volunteer/authority) for SOS alerts
+  void subscribeAsResponder(String userId, String role, double latitude, double longitude) {
+    _socket?.emit('subscribeAsResponder', {
+      'userId': userId,
+      'role': role,
+      'latitude': latitude,
+      'longitude': longitude,
+    });
+  }
+
+  // Listen for volunteer responding to SOS
+  void onVolunteerResponding(Function(dynamic) callback) {
+    _socket?.on('volunteerResponding', callback);
+  }
+
+  // Listen for authority dispatching resources
+  void onAuthorityDispatched(Function(dynamic) callback) {
+    _socket?.on('authorityDispatched', callback);
+  }
+
   void disconnect() {
     _socket?.disconnect();
     _socket = null;
@@ -91,3 +112,4 @@ class WebSocketService {
 }
 
 final webSocketServiceProvider = Provider<WebSocketService>((ref) => WebSocketService());
+

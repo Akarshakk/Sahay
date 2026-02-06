@@ -18,6 +18,7 @@ import { SOSModule } from './modules/sos/sos.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
+import { TranscriptionModule } from './modules/transcription/transcription.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
     BroadcastsModule,
     TasksModule,
     WhatsAppModule,  // WhatsApp Chatbot (Twilio)
+    TranscriptionModule,
   ],
   controllers: [],
   providers: [],

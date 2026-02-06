@@ -1,16 +1,25 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000/api/v1';
+  // Use localhost for web, PC's IP for mobile
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:3000/api/v1';
+    } else {
+      // Your PC's IP address - change this if your network changes
+      return 'http://10.1.19.96:3000/api/v1';
+    }
+  }
 
   final Dio _dio;
   String? _authToken;
 
   ApiService()
       : _dio = Dio(BaseOptions(
-          baseUrl: baseUrl,
+          baseUrl: kIsWeb ? 'http://localhost:3000/api/v1' : 'http://10.1.19.96:3000/api/v1',
           connectTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
           headers: {
@@ -180,7 +189,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> updateIncidentStatus(String incidentId, String status) async {
-    final response = await _dio.patch('/incidents/$incidentId', data: {
+    final response = await _dio.put('/incidents/$incidentId', data: {
       'status': status,
     });
     return response.data;
@@ -211,6 +220,7 @@ class ApiService {
     required double longitude,
     required String type,
     String? address,
+    String? message,
     int? batteryLevel,
   }) async {
     final response = await _dio.post('/sos/trigger', data: {
@@ -218,7 +228,18 @@ class ApiService {
       'longitude': longitude,
       'type': type,
       if (address != null) 'address': address,
+      if (message != null) 'message': message,
       if (batteryLevel != null) 'batteryLevel': batteryLevel,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateSOSMessage(
+    String sosId,
+    String message,
+  ) async {
+    final response = await _dio.patch('/sos/$sosId', data: {
+      'message': message,
     });
     return response.data;
   }
@@ -254,6 +275,56 @@ class ApiService {
       'latitude': latitude,
       'longitude': longitude,
       'radius': radius,
+    });
+    return response.data;
+  }
+
+  // Get SOS by ID
+  Future<Map<String, dynamic>> getSOSById(String sosId) async {
+    final response = await _dio.get('/sos/$sosId');
+    return response.data;
+  }
+
+  // Get all responders for an SOS
+  Future<Map<String, dynamic>> getSOSResponders(String sosId) async {
+    final response = await _dio.get('/sos/$sosId/responders');
+    return response.data;
+  }
+
+  // Get nearby volunteers and authorities
+  Future<Map<String, dynamic>> getNearbyResponders({
+    required double latitude,
+    required double longitude,
+    double radius = 10.0,
+  }) async {
+    final response = await _dio.get('/sos/responders/nearby', queryParameters: {
+      'latitude': latitude,
+      'longitude': longitude,
+      'radius': radius,
+    });
+    return response.data;
+  }
+
+  // Volunteer responds to SOS (clicks Help)
+  Future<Map<String, dynamic>> volunteerRespondToSOS(
+    String sosId, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    final response = await _dio.post('/sos/$sosId/volunteer-respond', data: {
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+    });
+    return response.data;
+  }
+
+  // Authority dispatches resources to SOS
+  Future<Map<String, dynamic>> authorityDispatchToSOS(
+    String sosId, {
+    required List<Map<String, dynamic>> resources,
+  }) async {
+    final response = await _dio.post('/sos/$sosId/authority-dispatch', data: {
+      'resources': resources,
     });
     return response.data;
   }

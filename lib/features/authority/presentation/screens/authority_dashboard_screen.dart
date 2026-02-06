@@ -4,6 +4,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
+import '../../../../core/providers/sos_notification_provider.dart';
+import '../../../../core/services/websocket_service.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../../core/widgets/sos_alert_popup.dart';
+import '../../../../core/widgets/resource_dispatch_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'manage_tasks_screen.dart' as manage_tasks;
 
@@ -19,10 +24,111 @@ class AuthorityDashboardScreen extends ConsumerStatefulWidget {
 class _AuthorityDashboardScreenState
     extends ConsumerState<AuthorityDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isPopupShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize SOS notifications after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSOSNotifications();
+    });
+  }
+  
+  void _initializeSOSNotifications() async {
+    final webSocketService = ref.read(webSocketServiceProvider);
+    final sosNotifier = ref.read(sosNotificationProvider.notifier);
+    final user = ref.read(authControllerProvider);
+    
+    // Initialize WebSocket listeners
+    sosNotifier.initializeListeners();
+    
+    // Get current location and subscribe as responder
+    try {
+      final locationService = LocationService();
+      final position = await locationService.getCurrentLocation();
+      if (position != null && user != null) {
+        webSocketService.subscribeAsResponder(
+          user.id,
+          'AUTHORITY',
+          position.latitude,
+          position.longitude,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error getting location for SOS subscription: $e');
+    }
+  }
+  
+  void _showSOSPopup(SOSAlert alert) {
+    if (_isPopupShowing) return;
+    _isPopupShowing = true;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SOSAlertPopup(
+        alert: alert,
+        userRole: 'AUTHORITY',
+        onHelp: () {}, // Not used for authorities
+        onDispatch: () {
+          Navigator.of(context).pop();
+          _showResourceDispatchDialog(alert);
+        },
+        onIgnore: () {
+          Navigator.of(context).pop();
+          _isPopupShowing = false;
+          ref.read(sosNotificationProvider.notifier).dismissPopup();
+        },
+        isLoading: ref.watch(sosNotificationProvider).isLoading,
+      ),
+    );
+  }
+  
+  void _showResourceDispatchDialog(SOSAlert alert) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ResourceDispatchDialog(
+        sosId: alert.id,
+        citizenName: alert.userName,
+        onDispatch: (resources) async {
+          Navigator.of(context).pop();
+          _isPopupShowing = false;
+          await ref.read(sosNotificationProvider.notifier).authorityDispatch(
+            alert.id, 
+            resources,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              const SnackBar(
+                content: Text('Resources dispatched successfully! 🚓'),
+                backgroundColor: AppTheme.primaryGreen,
+              ),
+            );
+          }
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+          _isPopupShowing = false;
+          ref.read(sosNotificationProvider.notifier).dismissPopup();
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final verificationState = ref.watch(verificationProvider);
+    final sosState = ref.watch(sosNotificationProvider);
+    
+    // Show SOS popup if there's a pending alert
+    if (sosState.showPopup && sosState.pendingAlert != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSOSPopup(sosState.pendingAlert!);
+      });
+    }
 
     return Scaffold(
       key: _scaffoldKey,

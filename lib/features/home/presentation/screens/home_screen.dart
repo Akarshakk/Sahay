@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:background_sms/background_sms.dart';
@@ -12,7 +14,12 @@ import '../../../../core/services/location_service.dart';
 import '../../../../core/services/hardware_trigger_service.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/websocket_service.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:background_sms/background_sms.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/glass_container.dart';
+import 'dart:ui';
 import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/models/incident_model.dart';
@@ -53,27 +60,77 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Default location for fallback (Mumbai coordinates)
   static const double _defaultLatitude = 19.0760;
   static const double _defaultLongitude = 72.8777;
-  
+
   List<Map<String, dynamic>> _notifications = [];
-  
+  bool _isTourChecked = false;
+
+  // Keys for App Tour
+
+  // Keys for App Tour
+  final GlobalKey _sosKey = GlobalKey();
+  final GlobalKey _locationKey = GlobalKey();
+  final GlobalKey _policeKey = GlobalKey();
+  final GlobalKey _ambulanceKey = GlobalKey();
+  final GlobalKey _fireKey = GlobalKey();
+  final GlobalKey _communityKey = GlobalKey();
+
   @override
   void initState() {
+    print("DEBUG: HomeScreen initState");
     super.initState();
     _loadNotifications();
     // Hardware Trigger Listener - Navigate to SOS countdown screen
     HardwareTriggerService().onEmergencyTriggered = _triggerEmergencySOS;
     HardwareTriggerService().initialize();
-    
-    // Initialize WebSocket
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initWebSocket();
     });
   }
 
+  Future<void> _checkAndStartTour(BuildContext innerContext) async {
+    print("DEBUG: _checkAndStartTour called");
+    final prefs = await SharedPreferences.getInstance();
+    // For debugging: Force tour if needed or check logic
+    // await prefs.remove('hasSeenTour'); // Uncomment to reset for testing
+
+    final hasSeenTour = prefs.getBool('hasSeenTour') ?? false;
+    print("DEBUG: hasSeenTour = $hasSeenTour");
+
+    // For testing: Show tour everytime
+    // if (!hasSeenTour) {
+    if (true) {
+      print("DEBUG: Starting ShowCase");
+      if (mounted) {
+        // Ensure context is valid
+        try {
+          final List<GlobalKey> tourKeys = [
+            _sosKey,
+            _locationKey,
+            _policeKey,
+            _ambulanceKey,
+            _fireKey
+          ];
+
+          // Community key is only for citizens
+          if (widget.userRole == UserRole.citizen) {
+            tourKeys.add(_communityKey);
+          }
+
+          ShowCaseWidget.of(innerContext).startShowCase(tourKeys);
+          print("DEBUG: ShowCase started");
+          await prefs.setBool('hasSeenTour', true);
+        } catch (e) {
+          print("DEBUG: Failed to start ShowCase: $e");
+        }
+      }
+    }
+  }
+
   void _initWebSocket() {
     final user = ref.read(authControllerProvider);
     final ws = ref.read(webSocketServiceProvider);
-    
+
     // Connect
     if (user != null && !ws.isConnected) {
       ws.connect(user.id);
@@ -88,6 +145,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ws.joinRegion(user.state!);
         _fetchMissedBroadcasts(user.state!);
       }
+
+      // Subscribe to SOS alerts for volunteers and authorities
+      if (user.role == UserRole.volunteer || user.role == UserRole.authority) {
+        final location = ref.read(currentLocationProvider).valueOrNull;
+        if (location != null) {
+          ws.subscribeToSOSAlerts(location.latitude, location.longitude);
+        }
+
+        // Listen for new SOS alerts
+        ws.onNewSOS((data) {
+          if (!mounted) return;
+          _showSOSAlertDialog(data);
+        });
+
+        // Listen for SOS updates (including new messages)
+        ws.onSOSUpdated((data) {
+          if (!mounted) return;
+          _showSOSUpdateSnackbar(data);
+        });
+      }
     }
 
     // Listen for Broadcasts
@@ -97,7 +174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _showBroadcastDialog(data['data']);
     });
   }
-  
+
   void _showBroadcastDialog(Map<String, dynamic> data) {
     showDialog(
       context: context,
@@ -107,21 +184,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppTheme.primaryRed, size: 28),
+            Icon(Icons.warning_amber_rounded,
+                color: AppTheme.primaryRed, size: 28),
             SizedBox(width: 12),
-            Expanded(child: Text('EMERGENCY ALERT', style: TextStyle(color: AppTheme.primaryRed, fontWeight: FontWeight.bold))),
+            Expanded(
+                child: Text('EMERGENCY ALERT',
+                    style: TextStyle(
+                        color: AppTheme.primaryRed,
+                        fontWeight: FontWeight.bold))),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(data['title'] ?? 'Alert', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(data['title'] ?? 'Alert',
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Text(data['message'] ?? '', style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 16),
-            Text('Region: ${data['region']}', style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
-            Text('Priority: ${data['priority']}', style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+            Text('Region: ${data['region']}',
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic)),
+            Text('Priority: ${data['priority']}',
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -138,41 +230,341 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _showSOSAlertDialog(dynamic data) {
+    final sosData = data is Map ? data : {};
+    final String sosId = sosData['id']?.toString() ?? 'Unknown';
+    final String type = sosData['type']?.toString() ?? 'EMERGENCY';
+    final String? message = sosData['message']?.toString();
+    final String? address = sosData['address']?.toString();
+    final double? latitude = sosData['latitude'] is num
+        ? (sosData['latitude'] as num).toDouble()
+        : null;
+    final double? longitude = sosData['longitude'] is num
+        ? (sosData['longitude'] as num).toDouble()
+        : null;
+    final String? userName = sosData['userName']?.toString();
+    final String? userPhone = sosData['userPhone']?.toString();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryRed.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  const Icon(Icons.sos, color: AppTheme.primaryRed, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'SOS ALERT!',
+                style: TextStyle(
+                  color: AppTheme.primaryRed,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User info if available
+              if (userName != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(userName,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              // Emergency type
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  type,
+                  style: const TextStyle(
+                    color: AppTheme.primaryRed,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Message if present
+              if (message != null && message.isNotEmpty) ...[
+                const Text(
+                  'Message:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    message,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Location
+              const Text(
+                'Location:',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (address != null && address.isNotEmpty)
+                      Text(address, style: const TextStyle(fontSize: 14)),
+                    if (latitude != null && longitude != null)
+                      Text(
+                        'Coordinates: ${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 8),
+              Text(
+                'SOS ID: $sosId',
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Dismiss'),
+          ),
+          if (userPhone != null)
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final Uri phoneUri = Uri(scheme: 'tel', path: userPhone);
+                try {
+                  if (await canLaunchUrl(phoneUri)) {
+                    await launchUrl(phoneUri);
+                  }
+                } catch (e) {
+                  debugPrint('Failed to call: $e');
+                }
+              },
+              icon: const Icon(Icons.phone, size: 18),
+              label: const Text('Call'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to map or location - can be enhanced
+              if (latitude != null && longitude != null) {
+                _openMapLocation(latitude, longitude, address);
+              }
+            },
+            icon: const Icon(Icons.map, size: 18),
+            label: const Text('View Map'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRed,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSOSUpdateSnackbar(dynamic data) {
+    final sosData = data is Map ? data : {};
+    final String? message = sosData['message']?.toString();
+    final String action = sosData['action']?.toString() ?? 'Update';
+
+    String snackMessage = 'SOS Alert Updated';
+    if (action == 'MESSAGE_SENT' && message != null) {
+      snackMessage =
+          'New SOS Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}';
+    } else if (action == 'MARKED_SAFE') {
+      snackMessage = 'User has marked themselves as safe';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.sos, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(snackMessage)),
+          ],
+        ),
+        backgroundColor: action == 'MARKED_SAFE'
+            ? AppTheme.primaryGreen
+            : AppTheme.primaryRed,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'View',
+          textColor: Colors.white,
+          onPressed: () {
+            _showSOSAlertDialog(data);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMapLocation(double lat, double lng, String? address) async {
+    final Uri mapsUri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    try {
+      if (await canLaunchUrl(mapsUri)) {
+        await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location: ${address ?? '$lat, $lng'}')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     HardwareTriggerService().dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authControllerProvider);
-    
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      drawer: _buildDrawer(user),
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(),
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  _buildEmergencyBanner(),
-                  const SizedBox(height: 24),
-                  _buildQuickActions(),
-                  const SizedBox(height: 24),
-                  _buildServiceGrid(),
-                  const SizedBox(height: 24),
-                  _buildLocationDisplay(),
-                  const SizedBox(height: 100),
-                ],
+    print("DEBUG: HomeScreen build");
+    return ShowCaseWidget(
+      blurValue: 1,
+      autoPlay: false,
+      builder: (innerContext) {
+        final user = ref.watch(authControllerProvider);
+
+        if (!_isTourChecked) {
+          _isTourChecked = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _checkAndStartTour(innerContext);
+          });
+        }
+
+        return Scaffold(
+          backgroundColor: AppTheme.getBackgroundColor(context),
+          drawer: _buildDrawer(user),
+          body: Stack(
+            children: [
+              // Background Gradient Element
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryBrand.withOpacity(0.1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryBrand.withOpacity(0.2),
+                        blurRadius: 100,
+                        spreadRadius: 50,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: _buildSOSButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+
+              SafeArea(
+                child: CustomScrollView(
+                  slivers: [
+                    _buildAppBar(),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            _buildEmergencyBanner(),
+                            const SizedBox(height: 24),
+                            _buildShowcase(
+                              innerContext,
+                              _locationKey,
+                              'Your Location',
+                              'View your live location and address. This helps rescuers find you.',
+                              _buildLocationDisplay(),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildQuickActions(),
+                            const SizedBox(height: 24),
+                            _buildServiceGrid(innerContext),
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          floatingActionButton: _buildShowcase(
+            innerContext,
+            _sosKey,
+            'Emergency SOS',
+            'Press and hold for 3 seconds to send an immediate distress alert.',
+            _buildSOSButton(),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+        );
+      },
     );
   }
 
@@ -181,103 +573,160 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       floating: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
+      centerTitle: false,
       leading: Builder(
-        builder: (context) => IconButton(
-          icon: Icon(Icons.menu, color: AppTheme.getSecondaryTextColor(context)),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
+        builder: (context) => Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppTheme.getSurfaceColor(context),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon:
+                Icon(Icons.menu_rounded, color: AppTheme.getTextColor(context)),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            padding: EdgeInsets.zero,
+          ),
         ),
       ),
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFF9933), Color(0xFFFFFFFF), Color(0xFF138808)],
-              ),
-              borderRadius: BorderRadius.circular(8),
+          Text(
+            'Welcome back,',
+            style: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-            child: Text(
-              'Sahay',
-              style: TextStyle(
-                color: AppTheme.getTextColor(context),
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+          ),
+          Text(
+            ref.watch(authControllerProvider)?.name ?? 'Sahay',
+            style: TextStyle(
+              color: AppTheme.getTextColor(context),
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              fontFamily: 'Outfit',
             ),
           ),
         ],
       ),
       actions: [
-        IconButton(
-          icon: Icon(Icons.notifications_outlined, color: AppTheme.getSecondaryTextColor(context)),
-          onPressed: () => _showNotificationsPanel(),
-        ),
-        IconButton(
-          icon: Icon(Icons.info_outline, color: AppTheme.getSecondaryTextColor(context)),
-          onPressed: () => _showAppInfo(),
+        Container(
+          margin: const EdgeInsets.only(right: 16),
+          decoration: BoxDecoration(
+            color: AppTheme.getSurfaceColor(context),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(Icons.notifications_outlined,
+                color: AppTheme.getTextColor(context)),
+            onPressed: () => _showNotificationsPanel(),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildEmergencyBanner() {
-    Color accentColor = _getRoleAccentColor();
-    
+    final roleText = _getRoleBannerText();
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryRed,
-            AppTheme.primaryRed.withOpacity(0.8),
-          ],
+        gradient: const LinearGradient(
+          colors: [AppTheme.crisisRed, Color(0xFFFF5252)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryRed.withOpacity(0.3),
+            color: AppTheme.crisisRed.withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Expanded(
+          // Decorative circles
+          Positioned(
+            right: -20,
+            top: -20,
+            child: CircleAvatar(
+              radius: 60,
+              backgroundColor: Colors.white.withOpacity(0.1),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.shield_outlined,
+                          color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'ACTIVE',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text(
-                  'Sahay Service',
+                  'Emergency Assistance',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _getRoleBannerText(),
+                  roleText,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 14,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
           ),
-          // Empty space where logo was - removed "Sahay" text
-          const SizedBox(width: 16),
         ],
       ),
-    ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0);
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0);
   }
 
   Widget _buildQuickActions() {
@@ -297,59 +746,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Expanded(
             child: _buildQuickActionCard(
-              icon: Icons.person_outline,
-              label: 'Profile',
-              color: AppTheme.citizenAccent,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildQuickActionCard(
               icon: Icons.history,
               label: 'SOS History',
               color: AppTheme.primaryOrange,
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SOSHistoryScreen()),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildQuickActionCard(
-              icon: Icons.public,
-              label: 'Community',
-              color: AppTheme.primaryGreen,
-              onTap: () {
-                Navigator.push(
-                  context,
                   MaterialPageRoute(
-                    builder: (context) => const CommunityFeedScreen(),
-                  ),
+                      builder: (context) => const SOSHistoryScreen()),
                 );
               },
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildQuickActionCard(
-              icon: Icons.help_outline,
-              label: 'Help',
-              color: AppTheme.neutralGray,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TopQuestionsScreen()),
-                );
-              },
+            child: Showcase(
+              key: _communityKey,
+              title: 'Community',
+              description: 'Connect with neighbors and see local updates.',
+              child: _buildQuickActionCard(
+                icon: Icons.public,
+                label: 'Community',
+                color: AppTheme.primaryGreen,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CommunityFeedScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -366,14 +793,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           GestureDetector(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const VolunteerDashboardScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const VolunteerDashboardScreen()),
             ),
             child: Container(
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppTheme.volunteerAccent, AppTheme.volunteerAccent.withOpacity(0.7)],
+                  colors: [
+                    AppTheme.volunteerAccent,
+                    AppTheme.volunteerAccent.withOpacity(0.7)
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -392,7 +823,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.dashboard, color: Colors.white, size: 24),
+                    child: const Icon(Icons.dashboard,
+                        color: Colors.white, size: 24),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -414,7 +846,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                  const Icon(Icons.arrow_forward_ios,
+                      color: Colors.white70, size: 16),
                 ],
               ),
             ),
@@ -430,7 +863,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VolunteerTasksDetailedScreen(),
+                      builder: (context) =>
+                          const VolunteerTasksDetailedScreen(),
                     ),
                   ),
                 ),
@@ -443,7 +877,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.primaryOrange,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const CommunityFeedScreen(canVerify: true)),
                   ),
                 ),
               ),
@@ -455,7 +891,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: AppTheme.primaryGreen,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ResourcesScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const ResourcesScreen()),
                   ),
                 ),
               ),
@@ -467,143 +904,155 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildAuthorityQuickActions() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: Column(
-      children: [
-        // Authority Dashboard Button (Command Center)
-        GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.authorityAccent, AppTheme.authorityAccent.withOpacity(0.7)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.authorityAccent.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          // Authority Dashboard Button (Command Center)
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const AuthorityDashboardScreen()),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.shield, color: Colors.white, size: 24),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.authorityAccent,
+                    AppTheme.authorityAccent.withOpacity(0.7)
+                  ],
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Command Center',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.authorityAccent.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child:
+                        const Icon(Icons.shield, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Command Center',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Manage incidents, alerts & analytics',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
+                        Text(
+                          'Manage incidents, alerts & analytics',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
-              ],
+                  const Icon(Icons.arrow_forward_ios,
+                      color: Colors.white70, size: 16),
+                ],
+              ),
             ),
           ),
-        ),
-        
-        // Verify and Resources (New Row)
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
-                icon: Icons.verified_outlined,
-                label: 'Verify',
-                color: AppTheme.primaryOrange,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CommunityFeedScreen(canVerify: true)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
-                icon: Icons.inventory_outlined,
-                label: 'Resources',
-                color: AppTheme.primaryGreen,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ResourcesScreen()),
-                ),
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
 
-        // Core Authority Tools
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
-                icon: Icons.map_outlined,
-                label: 'Heatmap',
-                color: AppTheme.authorityAccent,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HeatmapScreen()),
+          // Verify and Resources (New Row)
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.verified_outlined,
+                  label: 'Verify',
+                  color: AppTheme.primaryOrange,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const CommunityFeedScreen(canVerify: true)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
-                icon: Icons.campaign_outlined,
-                label: 'Broadcast',
-                color: AppTheme.primaryOrange,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BroadcastScreen()),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.inventory_outlined,
+                  label: 'Resources',
+                  color: AppTheme.primaryGreen,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ResourcesScreen()),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
-                icon: Icons.analytics_outlined,
-                label: 'Analytics',
-                color: AppTheme.primaryGreen,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Core Authority Tools
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.map_outlined,
+                  label: 'Heatmap',
+                  color: AppTheme.authorityAccent,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const HeatmapScreen()),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.campaign_outlined,
+                  label: 'Broadcast',
+                  color: AppTheme.primaryOrange,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const BroadcastScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.analytics_outlined,
+                  label: 'Analytics',
+                  color: AppTheme.primaryGreen,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AnalyticsScreen()),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildQuickActionCard({
     required IconData icon,
@@ -646,7 +1095,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildServiceGrid() {
+  Widget _buildCompactServiceCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppTheme.getTextColor(context),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ).animate().scale(delay: 100.ms, duration: 300.ms);
+  }
+
+  Widget _buildServiceGrid(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -665,56 +1150,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 4,
+            childAspectRatio: 0.8,
             mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
+            crossAxisSpacing: 8,
             children: [
-              _buildServiceCard(
-                icon: Icons.local_police,
-                label: 'POLICE',
-                color: const Color(0xFF1565C0),
-                type: IncidentType.police,
+              _buildShowcase(
+                context,
+                _policeKey,
+                'Police',
+                'Report crimes/assistance',
+                _buildCompactServiceCard(
+                  title: 'Police',
+                  icon: Icons.local_police,
+                  color: const Color(0xFF1E88E5),
+                  onTap: () => _showIncidentReportDialog(IncidentType.police),
+                ),
               ),
-              _buildServiceCard(
-                icon: Icons.local_fire_department,
-                label: 'FIRE',
-                color: const Color(0xFFD32F2F),
-                type: IncidentType.fire,
+              _buildShowcase(
+                context,
+                _fireKey,
+                'Fire',
+                'Fire emergencies',
+                _buildCompactServiceCard(
+                  title: 'Fire',
+                  icon: Icons.local_fire_department,
+                  color: const Color(0xFFE53935),
+                  onTap: () => _showIncidentReportDialog(IncidentType.fire),
+                ),
               ),
-              _buildServiceCard(
-                icon: Icons.medical_services,
-                label: 'MEDICAL',
-                color: const Color(0xFFE53935),
-                type: IncidentType.medical,
+              _buildShowcase(
+                context,
+                _ambulanceKey,
+                'Medical',
+                'Medical help',
+                _buildCompactServiceCard(
+                  title: 'Medical',
+                  icon: Icons.medical_services,
+                  color: const Color(0xFFE53935),
+                  onTap: () => _showIncidentReportDialog(IncidentType.medical),
+                ),
               ),
-              _buildServiceCard(
-                icon: Icons.warning,
-                label: 'DISASTER',
-                color: const Color(0xFFFF6F00),
-                type: IncidentType.disaster,
+              _buildCompactServiceCard(
+                title: 'Disaster',
+                icon: Icons.warning_amber_rounded,
+                color: Colors.orange,
+                onTap: () => _showIncidentReportDialog(IncidentType.disaster),
               ),
-              _buildServiceCard(
+              _buildCompactServiceCard(
+                title: 'Woman',
                 icon: Icons.woman,
-                label: 'WOMAN',
-                color: const Color(0xFF8E24AA),
-                type: IncidentType.woman,
+                color: Colors.pink,
+                onTap: () => _showIncidentReportDialog(IncidentType.woman),
               ),
-              _buildServiceCard(
+              _buildCompactServiceCard(
+                title: 'Child',
                 icon: Icons.child_care,
-                label: 'CHILD',
-                color: const Color(0xFF00897B),
-                type: IncidentType.child,
+                color: Colors.teal,
+                onTap: () => _showIncidentReportDialog(IncidentType.child),
               ),
-              _buildServiceCard(
+              _buildCompactServiceCard(
+                title: 'Elderly',
                 icon: Icons.elderly,
-                label: 'ELDERLY',
-                color: const Color(0xFF6D4C41),
-                type: IncidentType.elderly,
+                color: Colors.brown,
+                onTap: () => _showIncidentReportDialog(IncidentType.elderly),
               ),
-              _buildServiceCard(
+              _buildCompactServiceCard(
+                title: 'Railway',
                 icon: Icons.train,
-                label: 'RAILWAY',
-                color: const Color(0xFF5E35B1),
-                type: IncidentType.railway,
+                color: Colors.indigo,
+                onTap: () => _showIncidentReportDialog(IncidentType.railway),
               ),
             ],
           ),
@@ -723,113 +1227,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildServiceCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required IncidentType type,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        _showIncidentReportDialog(type);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: AppTheme.getSecondaryTextColor(context),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).animate().scale(delay: (label.hashCode % 400).ms);
-  }
-
   Widget _buildLocationDisplay() {
     final locationAsync = ref.watch(currentLocationProvider);
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.2)),
-      ),
+
+    return GlassContainer(
+      color: AppTheme.getCardColor(context),
+      opacity: AppTheme.isDarkMode(context) ? 0.8 : 0.7,
+      border: AppTheme.isDarkMode(context)
+          ? Border.all(color: Colors.white.withOpacity(0.1))
+          : null,
       child: Row(
         children: [
-          const Icon(Icons.location_on, color: AppTheme.primaryGreen),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBrand.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.location_on_rounded,
+                color: AppTheme.primaryBrand, size: 24),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Current Location',
-                  style: TextStyle(
+                  style: GoogleFonts.outfit(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: AppTheme.getSecondaryTextColor(context),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 4),
                 locationAsync.when(
                   data: (location) => Text(
                     location?.address ?? 'Location unavailable',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.getTextColor(context),
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   loading: () => Row(
                     children: [
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppTheme.primaryBrand),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Detecting location...',
-                        style: TextStyle(
+                        'Locating...',
+                        style: GoogleFonts.outfit(
                           fontSize: 14,
                           color: AppTheme.getSecondaryTextColor(context),
                         ),
                       ),
                     ],
                   ),
-                  error: (_, __) => const Text(
-                    'Enable location permission',
-                    style: TextStyle(
+                  error: (_, __) => Text(
+                    'Tap to enable location',
+                    style: GoogleFonts.outfit(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.orange,
+                      color: AppTheme.alertOrange,
                     ),
                   ),
                 ),
@@ -837,7 +1303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.primaryGreen),
+            icon: Icon(Icons.refresh_rounded, color: AppTheme.primaryBrand),
             onPressed: () {
               ref.invalidate(currentLocationProvider);
             },
@@ -889,19 +1355,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-    ).animate(onPlay: (controller) => controller.repeat())
-      .shimmer(duration: 2000.ms, color: Colors.white.withOpacity(0.3));
-  }
-
-  Color _getRoleAccentColor() {
-    switch (widget.userRole) {
-      case UserRole.citizen:
-        return AppTheme.citizenAccent;
-      case UserRole.volunteer:
-        return AppTheme.volunteerAccent;
-      case UserRole.authority:
-        return AppTheme.authorityAccent;
-    }
+    )
+        .animate(onPlay: (controller) => controller.repeat())
+        .shimmer(duration: 2000.ms, color: Colors.white.withOpacity(0.3));
   }
 
   String _getRoleBannerText() {
@@ -939,17 +1395,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           return EmergencyType.police;
       }
     }
-    
+
     final emergencyType = getEmergencyType();
-    
+
     // Show dialog with options
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.getCardColor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           '${type.name.toUpperCase()} Services',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppTheme.getTextColor(context)),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -959,7 +1418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
-            
+
             // Report Incident Option
             SizedBox(
               width: double.infinity,
@@ -969,7 +1428,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => IncidentReportFormScreen(incidentType: type),
+                      builder: (context) =>
+                          IncidentReportFormScreen(incidentType: type),
                     ),
                   );
                 },
@@ -982,9 +1442,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // SOS Option
             SizedBox(
               width: double.infinity,
@@ -1024,130 +1484,133 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-  
+
   /// Legacy SOS Dialog - Shows emergency call/SMS options
   Future<void> _showEmergencyOptions() async {
-  // Get current location
-  final locationData = ref.read(currentLocationProvider).valueOrNull;
-  final locationText = locationData != null 
-      ? '📍 ${locationData.address}\n(${locationData.latitude.toStringAsFixed(4)}, ${locationData.longitude.toStringAsFixed(4)})'
-      : '📍 Location unavailable';
+    // Get current location
+    final locationData = ref.read(currentLocationProvider).valueOrNull;
+    final locationText = locationData != null
+        ? '📍 ${locationData.address}\n(${locationData.latitude.toStringAsFixed(4)}, ${locationData.longitude.toStringAsFixed(4)})'
+        : '📍 Location unavailable';
 
-  // Load custom numbers
-  final user = ref.read(authControllerProvider);
-  final userId = user?.id ?? 'guest';
-  final prefs = await SharedPreferences.getInstance();
-  final policeNum = prefs.getString('${userId}_sos_police') ?? '112';
-  final fireNum = prefs.getString('${userId}_sos_fire') ?? '101';
-  final ambulanceNum = prefs.getString('${userId}_sos_ambulance') ?? '108';
-  final womenNum = prefs.getString('${userId}_sos_women') ?? '181';
+    // Load custom numbers
+    final user = ref.read(authControllerProvider);
+    final userId = user?.id ?? 'guest';
+    final prefs = await SharedPreferences.getInstance();
+    final policeNum = prefs.getString('${userId}_sos_police') ?? '112';
+    final fireNum = prefs.getString('${userId}_sos_fire') ?? '101';
+    final ambulanceNum = prefs.getString('${userId}_sos_ambulance') ?? '108';
+    final womenNum = prefs.getString('${userId}_sos_women') ?? '181';
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  // Show Emergency Dialog
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryRed.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.emergency, color: AppTheme.primaryRed, size: 28),
-          ),
-          const SizedBox(width: 12),
-          const Text('Emergency SOS', style: TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            locationText,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 16),
-          
-          // Trigger Alert Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _submitEmergencySOS();
-              },
-              icon: const Icon(Icons.notifications_active),
-              label: const Text('TRIGGER SOS ALERT (LOG HISTORY)'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+    // Show Emergency Dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryRed.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(Icons.emergency,
+                  color: AppTheme.primaryRed, size: 28),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          const Text('Select emergency service to call:', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          // Emergency Call Buttons
-          _buildEmergencyCallButton(
-            icon: Icons.local_police,
-            label: 'Police ($policeNum)',
-            number: policeNum,
-            color: const Color(0xFF1565C0),
-          ),
-          const SizedBox(height: 8),
-          _buildEmergencyCallButton(
-            icon: Icons.local_fire_department,
-            label: 'Fire Brigade ($fireNum)',
-            number: fireNum,
-            color: const Color(0xFFD32F2F),
-          ),
-          const SizedBox(height: 8),
-          _buildEmergencyCallButton(
-            icon: Icons.medical_services,
-            label: 'Ambulance ($ambulanceNum)',
-            number: ambulanceNum,
-            color: const Color(0xFFE53935),
-          ),
-          const SizedBox(height: 8),
-          _buildEmergencyCallButton(
-            icon: Icons.woman,
-            label: 'Women Helpline ($womenNum)',
-            number: womenNum,
-            color: const Color(0xFF8E24AA),
-          ),
-          const SizedBox(height: 16),
-          // SMS Button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _sendEmergencySMS(locationData),
-              icon: const Icon(Icons.sms),
-              label: const Text('Send SMS to Emergency Contacts'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryRed,
-                side: const BorderSide(color: AppTheme.primaryRed),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+            const SizedBox(width: 12),
+            const Text('Emergency SOS',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
         ),
-      ],
-    ),
-  );
-}
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              locationText,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+
+            // Trigger Alert Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _submitEmergencySOS();
+                },
+                icon: const Icon(Icons.notifications_active),
+                label: const Text('TRIGGER SOS ALERT (LOG HISTORY)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            const Text('Select emergency service to call:',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            // Emergency Call Buttons
+            _buildEmergencyCallButton(
+              icon: Icons.local_police,
+              label: 'Police ($policeNum)',
+              number: policeNum,
+              color: const Color(0xFF1565C0),
+            ),
+            const SizedBox(height: 8),
+            _buildEmergencyCallButton(
+              icon: Icons.local_fire_department,
+              label: 'Fire Brigade ($fireNum)',
+              number: fireNum,
+              color: const Color(0xFFD32F2F),
+            ),
+            const SizedBox(height: 8),
+            _buildEmergencyCallButton(
+              icon: Icons.medical_services,
+              label: 'Ambulance ($ambulanceNum)',
+              number: ambulanceNum,
+              color: const Color(0xFFE53935),
+            ),
+            const SizedBox(height: 8),
+            _buildEmergencyCallButton(
+              icon: Icons.woman,
+              label: 'Women Helpline ($womenNum)',
+              number: womenNum,
+              color: const Color(0xFF8E24AA),
+            ),
+            const SizedBox(height: 16),
+            // SMS Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _sendEmergencySMS(locationData),
+                icon: const Icon(Icons.sms),
+                label: const Text('Send SMS to Emergency Contacts'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryRed,
+                  side: const BorderSide(color: AppTheme.primaryRed),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Build emergency call button
   Widget _buildEmergencyCallButton({
@@ -1164,16 +1627,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           backgroundColor: color,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: Row(
           children: [
             Icon(icon, size: 24),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
             ),
-            Text(number, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            Text(number,
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             const Icon(Icons.call, size: 20),
           ],
@@ -1189,7 +1657,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       bool? res = await FlutterPhoneDirectCaller.callNumber(number);
       if (res == true) return;
     } catch (e) {
-       debugPrint('Direct call failed: $e');
+      debugPrint('Direct call failed: $e');
     }
 
     // Fallback to URL Launcher
@@ -1210,21 +1678,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final String message = location != null
         ? 'EMERGENCY SOS! I need help. My location: ${location.address} (${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)})'
         : 'EMERGENCY SOS! I need help. Please contact me immediately.';
-    
+
     // Default emergency contacts (Police control room)
     const String emergencyNumber = '112';
-    
+
     // Check permission
     if (await Permission.sms.isGranted) {
       try {
         final result = await BackgroundSms.sendMessage(
-          phoneNumber: emergencyNumber, 
+          phoneNumber: emergencyNumber,
           message: message,
         );
         if (result == SmsStatus.sent) {
           if (!mounted) return;
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('SMS Sent Automatically'), backgroundColor: Colors.green),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('SMS Sent Automatically'),
+                backgroundColor: Colors.green),
           );
           return;
         }
@@ -1239,7 +1709,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       path: emergencyNumber,
       queryParameters: {'body': message},
     );
-    
+
     try {
       if (await canLaunchUrl(smsUri)) {
         await launchUrl(smsUri);
@@ -1260,7 +1730,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     try {
       final api = ref.read(apiServiceProvider);
-      
+
       // 1. Trigger SOS API
       await api.triggerSOS(
         latitude: location?.latitude ?? _defaultLatitude,
@@ -1278,9 +1748,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      
+
       // 3. Send SMS automatically
-      // _sendEmergencySMS(location); 
+      // _sendEmergencySMS(location);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1296,7 +1766,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _startSOSCountdown() {
     int countdown = 5;
     Timer? timer;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1315,11 +1785,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           return AlertDialog(
             backgroundColor: AppTheme.primaryRed,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.white),
+                const Icon(Icons.warning_amber_rounded,
+                    size: 64, color: Colors.white),
                 const SizedBox(height: 16),
                 const Text(
                   'SOS TRIGGERED',
@@ -1343,10 +1815,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ).animate(target: countdown.toDouble()).scale(
-                  begin: const Offset(1.5, 1.5),
-                  end: const Offset(1.0, 1.0),
-                  duration: 300.ms,
-                ),
+                      begin: const Offset(1.5, 1.5),
+                      end: const Offset(1.0, 1.0),
+                      duration: 300.ms,
+                    ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -1360,7 +1832,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       backgroundColor: Colors.white,
                       foregroundColor: AppTheme.primaryRed,
                     ),
-                    child: const Text('CANCEL SOS', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('CANCEL SOS',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -1375,13 +1848,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _executeSOSSequence() async {
     // 1. Trigger API (Police)
     await _submitEmergencySOS();
-    
+
     // Get location for SMS
     final location = ref.read(currentLocationProvider).valueOrNull;
 
     // 2. Send SMS to Contacts
     if (mounted) {
-        _sendEmergencySMS(location);
+      _sendEmergencySMS(location);
     }
 
     // 3. Call Police automatically
@@ -1389,11 +1862,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final userId = user?.id ?? 'guest';
     final prefs = await SharedPreferences.getInstance();
     final policeNum = prefs.getString('${userId}_sos_police') ?? '112';
-    
+
     _makeEmergencyCall(policeNum);
   }
-
-
 
   /// Show duplicate incident alert
   void _showDuplicateAlert(IncidentModel duplicate) {
@@ -1510,7 +1981,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            
+
             // Menu Items
             _buildDrawerItem(
               icon: Icons.home,
@@ -1520,7 +1991,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
               },
             ),
-            
+
             _buildDrawerItem(
               icon: Icons.person,
               title: 'Profile',
@@ -1528,11 +1999,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const ProfileScreen()),
                 );
               },
             ),
-            
+
             // Authority Specific Menu Item
             if (user?.role == UserRole.authority)
               _buildDrawerItem(
@@ -1542,11 +2014,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AuthorityDashboardScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const AuthorityDashboardScreen()),
                   );
                 },
               ),
-            
+
             _buildDrawerItem(
               icon: Icons.contact_emergency,
               title: 'E-Contact',
@@ -1554,11 +2027,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const EContactScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const EContactScreen()),
                 );
               },
             ),
-            
+
             _buildDrawerItem(
               icon: Icons.history,
               title: 'SOS History',
@@ -1566,11 +2040,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SOSHistoryScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const SOSHistoryScreen()),
                 );
               },
             ),
-            
+
             _buildDrawerItem(
               icon: Icons.settings,
               title: 'Settings',
@@ -1578,11 +2053,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const SettingsScreen()),
                 );
               },
             ),
-            
+
             _buildDrawerItem(
               icon: Icons.info,
               title: 'App Info',
@@ -1591,7 +2067,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _showAppInfo();
               },
             ),
-            
+
             _buildDrawerItem(
               icon: Icons.question_answer,
               title: 'Top Questions',
@@ -1599,13 +2075,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const TopQuestionsScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const TopQuestionsScreen()),
                 );
               },
             ),
-            
+
             const Divider(height: 32),
-            
+
             _buildDrawerItem(
               icon: Icons.logout,
               title: 'Logout',
@@ -1614,9 +2091,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _handleLogout();
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Version Info
             Center(
               child: Text(
@@ -1633,7 +2110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-  
+
   /// Build Drawer Menu Item
   Widget _buildDrawerItem({
     required IconData icon,
@@ -1644,7 +2121,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? AppTheme.primaryRed : AppTheme.primaryRed.withOpacity(0.7),
+        color: isSelected
+            ? AppTheme.primaryRed
+            : AppTheme.primaryRed.withOpacity(0.7),
         size: 24,
       ),
       title: Text(
@@ -1660,7 +2139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onTap: onTap,
     );
   }
-  
+
   /// Show App Info Dialog
   void _showAppInfo() {
     showDialog(
@@ -1693,7 +2172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-  
+
   /// Handle Logout
   void _handleLogout() {
     showDialog(
@@ -1711,7 +2190,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Clear auth state
               ref.read(authControllerProvider.notifier).logout();
               // Navigate to login screen
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/', (route) => false);
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.primaryRed,
@@ -1762,15 +2242,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 )
               else
-                ..._notifications.map((n) => _buildNotificationItem(
-                  icon: Icons.warning_amber,
-                  title: n['title'] ?? 'Alert',
-                  subtitle: n['message'] ?? '',
-                  time: _formatTime(DateTime.tryParse(n['time'] ?? '') ?? DateTime.now()),
-                  color: (n['priority'] == 'High' || n['priority'] == 'Critical') 
-                      ? AppTheme.primaryRed 
-                      : AppTheme.primaryOrange,
-                )),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: _notifications
+                        .map((n) => _buildNotificationItem(
+                              icon: Icons.warning_amber,
+                              title: n['title'] ?? 'Alert',
+                              subtitle: n['message'] ?? '',
+                              time: _formatTime(
+                                  DateTime.tryParse(n['time'] ?? '') ??
+                                      DateTime.now()),
+                              color: (n['priority'] == 'High' ||
+                                      n['priority'] == 'Critical')
+                                  ? AppTheme.primaryRed
+                                  : AppTheme.primaryOrange,
+                            ))
+                        .toList(),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1780,7 +2270,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _fetchMissedBroadcasts(String region) async {
     try {
-      final broadcasts = await ref.read(apiServiceProvider).getBroadcasts(region);
+      final broadcasts =
+          await ref.read(apiServiceProvider).getBroadcasts(region);
       bool shownDialog = false; // Only show one dialog to avoid stacking
 
       // Sort by newest first
@@ -1788,7 +2279,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         broadcasts.sort((a, b) {
           DateTime? timeA;
           DateTime? timeB;
-          
+
           // Handle Firestore Timestamp format
           if (a['createdAt'] is Map) {
             final int? secondsA = a['createdAt']['_seconds'];
@@ -1798,7 +2289,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           } else if (a['createdAt'] is String) {
             timeA = DateTime.tryParse(a['createdAt']);
           }
-          
+
           if (b['createdAt'] is Map) {
             final int? secondsB = b['createdAt']['_seconds'];
             if (secondsB != null) {
@@ -1807,25 +2298,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           } else if (b['createdAt'] is String) {
             timeB = DateTime.tryParse(b['createdAt']);
           }
-          
+
           if (timeA == null || timeB == null) return 0;
           return timeB.compareTo(timeA);
         });
       }
 
-      print('DEBUG: Fetched ${broadcasts.length} broadcasts for region $region');
-      
+      print(
+          'DEBUG: Fetched ${broadcasts.length} broadcasts for region $region');
+
       for (var b in broadcasts) {
         // Check if already saved
         final prefs = await SharedPreferences.getInstance();
         final List<String> list = prefs.getStringList('notifications') ?? [];
         bool exists = list.any((n) {
           final decoded = jsonDecode(n);
-          return decoded['title'] == b['title'] && decoded['message'] == b['message'];
+          return decoded['title'] == b['title'] &&
+              decoded['message'] == b['message'];
         });
-        
+
         if (!exists) {
-           _saveNotification(b);
+          _saveNotification(b);
         }
 
         // Check if active (less than 1 hour old)
@@ -1834,29 +2327,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (b['createdAt'] is String) {
             createdAt = DateTime.tryParse(b['createdAt']);
           } else if (b['createdAt'] is Map) {
-             // Handle Firestore Timestamp
-             final int? seconds = b['createdAt']['_seconds'];
-             if (seconds != null) {
-               createdAt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
-             }
+            // Handle Firestore Timestamp
+            final int? seconds = b['createdAt']['_seconds'];
+            if (seconds != null) {
+              createdAt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+            }
           }
 
           if (createdAt != null) {
             final now = DateTime.now();
-            final difference = now.difference(createdAt.toLocal()); // Convert UTC to Local for comparison
-            
-            print('DEBUG: Broadcast "${b['title']}" Created: ${createdAt.toLocal()}, Now: $now, Diff (min): ${difference.inMinutes}');
-            
-            // Show dialog for broadcasts from the last 12 hours that haven't been shown yet
-            if (difference.inHours < 12 && difference.inMinutes >= 0) {
+            final difference = now.difference(
+                createdAt.toLocal()); // Convert UTC to Local for comparison
+
+            print(
+                'DEBUG: Broadcast "${b['title']}" Created: ${createdAt.toLocal()}, Now: $now, Diff (min): ${difference.inMinutes}');
+
+            // Show dialog for broadcasts from the last 24 hours that haven't been shown yet
+            if (difference.inHours < 24 && difference.inMinutes >= 0) {
               // Check if this broadcast was already shown
               final prefs = await SharedPreferences.getInstance();
-              final shownBroadcasts = prefs.getStringList('shown_broadcasts') ?? [];
-              
+              final shownBroadcasts =
+                  prefs.getStringList('shown_broadcasts') ?? [];
+
               if (!shownBroadcasts.contains(b['id'])) {
                 print('DEBUG: Showing dialog for "${b['title']}"');
                 _showBroadcastDialog(b);
-                
+
                 // Mark this broadcast as shown
                 shownBroadcasts.add(b['id']);
                 await prefs.setStringList('shown_broadcasts', shownBroadcasts);
@@ -1865,7 +2361,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 print('DEBUG: Broadcast already shown before.');
               }
             } else {
-               print('DEBUG: Skipping dialog. Too old or in future.');
+              print('DEBUG: Skipping dialog. Too old or in future.');
             }
           }
         }
@@ -1879,14 +2375,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     final List<String> list = prefs.getStringList('notifications') ?? [];
     setState(() {
-      _notifications = list.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+      _notifications =
+          list.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
     });
   }
 
   Future<void> _saveNotification(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     final List<String> list = prefs.getStringList('notifications') ?? [];
-    
+
     final notification = {
       'title': data['title'],
       'message': data['message'],
@@ -1895,15 +2392,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'time': DateTime.now().toIso8601String(),
       'read': false,
     };
-    
+
     list.insert(0, jsonEncode(notification)); // Add to top
     if (list.length > 20) list.removeLast(); // Limit to 20
-    
+
     await prefs.setStringList('notifications', list);
-    
+
     if (mounted) {
       setState(() {
-        _notifications = list.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+        _notifications =
+            list.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
       });
     }
   }
@@ -1922,7 +2420,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle),
-      trailing: Text(time, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+      trailing:
+          Text(time, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
     );
   }
 
@@ -2001,15 +2500,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: priorityColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(priority, style: TextStyle(color: priorityColor, fontWeight: FontWeight.w600, fontSize: 12)),
+                  child: Text(priority,
+                      style: TextStyle(
+                          color: priorityColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12)),
                 ),
               ],
             ),
@@ -2025,10 +2531,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Status: $status', style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text('Status: $status',
+                    style: const TextStyle(fontWeight: FontWeight.w500)),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.volunteerAccent),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.volunteerAccent),
                   child: const Text('View Details'),
                 ),
               ],
@@ -2039,11 +2547,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _buildShowcase(BuildContext context, GlobalKey key, String title,
+      String description, Widget child) {
+    return Showcase.withWidget(
+      key: key,
+      targetPadding: const EdgeInsets.all(4),
+      container: Builder(
+        builder: (_) => _TourTooltip(
+          title: title,
+          description: description,
+          onNext: () {
+            print("DEBUG: Tour Next Clicked");
+            try {
+              ShowCaseWidget.of(context).next();
+            } catch (e) {
+              print("DEBUG: Tour Next Error: $e");
+            }
+          },
+          onSkip: () {
+            print("DEBUG: Tour Skip Clicked");
+            try {
+              ShowCaseWidget.of(context).dismiss();
+            } catch (e) {
+              print("DEBUG: Tour Skip Error: $e");
+            }
+          },
+        ),
+      ),
+      child: child,
+    );
+  }
+}
 
+class _TourTooltip extends StatelessWidget {
+  final String title;
+  final String description;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
 
+  const _TourTooltip({
+    required this.title,
+    required this.description,
+    required this.onNext,
+    required this.onSkip,
+  });
 
-
-
-
-
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: onSkip,
+                  child:
+                      const Text('Skip', style: TextStyle(color: Colors.grey)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: onNext,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBrand,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                  child: const Text('Next'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
