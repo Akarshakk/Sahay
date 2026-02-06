@@ -2,14 +2,13 @@
 
 # We explicitly list packages to ensure they are available in the PATH
 [phases.setup]
-# npm is included in nodejs
-# pip must be installed explicitly via python3Packages.pip
-nixPkgs = ["nodejs", "ffmpeg", "python3", "python3Packages.pip"]
+# python3Full includes pip and ensurepip (unlike minimal python3)
+nixPkgs = ["nodejs", "ffmpeg", "python3Full"]
 
 [phases.install]
 # Use npm install (safer than ci for cross-platform)
 # Use python3 -m pip to ensure we use the correct pip
-cmds = ["npm install", "python3 -m pip install -r requirements.txt"]
+cmds = ["npm install", "python3 -m ensurepip --default-pip || true", "python3 -m pip install -r requirements.txt"]
 
 [start]
 cmd = "npm run start:prod"
