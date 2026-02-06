@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -36,13 +37,13 @@ class _AuthorityRegistrationScreenState
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _regNumberController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  
+
   // Document upload
-  File? _idDocumentFile;
+  XFile? _idDocumentFile; // Use XFile for cross-platform support
   String? _idDocumentUrl;
   String _selectedDocumentType = 'aadhaar';
   bool _isUploadingDocument = false;
@@ -104,16 +105,18 @@ class _AuthorityRegistrationScreenState
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.authorityAccent.withValues(alpha: 0.1),
+                    color: AppTheme.authorityAccent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.authorityAccent.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppTheme.authorityAccent.withOpacity(0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.verified, color: AppTheme.primaryGreen, size: 20),
+                          const Icon(Icons.verified,
+                              color: AppTheme.primaryGreen, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             'Verified: ${widget.authorityCodeData['code']}',
@@ -128,7 +131,7 @@ class _AuthorityRegistrationScreenState
                       Text(
                         '${widget.authorityCodeData['department']} • ${widget.authorityCodeData['area']}',
                         style: TextStyle(
-                          color: AppTheme.neutralGray.withValues(alpha: 0.8),
+                          color: AppTheme.neutralGray.withOpacity(0.8),
                           fontSize: 14,
                         ),
                       ),
@@ -136,7 +139,7 @@ class _AuthorityRegistrationScreenState
                       Text(
                         'Phone: +91 ${widget.phoneNumber}',
                         style: TextStyle(
-                          color: AppTheme.neutralGray.withValues(alpha: 0.7),
+                          color: AppTheme.neutralGray.withOpacity(0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -185,7 +188,8 @@ class _AuthorityRegistrationScreenState
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -219,10 +223,13 @@ class _AuthorityRegistrationScreenState
                   obscureText: _obscurePassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.neutralGray.withValues(alpha: 0.5),
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppTheme.neutralGray.withOpacity(0.5),
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -246,10 +253,13 @@ class _AuthorityRegistrationScreenState
                   obscureText: _obscureConfirmPassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.neutralGray.withValues(alpha: 0.5),
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppTheme.neutralGray.withOpacity(0.5),
                     ),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    onPressed: () => setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword),
                   ),
                   validator: (value) {
                     if (value != _passwordController.text) {
@@ -274,7 +284,7 @@ class _AuthorityRegistrationScreenState
                 Text(
                   'Upload your government ID for verification',
                   style: TextStyle(
-                    color: AppTheme.neutralGray.withValues(alpha: 0.6),
+                    color: AppTheme.neutralGray.withOpacity(0.6),
                     fontSize: 12,
                   ),
                 ),
@@ -285,14 +295,17 @@ class _AuthorityRegistrationScreenState
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.neutralGray.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppTheme.neutralGray.withOpacity(0.2)),
                   ),
                   child: DropdownButtonFormField<String>(
                     initialValue: _selectedDocumentType,
                     decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.description_outlined, color: AppTheme.authorityAccent),
+                      prefixIcon: Icon(Icons.description_outlined,
+                          color: AppTheme.authorityAccent),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     items: _documentTypes.map((type) {
                       return DropdownMenuItem(
@@ -319,9 +332,9 @@ class _AuthorityRegistrationScreenState
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _idDocumentFile != null 
-                            ? AppTheme.primaryGreen 
-                            : AppTheme.neutralGray.withValues(alpha: 0.2),
+                        color: _idDocumentFile != null
+                            ? AppTheme.primaryGreen
+                            : AppTheme.neutralGray.withOpacity(0.2),
                         width: _idDocumentFile != null ? 2 : 1,
                       ),
                     ),
@@ -330,7 +343,8 @@ class _AuthorityRegistrationScreenState
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                CircularProgressIndicator(color: AppTheme.authorityAccent),
+                                CircularProgressIndicator(
+                                    color: AppTheme.authorityAccent),
                                 SizedBox(height: 12),
                                 Text('Uploading document...'),
                               ],
@@ -342,11 +356,17 @@ class _AuthorityRegistrationScreenState
                                   Center(
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
-                                      child: Image.file(
-                                        _idDocumentFile!,
-                                        height: 130,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      child: kIsWeb
+                                          ? Image.network(
+                                              _idDocumentFile!.path,
+                                              height: 130,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.file(
+                                              File(_idDocumentFile!.path),
+                                              height: 130,
+                                              fit: BoxFit.cover,
+                                            ),
                                     ),
                                   ),
                                   Positioned(
@@ -355,17 +375,24 @@ class _AuthorityRegistrationScreenState
                                     child: Row(
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
                                             color: AppTheme.primaryGreen,
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                           child: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(Icons.check, color: Colors.white, size: 14),
+                                              Icon(Icons.check,
+                                                  color: Colors.white,
+                                                  size: 14),
                                               SizedBox(width: 4),
-                                              Text('Uploaded', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                              Text('Uploaded',
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10)),
                                             ],
                                           ),
                                         ),
@@ -379,9 +406,11 @@ class _AuthorityRegistrationScreenState
                                             padding: const EdgeInsets.all(4),
                                             decoration: BoxDecoration(
                                               color: AppTheme.primaryRed,
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
-                                            child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                            child: const Icon(Icons.close,
+                                                color: Colors.white, size: 14),
                                           ),
                                         ),
                                       ],
@@ -395,20 +424,23 @@ class _AuthorityRegistrationScreenState
                                   Icon(
                                     Icons.cloud_upload_outlined,
                                     size: 48,
-                                    color: AppTheme.neutralGray.withValues(alpha: 0.4),
+                                    color:
+                                        AppTheme.neutralGray.withOpacity(0.4),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Tap to upload document',
                                     style: TextStyle(
-                                      color: AppTheme.neutralGray.withValues(alpha: 0.6),
+                                      color:
+                                          AppTheme.neutralGray.withOpacity(0.6),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Camera or Gallery',
                                     style: TextStyle(
-                                      color: AppTheme.neutralGray.withValues(alpha: 0.4),
+                                      color:
+                                          AppTheme.neutralGray.withOpacity(0.4),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -437,7 +469,8 @@ class _AuthorityRegistrationScreenState
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
@@ -487,11 +520,12 @@ class _AuthorityRegistrationScreenState
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.neutralGray.withValues(alpha: 0.2)),
+          borderSide: BorderSide(color: AppTheme.neutralGray.withOpacity(0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.authorityAccent, width: 2),
+          borderSide:
+              const BorderSide(color: AppTheme.authorityAccent, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -504,7 +538,7 @@ class _AuthorityRegistrationScreenState
 
   Future<void> _pickDocument() async {
     final picker = ImagePicker();
-    
+
     // Show bottom sheet to choose camera or gallery
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -526,13 +560,15 @@ class _AuthorityRegistrationScreenState
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppTheme.authorityAccent),
+                leading: const Icon(Icons.camera_alt,
+                    color: AppTheme.authorityAccent),
                 title: const Text('Camera'),
                 subtitle: const Text('Take a photo of your document'),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppTheme.authorityAccent),
+                leading: const Icon(Icons.photo_library,
+                    color: AppTheme.authorityAccent),
                 title: const Text('Gallery'),
                 subtitle: const Text('Choose from gallery'),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
@@ -556,7 +592,7 @@ class _AuthorityRegistrationScreenState
       if (image == null) return;
 
       setState(() {
-        _idDocumentFile = File(image.path);
+        _idDocumentFile = image;
         _isUploadingDocument = true;
       });
 
@@ -566,9 +602,15 @@ class _AuthorityRegistrationScreenState
           .child('identity_documents')
           .child('${DateTime.now().millisecondsSinceEpoch}_${image.name}');
 
-      final uploadTask = storageRef.putFile(_idDocumentFile!);
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
+      if (kIsWeb) {
+        final bytes = await _idDocumentFile!.readAsBytes();
+        await storageRef.putData(
+            bytes, SettableMetadata(contentType: 'image/jpeg'));
+      } else {
+        await storageRef.putFile(File(_idDocumentFile!.path));
+      }
+
+      final downloadUrl = await storageRef.getDownloadURL();
 
       setState(() {
         _idDocumentUrl = downloadUrl;
@@ -617,7 +659,7 @@ class _AuthorityRegistrationScreenState
 
     try {
       final authController = ref.read(authControllerProvider.notifier);
-      
+
       final user = await authController.register(
         fullName: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
@@ -641,7 +683,9 @@ class _AuthorityRegistrationScreenState
       if (user != null) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen(userRole: UserRole.authority)),
+          MaterialPageRoute(
+              builder: (context) =>
+                  const HomeScreen(userRole: UserRole.authority)),
           (route) => false,
         );
       } else {
