@@ -62,7 +62,6 @@ dependencies:
   
   # Phone calling
   flutter_phone_direct_caller: ^2.1.1
-  background_sms: ^0.0.4
   
   # Volume button listener
   flutter_volume_controller: ^1.3.2

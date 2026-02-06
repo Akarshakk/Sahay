@@ -1,16 +1,25 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000/api/v1';
+  // Use localhost for web, PC's IP for mobile
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:3000/api/v1';
+    } else {
+      // Your PC's IP address - change this if your network changes
+      return 'http://10.1.19.96:3000/api/v1';
+    }
+  }
 
   final Dio _dio;
   String? _authToken;
 
   ApiService()
       : _dio = Dio(BaseOptions(
-          baseUrl: baseUrl,
+          baseUrl: kIsWeb ? 'http://localhost:3000/api/v1' : 'http://10.1.19.96:3000/api/v1',
           connectTimeout: const Duration(seconds: 60),
           receiveTimeout: const Duration(seconds: 60),
           headers: {
@@ -180,7 +189,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> updateIncidentStatus(String incidentId, String status) async {
-    final response = await _dio.patch('/incidents/$incidentId', data: {
+    final response = await _dio.put('/incidents/$incidentId', data: {
       'status': status,
     });
     return response.data;

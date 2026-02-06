@@ -7,7 +7,6 @@
       "name": "sahay",
       "version": "6.1.0+1",
       "dependencies": [
-        "background_sms",
         "cached_network_image",
         "cloud_firestore",
         "cupertino_icons",
@@ -180,6 +179,20 @@
       ]
     },
     {
+      "name": "record",
+      "version": "5.2.1",
+      "dependencies": [
+        "flutter",
+        "record_android",
+        "record_darwin",
+        "record_linux",
+        "record_platform_interface",
+        "record_web",
+        "record_windows",
+        "uuid"
+      ]
+    },
+    {
       "name": "speech_to_text",
       "version": "6.6.0",
       "dependencies": [
@@ -200,13 +213,6 @@
       "dependencies": [
         "flutter",
         "flutter_plugin_android_lifecycle"
-      ]
-    },
-    {
-      "name": "background_sms",
-      "version": "0.0.4",
-      "dependencies": [
-        "flutter"
       ]
     },
     {
@@ -994,6 +1000,65 @@
       ]
     },
     {
+      "name": "record_darwin",
+      "version": "1.2.2",
+      "dependencies": [
+        "flutter",
+        "record_platform_interface"
+      ]
+    },
+    {
+      "name": "record_android",
+      "version": "1.5.0",
+      "dependencies": [
+        "flutter",
+        "record_platform_interface"
+      ]
+    },
+    {
+      "name": "record_linux",
+      "version": "0.7.2",
+      "dependencies": [
+        "flutter",
+        "record_platform_interface"
+      ]
+    },
+    {
+      "name": "record_windows",
+      "version": "1.0.7",
+      "dependencies": [
+        "flutter",
+        "record_platform_interface"
+      ]
+    },
+    {
+      "name": "record_web",
+      "version": "1.3.0",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "record_platform_interface",
+        "web"
+      ]
+    },
+    {
+      "name": "record_platform_interface",
+      "version": "1.5.0",
+      "dependencies": [
+        "flutter",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "uuid",
+      "version": "4.5.2",
+      "dependencies": [
+        "crypto",
+        "fixnum",
+        "meta"
+      ]
+    },
+    {
       "name": "flutter_web_plugins",
       "version": "0.0.0",
       "dependencies": [
@@ -1749,6 +1814,11 @@
       ]
     },
     {
+      "name": "fixnum",
+      "version": "1.1.1",
+      "dependencies": []
+    },
+    {
       "name": "file_selector_windows",
       "version": "0.9.3+5",
       "dependencies": [
@@ -1794,15 +1864,6 @@
       ]
     },
     {
-      "name": "uuid",
-      "version": "4.5.2",
-      "dependencies": [
-        "crypto",
-        "fixnum",
-        "meta"
-      ]
-    },
-    {
       "name": "sqflite",
       "version": "2.4.2",
       "dependencies": [
@@ -1830,11 +1891,6 @@
       "dependencies": [
         "unicode"
       ]
-    },
-    {
-      "name": "fixnum",
-      "version": "1.1.1",
-      "dependencies": []
     },
     {
       "name": "custom_lint_visitor",
@@ -1918,70 +1974,6 @@
       "version": "1.0.1",
       "dependencies": [
         "meta"
-      ]
-    },
-    {
-      "name": "record",
-      "version": "5.2.1",
-      "dependencies": [
-        "flutter",
-        "record_android",
-        "record_darwin",
-        "record_linux",
-        "record_platform_interface",
-        "record_web",
-        "record_windows",
-        "uuid"
-      ]
-    },
-    {
-      "name": "record_windows",
-      "version": "1.0.7",
-      "dependencies": [
-        "flutter",
-        "record_platform_interface"
-      ]
-    },
-    {
-      "name": "record_platform_interface",
-      "version": "1.5.0",
-      "dependencies": [
-        "flutter",
-        "plugin_platform_interface"
-      ]
-    },
-    {
-      "name": "record_darwin",
-      "version": "1.2.2",
-      "dependencies": [
-        "flutter",
-        "record_platform_interface"
-      ]
-    },
-    {
-      "name": "record_linux",
-      "version": "0.7.2",
-      "dependencies": [
-        "flutter",
-        "record_platform_interface"
-      ]
-    },
-    {
-      "name": "record_web",
-      "version": "1.3.0",
-      "dependencies": [
-        "flutter",
-        "flutter_web_plugins",
-        "record_platform_interface",
-        "web"
-      ]
-    },
-    {
-      "name": "record_android",
-      "version": "1.5.0",
-      "dependencies": [
-        "flutter",
-        "record_platform_interface"
       ]
     }
   ],

@@ -1,9 +1,10 @@
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WebSocketService {
   IO.Socket? _socket;
-  final String baseUrl = 'http://localhost:3000';
+  final String baseUrl = kIsWeb ? 'http://localhost:3000' : 'http://10.1.19.96:3000';
   
   bool get isConnected => _socket?.connected ?? false;
 

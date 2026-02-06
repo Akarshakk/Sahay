@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:background_sms/background_sms.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1457,7 +1456,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  /// Send emergency SMS with location (Direct/Background)
+  /// Send emergency SMS with location (via system SMS app)
   Future<void> _sendEmergencySMS(LocationData? location) async {
     final String message = location != null
         ? 'EMERGENCY SOS! I need help. My location: ${location.address} (${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)})'
@@ -1466,26 +1465,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Default emergency contacts (Police control room)
     const String emergencyNumber = '112';
     
-    // Check permission
-    if (await Permission.sms.isGranted) {
-      try {
-        final result = await BackgroundSms.sendMessage(
-          phoneNumber: emergencyNumber, 
-          message: message,
-        );
-        if (result == SmsStatus.sent) {
-          if (!mounted) return;
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('SMS Sent Automatically'), backgroundColor: Colors.green),
-          );
-          return;
-        }
-      } catch (e) {
-        debugPrint('Direct SMS failed: $e');
-      }
-    }
-
-    // Fallback to URL Launcher
+    // Use URL Launcher to open SMS app with pre-filled message
     final Uri smsUri = Uri(
       scheme: 'sms',
       path: emergencyNumber,

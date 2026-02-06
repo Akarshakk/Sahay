@@ -6,6 +6,7 @@ import '../../../../core/enums/app_enums.dart';
 import '../../../../core/models/user_model.dart' as user_model;
 import '../../../../core/models/incident_model.dart';
 import '../../../../core/services/audit_service.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../incidents/presentation/providers/incident_provider.dart';
 import '../../../feed/presentation/screens/community_feed_screen.dart';
@@ -35,6 +36,8 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     });
   }
 
+  bool _showResolved = false;
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
@@ -54,8 +57,23 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                 children: [
                    const Icon(Icons.radio_button_checked, color: Colors.red, size: 16),
                    const SizedBox(width: 8),
-                   const Text('LIVE INCIDENT FEED', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                   const Text('INCIDENT FEED', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                    const Spacer(),
+                   // Toggle Buttons
+                   Container(
+                     padding: const EdgeInsets.all(4),
+                     decoration: BoxDecoration(
+                       color: Colors.grey[200],
+                       borderRadius: BorderRadius.circular(20),
+                     ),
+                     child: Row(
+                       children: [
+                         _buildFilterTab('Active', !_showResolved, () => setState(() => _showResolved = false)),
+                         _buildFilterTab('Resolved', _showResolved, () => setState(() => _showResolved = true)),
+                       ],
+                     ),
+                   ),
+                   const SizedBox(width: 8),
                    IconButton(
                      icon: const Icon(Icons.refresh, size: 20, color: AppTheme.neutralGray),
                      onPressed: () => ref.refresh(incidentListProvider),
@@ -67,6 +85,28 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
               child: _buildLiveFeed(incidentsAsync),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected ? [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4)] : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? AppTheme.authorityAccent : Colors.grey,
+          ),
         ),
       ),
     );
@@ -250,14 +290,30 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
   Widget _buildLiveFeed(AsyncValue<List<IncidentModel>> incidentsAsync) {
     return incidentsAsync.when(
       data: (incidentList) {
-        if (incidentList.isEmpty) {
+        // Filter based on selection
+        final filteredIncidents = incidentList.where((i) {
+          if (_showResolved) {
+            return i.status == IncidentStatus.resolved;
+          } else {
+            return i.status != IncidentStatus.resolved;
+          }
+        }).toList();
+
+        if (filteredIncidents.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle_outline, size: 60, color: AppTheme.primaryGreen.withOpacity(0.5)),
+                Icon(
+                  _showResolved ? Icons.history : Icons.check_circle_outline, 
+                  size: 60, 
+                  color: AppTheme.neutralGray.withOpacity(0.5)
+                ),
                 const SizedBox(height: 16),
-                const Text('No Active Incidents', style: TextStyle(fontSize: 16, color: AppTheme.neutralGray)),
+                Text(
+                  _showResolved ? 'No Resolved Incidents' : 'No Active Incidents', 
+                  style: const TextStyle(fontSize: 16, color: AppTheme.neutralGray)
+                ),
               ],
             ),
           );
@@ -265,9 +321,9 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          itemCount: incidentList.length,
+          itemCount: filteredIncidents.length,
           itemBuilder: (context, index) {
-            final incident = incidentList[index];
+            final incident = filteredIncidents[index];
             return _buildIncidentCard(incident).animate().fadeIn(delay: (index * 50).ms);
           },
         );
@@ -354,6 +410,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
           Row(
             children: [
               Expanded(
+                flex: 3,
                 child: OutlinedButton(
                   onPressed: () => _showIncidentDetails(incident),
                   style: OutlinedButton.styleFrom(
@@ -363,8 +420,31 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
                   child: const Text('View Details'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  onPressed: incident.status == IncidentStatus.resolved 
+                      ? null 
+                      : () => _resolveIncident(incident),
+                  style: ElevatedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                  icon: Icon(
+                    incident.status == IncidentStatus.resolved 
+                        ? Icons.check 
+                        : Icons.check_circle, 
+                    size: 16,
+                  ),
+                  label: Text(incident.status == IncidentStatus.resolved ? 'Done' : 'Resolve'),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                flex: 3,
                 child: ElevatedButton(
                   onPressed: () => _showDispatchDialog(incident),
                   style: ElevatedButton.styleFrom(
@@ -381,6 +461,7 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
       ),
     );
   }
+
 
   Color _getSeverityColor(SeverityLevel severity) {
     switch (severity) {
@@ -476,5 +557,51 @@ class _AuthorityDashboardScreenState extends ConsumerState<AuthorityDashboardScr
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Resources dispatched to incident location')),
     );
+  }
+
+  Future<void> _resolveIncident(IncidentModel incident) async {
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Resolving incident...')),
+    );
+
+    try {
+      // Call API to update status
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.updateIncidentStatus(incident.id, 'resolved');
+
+      // Audit log
+      ref.read(auditServiceProvider).logAction(
+        userId: ref.read(authControllerProvider)?.id ?? 'unknown',
+        userName: ref.read(authControllerProvider)?.name ?? 'Authority',
+        userRole: 'authority',
+        actionType: AuditActionType.verify,
+        actionDescription: 'Resolved incident: ${incident.title}',
+        metadata: {'incidentId': incident.id, 'newStatus': 'resolved'},
+      );
+
+      // Refresh the incident list to show updated status
+      ref.refresh(incidentListProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Incident marked as resolved'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to resolve: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
