@@ -6,12 +6,7 @@ import '../models/task_model.dart';
 class ApiService {
   // Use localhost for web, PC's IP for mobile
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3000/api/v1';
-    } else {
-      // USB Debugging (requires 'adb reverse tcp:3000 tcp:3000')
-      return 'http://127.0.0.1:3000/api/v1';
-    }
+    return 'https://sahay-backend-production.up.railway.app/api/v1';
   }
 
   final Dio _dio;

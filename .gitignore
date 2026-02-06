@@ -1,26 +1,43 @@
-# Flutter/Dart
-.dart_tool/
-.packages
-build/
-*.iml
-
-# IDE
-.idea/
-*.iml
-.vscode/
-
-# macOS
+# General
 .DS_Store
-
-# Logs
-*.log
-
-# Windows
 Thumbs.db
+.idea/
+.vscode/
+*.iml
+*.log
+.history
 
-# Environment
-.env.local
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+android/local.properties
+.pub-cache/
+.packages
+doc/api/
 
-# Generated
-*.freezed.dart
-*.g.dart
+# Node.js / Backend
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+
+# Railway
+.railway
+
+# OS Generated
+.spotlight-V100
+.Trashes
+ehthumbs.db
