@@ -37,6 +37,15 @@ class _CitizenVolunteerRegistrationScreenState
   final _professionController = TextEditingController();
   final _addressController = TextEditingController();
 
+  // Focus nodes for Enter key navigation
+  final _phoneFocusNode = FocusNode();
+  final _nameFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
+  final _professionFocusNode = FocusNode();
+  final _addressFocusNode = FocusNode();
+
   DateTime? _selectedDate;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -97,6 +106,14 @@ class _CitizenVolunteerRegistrationScreenState
     _confirmPasswordController.dispose();
     _professionController.dispose();
     _addressController.dispose();
+    // Dispose focus nodes
+    _phoneFocusNode.dispose();
+    _nameFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
+    _professionFocusNode.dispose();
+    _addressFocusNode.dispose();
     super.dispose();
   }
 
@@ -168,9 +185,12 @@ class _CitizenVolunteerRegistrationScreenState
                 // Phone Number
                 TextFormField(
                   controller: _phoneController,
+                  focusNode: _phoneFocusNode,
                   enabled: !_isLoading,
                   keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
                   maxLength: 10,
+                  onFieldSubmitted: (_) => _nameFocusNode.requestFocus(),
                   decoration: InputDecoration(
                     labelText: 'Mobile Number *',
                     hintText: 'Enter 10-digit mobile number',
@@ -211,8 +231,11 @@ class _CitizenVolunteerRegistrationScreenState
                 // Full Name
                 TextFormField(
                   controller: _nameController,
+                  focusNode: _nameFocusNode,
                   enabled: !_isLoading,
                   textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _emailFocusNode.requestFocus(),
                   decoration: InputDecoration(
                     labelText: 'Full Name *',
                     hintText: 'Enter your full name',
@@ -251,8 +274,11 @@ class _CitizenVolunteerRegistrationScreenState
                 // Email
                 TextFormField(
                   controller: _emailController,
+                  focusNode: _emailFocusNode,
                   enabled: !_isLoading,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                   decoration: InputDecoration(
                     labelText: 'Email *',
                     hintText: 'Enter your email address',
@@ -292,8 +318,11 @@ class _CitizenVolunteerRegistrationScreenState
                 // Password
                 TextFormField(
                   controller: _passwordController,
+                  focusNode: _passwordFocusNode,
                   enabled: !_isLoading,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _confirmPasswordFocusNode.requestFocus(),
                   decoration: InputDecoration(
                     labelText: 'Password *',
                     hintText: 'Create a password (min 6 characters)',
@@ -345,8 +374,11 @@ class _CitizenVolunteerRegistrationScreenState
                 // Confirm Password
                 TextFormField(
                   controller: _confirmPasswordController,
+                  focusNode: _confirmPasswordFocusNode,
                   enabled: !_isLoading,
                   obscureText: _obscureConfirmPassword,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _professionFocusNode.requestFocus(),
                   decoration: InputDecoration(
                     labelText: 'Confirm Password *',
                     hintText: 'Re-enter your password',
@@ -439,8 +471,11 @@ class _CitizenVolunteerRegistrationScreenState
                 // Profession
                 TextFormField(
                   controller: _professionController,
+                  focusNode: _professionFocusNode,
                   enabled: !_isLoading,
                   textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _addressFocusNode.requestFocus(),
                   decoration: InputDecoration(
                     labelText: 'Profession *',
                     hintText: 'Enter your profession',
@@ -533,9 +568,16 @@ class _CitizenVolunteerRegistrationScreenState
                 // Address
                 TextFormField(
                   controller: _addressController,
+                  focusNode: _addressFocusNode,
                   enabled: !_isLoading,
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: 3,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) {
+                    if (!_isLoading) {
+                      _submitRegistration();
+                    }
+                  },
                   decoration: InputDecoration(
                     labelText: 'Address *',
                     hintText: 'Enter your complete address',

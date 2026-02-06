@@ -597,7 +597,7 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
     return SwitchListTile(
       value: value,
       onChanged: onChanged,
-      activeColor: AppTheme.primaryGreen,
+      activeThumbColor: AppTheme.primaryGreen,
       secondary: Icon(icon, color: value ? AppTheme.primaryGreen : Colors.grey),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
