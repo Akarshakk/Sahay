@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -59,8 +60,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   List<Map<String, dynamic>> _notifications = [];
 
+  // Keys for App Tour
+  final GlobalKey _sosKey = GlobalKey();
+  final GlobalKey _locationKey = GlobalKey();
+  final GlobalKey _policeKey = GlobalKey();
+  final GlobalKey _ambulanceKey = GlobalKey();
+  final GlobalKey _fireKey = GlobalKey();
+  final GlobalKey _communityKey = GlobalKey();
+
   @override
   void initState() {
+    print("DEBUG: HomeScreen initState");
     super.initState();
     _loadNotifications();
     // Hardware Trigger Listener - Navigate to SOS countdown screen
@@ -70,7 +80,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Initialize WebSocket
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initWebSocket();
+      _checkAndStartTour();
     });
+  }
+
+  Future<void> _checkAndStartTour() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenTour = prefs.getBool('hasSeenTour') ?? false;
+
+    if (!hasSeenTour) {
+      if (mounted) {
+        ShowCaseWidget.of(context).startShowCase([
+          _sosKey,
+          _locationKey,
+          _policeKey,
+          _ambulanceKey,
+          _communityKey,
+        ]);
+        await prefs.setBool('hasSeenTour', true);
+      }
+    }
   }
 
   void _initWebSocket() {
@@ -91,20 +120,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ws.joinRegion(user.state!);
         _fetchMissedBroadcasts(user.state!);
       }
-      
+
       // Subscribe to SOS alerts for volunteers and authorities
       if (user.role == UserRole.volunteer || user.role == UserRole.authority) {
         final location = ref.read(currentLocationProvider).valueOrNull;
         if (location != null) {
           ws.subscribeToSOSAlerts(location.latitude, location.longitude);
         }
-        
+
         // Listen for new SOS alerts
         ws.onNewSOS((data) {
           if (!mounted) return;
           _showSOSAlertDialog(data);
         });
-        
+
         // Listen for SOS updates (including new messages)
         ws.onSOSUpdated((data) {
           if (!mounted) return;
@@ -182,11 +211,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final String type = sosData['type']?.toString() ?? 'EMERGENCY';
     final String? message = sosData['message']?.toString();
     final String? address = sosData['address']?.toString();
-    final double? latitude = sosData['latitude'] is num ? (sosData['latitude'] as num).toDouble() : null;
-    final double? longitude = sosData['longitude'] is num ? (sosData['longitude'] as num).toDouble() : null;
+    final double? latitude = sosData['latitude'] is num
+        ? (sosData['latitude'] as num).toDouble()
+        : null;
+    final double? longitude = sosData['longitude'] is num
+        ? (sosData['longitude'] as num).toDouble()
+        : null;
     final String? userName = sosData['userName']?.toString();
     final String? userPhone = sosData['userPhone']?.toString();
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -201,7 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: AppTheme.primaryRed.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.sos, color: AppTheme.primaryRed, size: 28),
+              child:
+                  const Icon(Icons.sos, color: AppTheme.primaryRed, size: 28),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -226,15 +260,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     const Icon(Icons.person, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
-                    Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(userName,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 8),
               ],
-              
+
               // Emergency type
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryRed.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -248,7 +284,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Message if present
               if (message != null && message.isNotEmpty) ...[
                 const Text(
@@ -274,7 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              
+
               // Location
               const Text(
                 'Location:',
@@ -305,7 +341,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 8),
               Text(
                 'SOS ID: $sosId',
@@ -358,19 +394,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-  
+
   void _showSOSUpdateSnackbar(dynamic data) {
     final sosData = data is Map ? data : {};
     final String? message = sosData['message']?.toString();
     final String action = sosData['action']?.toString() ?? 'Update';
-    
+
     String snackMessage = 'SOS Alert Updated';
     if (action == 'MESSAGE_SENT' && message != null) {
-      snackMessage = 'New SOS Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}';
+      snackMessage =
+          'New SOS Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}';
     } else if (action == 'MARKED_SAFE') {
       snackMessage = 'User has marked themselves as safe';
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -380,7 +417,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Expanded(child: Text(snackMessage)),
           ],
         ),
-        backgroundColor: action == 'MARKED_SAFE' ? AppTheme.primaryGreen : AppTheme.primaryRed,
+        backgroundColor: action == 'MARKED_SAFE'
+            ? AppTheme.primaryGreen
+            : AppTheme.primaryRed,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: 'View',
@@ -392,9 +431,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-  
+
   Future<void> _openMapLocation(double lat, double lng, String? address) async {
-    final Uri mapsUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final Uri mapsUri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     try {
       if (await canLaunchUrl(mapsUri)) {
         await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
@@ -416,63 +456,81 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authControllerProvider);
+    print("DEBUG: HomeScreen build");
+    return ShowCaseWidget(
+      blurValue: 1,
+      autoPlay: false,
+      builder: (context) {
+        final user = ref.watch(authControllerProvider);
 
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      drawer: _buildDrawer(user),
-      body: Stack(
-        children: [
-          // Background Gradient Element
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primaryBrand.withOpacity(0.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryBrand.withOpacity(0.2),
-                    blurRadius: 100,
-                    spreadRadius: 50,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 10),
-                        _buildEmergencyBanner(),
-                        const SizedBox(height: 24),
-                        _buildLocationDisplay(), // Moved up for better access
-                        const SizedBox(height: 24),
-                        _buildQuickActions(),
-                        const SizedBox(height: 24),
-                        _buildServiceGrid(),
-                        const SizedBox(height: 100),
-                      ],
-                    ),
+        return Scaffold(
+          backgroundColor: AppTheme.getBackgroundColor(context),
+          drawer: _buildDrawer(user),
+          body: Stack(
+            children: [
+              // Background Gradient Element
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryBrand.withOpacity(0.1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryBrand.withOpacity(0.2),
+                        blurRadius: 100,
+                        spreadRadius: 50,
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              SafeArea(
+                child: CustomScrollView(
+                  slivers: [
+                    _buildAppBar(),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            _buildEmergencyBanner(),
+                            const SizedBox(height: 24),
+                            _buildShowcase(
+                              _locationKey,
+                              'Your Location',
+                              'View your live location and address. This helps rescuers find you.',
+                              _buildLocationDisplay(),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildQuickActions(),
+                            const SizedBox(height: 24),
+                            _buildServiceGrid(),
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: _buildSOSButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          floatingActionButton: _buildShowcase(
+            _sosKey,
+            'Emergency SOS',
+            'Press and hold for 3 seconds to send an immediate distress alert.',
+            _buildSOSButton(),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+        );
+      },
     );
   }
 
@@ -668,18 +726,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildQuickActionCard(
-              icon: Icons.public,
-              label: 'Community',
-              color: AppTheme.primaryGreen,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CommunityFeedScreen(),
-                  ),
-                );
-              },
+            child: Showcase(
+              key: _communityKey,
+              title: 'Community',
+              description: 'Connect with neighbors and see local updates.',
+              child: _buildQuickActionCard(
+                icon: Icons.public,
+                label: 'Community',
+                color: AppTheme.primaryGreen,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CommunityFeedScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -1021,23 +1084,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
             children: [
-              _buildServiceCard(
-                title: 'Police',
-                icon: Icons.local_police_outlined,
-                color: const Color(0xFF3B82F6), // Blue
-                onTap: () => _showIncidentReportDialog(IncidentType.police),
+              _buildShowcase(
+                _policeKey,
+                'Police',
+                'Report crimes or request police assistance.',
+                _buildServiceCard(
+                  title: 'Police',
+                  icon: Icons.local_police_outlined,
+                  color: const Color(0xFF3B82F6), // Blue
+                  onTap: () => _showIncidentReportDialog(IncidentType.police),
+                ),
               ),
-              _buildServiceCard(
-                title: 'Fire Brigade',
-                icon: Icons.local_fire_department_outlined,
-                color: const Color(0xFFF97316), // Orange
-                onTap: () => _showIncidentReportDialog(IncidentType.fire),
+              _buildShowcase(
+                _fireKey,
+                'Fire Brigade',
+                'Report fire hazards and emergencies.',
+                _buildServiceCard(
+                  title: 'Fire Brigade',
+                  icon: Icons.local_fire_department_outlined,
+                  color: const Color(0xFFF97316), // Orange
+                  onTap: () => _showIncidentReportDialog(IncidentType.fire),
+                ),
               ),
-              _buildServiceCard(
-                title: 'Ambulance',
-                icon: Icons.medical_services_outlined,
-                color: const Color(0xFFEF4444), // Red
-                onTap: () => _showIncidentReportDialog(IncidentType.medical),
+              _buildShowcase(
+                _ambulanceKey,
+                'Ambulance',
+                'Request immediate medical help.',
+                _buildServiceCard(
+                  title: 'Ambulance',
+                  icon: Icons.medical_services_outlined,
+                  color: const Color(0xFFEF4444), // Red
+                  onTap: () => _showIncidentReportDialog(IncidentType.medical),
+                ),
               ),
               _buildServiceCard(
                 title: 'Woman Safety',
@@ -2464,6 +2542,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildShowcase(
+      GlobalKey key, String title, String description, Widget child) {
+    return Showcase.withWidget(
+      key: key,
+      targetPadding: const EdgeInsets.all(4),
+      container: Builder(
+        builder: (context) => _TourTooltip(
+          title: title,
+          description: description,
+          onNext: () {
+            ShowCaseWidget.of(context).next();
+          },
+          onSkip: () {
+            ShowCaseWidget.of(context).dismiss();
+          },
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _TourTooltip extends StatelessWidget {
+  final String title;
+  final String description;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+
+  const _TourTooltip({
+    required this.title,
+    required this.description,
+    required this.onNext,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: onSkip,
+                child: const Text('Skip', style: TextStyle(color: Colors.grey)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: onNext,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBrand,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: const Text('Next'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

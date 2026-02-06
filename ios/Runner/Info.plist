@@ -49,5 +49,9 @@
 	<string>Sahay needs access to speech recognition to convert your voice message to text for SOS alerts.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sahay needs access to the microphone to record your voice message for SOS alerts.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sahay needs your location to send help to your precise location during emergencies and to show nearby community alerts.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Sahay needs your location to send help to your precise location during emergencies and to show nearby community alerts.</string>
 </dict>
 </plist>

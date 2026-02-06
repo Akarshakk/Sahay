@@ -6,6 +6,8 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/providers/verification_provider.dart';
+import '../widgets/reddit_post_card.dart';
 
 class PostChatScreen extends ConsumerStatefulWidget {
   final FeedPost post;
@@ -19,19 +21,21 @@ class PostChatScreen extends ConsumerStatefulWidget {
 class _PostChatScreenState extends ConsumerState<PostChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  late FeedPost _currentPost;
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _currentPost = widget.post;
     _loadMessages();
     _setupWebSocket();
   }
 
   void _setupWebSocket() {
     final ws = ref.read(webSocketServiceProvider);
-    
+
     ws.onNewChatMessage((data) {
       if (data['postId'] == widget.post.id && data['data'] != null) {
         setState(() {
@@ -44,11 +48,11 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
 
   Future<void> _loadMessages() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final api = ref.read(apiServiceProvider);
       final result = await api.getComments(widget.post.id);
-      
+
       if (result['success'] == true && result['data'] != null) {
         setState(() {
           _messages = (result['data'] as List)
@@ -66,16 +70,65 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
     }
   }
 
+  Future<void> _toggleLike() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final result = await api.toggleLike(widget.post.id);
+
+      if (result['success'] == true && result['data'] != null) {
+        setState(() {
+          _currentPost = FeedPost.fromJson(result['data']);
+        });
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
+    }
+  }
+
+  Future<void> _verifyPost() async {
+    if (ref
+        .read(verificationProvider.notifier)
+        .hasUserVerified(widget.post.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You already verified this post')),
+      );
+      return;
+    }
+
+    try {
+      final api = ref.read(apiServiceProvider);
+      final result = await api.verifyPost(widget.post.id);
+
+      if (result['success'] == true) {
+        ref.read(verificationProvider.notifier).verifyPost(
+              _currentPost.id,
+              currentCount: _currentPost.verificationCount,
+            );
+        setState(() {
+          _currentPost = _currentPost.copyWith(
+              verificationCount:
+                  _currentPost.verificationCount + 10 // Mock increment or fetch
+              );
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Verified! +10 points')),
+        );
+      }
+    } catch (e) {
+      print('Error verifying: $e');
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    
+
     _messageController.clear();
-    
+
     try {
       final api = ref.read(apiServiceProvider);
       final currentUser = ref.read(authControllerProvider);
-      
+
       // Optimistically add message to UI immediately
       final optimisticMessage = ChatMessage(
         id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
@@ -85,15 +138,15 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
         message: text,
         createdAt: DateTime.now(),
       );
-      
+
       setState(() {
         _messages.insert(0, optimisticMessage);
       });
       _scrollToBottom();
-      
+
       // Send to backend
       final result = await api.addComment(widget.post.id, text);
-      
+
       if (result['success'] == true) {
         // Reload the full list to get the actual saved comment with correct ID
         await _loadMessages();
@@ -153,7 +206,8 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
             const Text('Discussion', style: TextStyle(fontSize: 18)),
             Text(
               widget.post.authorName,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
         ),
@@ -163,43 +217,16 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
       ),
       body: Column(
         children: [
-          // Post preview
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.post.content,
-                  style: const TextStyle(fontSize: 14),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.verified, size: 16, color: AppTheme.primaryGreen),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${widget.post.verificationCount} verifications',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    const Spacer(),
-                    Text(
-                      widget.post.category.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryRed,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          // Post Details
+          RedditPostCard(
+            post: _currentPost,
+            isDetailed: true,
+            onLike: _toggleLike,
+            onVerify: () => _verifyPost(),
+            onShare: () {}, // TODO
           ),
-          
+          const Divider(height: 1),
+
           // Messages list
           Expanded(
             child: _isLoading
@@ -209,7 +236,8 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[300]),
+                            Icon(Icons.chat_bubble_outline,
+                                size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
                             Text(
                               'No messages yet',
@@ -232,7 +260,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                         },
                       ),
           ),
-          
+
           // Input field
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -274,7 +302,8 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                   CircleAvatar(
                     backgroundColor: AppTheme.primaryRed,
                     child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                      icon:
+                          const Icon(Icons.send, color: Colors.white, size: 20),
                       onPressed: _sendMessage,
                     ),
                   ),
@@ -327,7 +356,8 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
@@ -340,7 +370,7 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
                 const SizedBox(height: 4),
                 const Row(
                   children: [
-                      /*
+                    /*
                       InkWell(
                         onTap: () => _reactToMessage(message),
                         child: Padding(
@@ -384,11 +414,11 @@ class _PostChatScreenState extends ConsumerState<PostChatScreen> {
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
-    
+
     if (diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
-    
+
     return DateFormat('MMM d').format(timestamp);
   }
 

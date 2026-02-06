@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/models/feed_post_model.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
-import 'post_chat_screen.dart';
 import 'create_post_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/widgets/glass_container.dart';
-import '../../../../features/auth/presentation/providers/auth_provider.dart';
+
+import '../widgets/reddit_post_card.dart';
 
 class CommunityFeedScreen extends ConsumerStatefulWidget {
   /// When true, shows verify button on posts (for volunteers/authorities)
@@ -144,13 +143,13 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
     } catch (e) {
       print('Error loading feed: $e');
       setState(() {
-        _posts = [];
+        _posts = _getDemoFeedPosts();
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to load feed. Please check connection.'),
-          backgroundColor: Colors.red,
+          content: Text('Failed to load feed. Showing demo data.'),
+          backgroundColor: Colors.orange,
         ),
       );
     }
@@ -342,7 +341,16 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
                             padding: const EdgeInsets.only(bottom: 80),
                             itemCount: _posts.length,
                             itemBuilder: (context, index) {
-                              return _buildPostCard(_posts[index])
+                              return RedditPostCard(
+                                post: _posts[index],
+                                onLike: () => _toggleLike(_posts[index]),
+                                onVerify: widget.canVerify
+                                    ? () => _verifyPost(_posts[index])
+                                    : null,
+                                onShare: () {
+                                  // TODO: Implement share
+                                },
+                              )
                                   .animate()
                                   .fadeIn(
                                       delay: Duration(milliseconds: index * 50))
@@ -387,253 +395,6 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
           Text(
             'Be the first to report something!',
             style: TextStyle(color: AppTheme.getSecondaryTextColor(context)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostCard(FeedPost post) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostChatScreen(post: post),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppTheme.primaryRed,
-                    child: Text(
-                      post.authorName[0].toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          post.authorName,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          _formatTimestamp(post.createdAt),
-                          style: TextStyle(
-                              color: AppTheme.getSecondaryTextColor(context),
-                              fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildCategoryChip(post.category),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Content
-              Text(
-                post.content,
-                style: const TextStyle(fontSize: 15, height: 1.4),
-              ),
-
-              if (post.address != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.location_on,
-                        size: 16,
-                        color: AppTheme.getSecondaryTextColor(context)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        post.address!,
-                        style: TextStyle(
-                            color: AppTheme.getSecondaryTextColor(context),
-                            fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              if (post.distance != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '${(post.distance! / 1000).toStringAsFixed(1)} km away',
-                  style: TextStyle(
-                      color: AppTheme.getSecondaryTextColor(context),
-                      fontSize: 12),
-                ),
-              ],
-
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-
-              const SizedBox(height: 12),
-
-              // Actions
-              Row(
-                children: [
-                  // Verify button - only shown for volunteers/authorities
-                  if (widget.canVerify) ...[
-                    TextButton.icon(
-                      onPressed: () => _verifyPost(post),
-                      icon: Icon(
-                        Icons.verified,
-                        size: 20,
-                        color: post.verificationCount >= 5
-                            ? AppTheme.primaryGreen
-                            : Colors.grey,
-                      ),
-                      label: Text(
-                        'Verify (${post.verificationCount})',
-                        style: TextStyle(
-                          color: post.verificationCount >= 5
-                              ? AppTheme.primaryGreen
-                              : Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                  // Verification badge (always shown, read-only for citizens)
-                  if (!widget.canVerify) ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified,
-                          size: 18,
-                          color: post.verificationCount >= 5
-                              ? AppTheme.primaryGreen
-                              : Colors.grey[400],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${post.verificationCount}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: post.verificationCount >= 5
-                                ? AppTheme.primaryGreen
-                                : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                  TextButton.icon(
-                    onPressed: () => _toggleLike(post),
-                    icon: Icon(
-                      post.likes.contains(ref.watch(authControllerProvider)?.id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      size: 20,
-                      color: post.likes
-                              .contains(ref.watch(authControllerProvider)?.id)
-                          ? Colors.red
-                          : Colors.grey,
-                    ),
-                    label: Text(
-                      '${post.likes.length}',
-                      style: TextStyle(
-                        color: post.likes
-                                .contains(ref.watch(authControllerProvider)?.id)
-                            ? Colors.red
-                            : Colors.grey[700],
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PostChatScreen(post: post),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                    label: Text('${post.commentsCount} Comments'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(String category) {
-    Color color;
-    IconData icon;
-
-    switch (category) {
-      case 'infrastructure':
-        color = Colors.orange;
-        icon = Icons.construction;
-        break;
-      case 'safety':
-        color = Colors.red;
-        icon = Icons.warning;
-        break;
-      case 'health':
-        color = Colors.blue;
-        icon = Icons.local_hospital;
-        break;
-      case 'environment':
-        color = Colors.green;
-        icon = Icons.eco;
-        break;
-      case 'accident':
-        color = Colors.deepOrange;
-        icon = Icons.car_crash;
-        break;
-      default:
-        color = Colors.grey;
-        icon = Icons.info;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            category.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
           ),
         ],
       ),
@@ -715,17 +476,5 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
         ],
       ),
     );
-  }
-
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final diff = now.difference(timestamp);
-
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-
-    return DateFormat('MMM d, yyyy').format(timestamp);
   }
 }
