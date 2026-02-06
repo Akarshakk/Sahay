@@ -232,19 +232,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showSOSAlertDialog(dynamic data) {
-    final sosData = data is Map ? data : {};
+    // The WebSocket sends { type: 'NEW_SOS', data: sosLog }
+    // So we need to extract the actual sosLog from data.data
+    final rawData = data is Map ? data : {};
+    final sosData = rawData['data'] is Map ? rawData['data'] : rawData;
+    
     final String sosId = sosData['id']?.toString() ?? 'Unknown';
     final String type = sosData['type']?.toString() ?? 'EMERGENCY';
     final String? message = sosData['message']?.toString();
     final String? address = sosData['address']?.toString();
-    final double? latitude = sosData['latitude'] is num
-        ? (sosData['latitude'] as num).toDouble()
-        : null;
-    final double? longitude = sosData['longitude'] is num
-        ? (sosData['longitude'] as num).toDouble()
-        : null;
+    
+    // Location is nested: { location: { latitude: X, longitude: Y } }
+    final locationData = sosData['location'] is Map ? sosData['location'] : {};
+    final double? latitude = locationData['latitude'] is num
+        ? (locationData['latitude'] as num).toDouble()
+        : (sosData['latitude'] is num ? (sosData['latitude'] as num).toDouble() : null);
+    final double? longitude = locationData['longitude'] is num
+        ? (locationData['longitude'] as num).toDouble()
+        : (sosData['longitude'] is num ? (sosData['longitude'] as num).toDouble() : null);
+        
     final String? userName = sosData['userName']?.toString();
     final String? userPhone = sosData['userPhone']?.toString();
+    
+    debugPrint('🚨 SOS Alert received: id=$sosId, user=$userName, lat=$latitude, lng=$longitude');
 
     // Trigger haptic feedback for urgency
     HapticFeedback.heavyImpact();
@@ -302,7 +312,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showSOSUpdateSnackbar(dynamic data) {
-    final sosData = data is Map ? data : {};
+    // The WebSocket sends { type: 'SOS_UPDATED', data: sosLog }
+    final rawData = data is Map ? data : {};
+    final sosData = rawData['data'] is Map ? rawData['data'] : rawData;
+    
     final String? message = sosData['message']?.toString();
     final String action = sosData['action']?.toString() ?? 'Update';
 
