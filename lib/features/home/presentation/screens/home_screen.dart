@@ -165,6 +165,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (!mounted) return;
           _showSOSUpdateSnackbar(data);
         });
+        
+        // Fetch any SOS alerts from the last hour that volunteer might have missed
+        _fetchRecentSOSAlerts();
       }
     }
 
@@ -349,6 +352,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// Fetch active SOS alerts from the last 1 hour that volunteer might have missed
+  Future<void> _fetchRecentSOSAlerts() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final result = await api.getActiveSOSAlerts();
+      
+      if (result['success'] == true && result['data'] != null) {
+        final alerts = result['data'] as List;
+        final now = DateTime.now();
+        
+        // Filter alerts from last 1 hour only
+        final recentAlerts = alerts.where((alert) {
+          try {
+            final createdAt = alert['createdAt'];
+            DateTime? alertTime;
+            
+            if (createdAt is String) {
+              alertTime = DateTime.tryParse(createdAt);
+            } else if (createdAt is Map && createdAt['_seconds'] != null) {
+              alertTime = DateTime.fromMillisecondsSinceEpoch(
+                (createdAt['_seconds'] as int) * 1000,
+              );
+            }
+            
+            if (alertTime != null) {
+              final difference = now.difference(alertTime);
+              return difference.inMinutes < 60; // Within last hour
+            }
+          } catch (e) {
+            debugPrint('Error parsing SOS alert time: $e');
+          }
+          return false;
+        }).toList();
+        
+        debugPrint('📢 Found ${recentAlerts.length} recent SOS alerts (last 1 hour)');
+        
+        // Check shared preferences for already-shown SOS alerts
+        final prefs = await SharedPreferences.getInstance();
+        final shownSOS = prefs.getStringList('shown_sos_alerts') ?? [];
+        
+        // Show alerts that haven't been shown yet (one at a time with delay)
+        for (final alert in recentAlerts) {
+          final sosId = alert['id']?.toString();
+          if (sosId != null && !shownSOS.contains(sosId)) {
+            if (!mounted) return;
+            
+            // Show the alert
+            _showSOSAlertDialog({'data': alert});
+            
+            // Mark as shown
+            shownSOS.add(sosId);
+            await prefs.setStringList('shown_sos_alerts', shownSOS);
+            
+            // Only show one at a time to not overwhelm user
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching recent SOS alerts: $e');
+    }
   }
 
   Future<void> _openMapLocation(double lat, double lng, String? address) async {
@@ -2733,12 +2799,15 @@ class _DramaticSOSAlertState extends State<_DramaticSOSAlert>
                                 children: [
                                   const Icon(Icons.person, color: Colors.white, size: 24),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    widget.userName!,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                  Flexible(
+                                    child: Text(
+                                      widget.userName!,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -2887,11 +2956,14 @@ class _DramaticSOSAlertState extends State<_DramaticSOSAlert>
                               child: ElevatedButton.icon(
                                 onPressed: widget.onCall,
                                 icon: const Icon(Icons.phone, size: 24),
-                                label: const Text(
-                                  'CALL',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                label: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'CALL',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
@@ -2912,11 +2984,14 @@ class _DramaticSOSAlertState extends State<_DramaticSOSAlert>
                             child: ElevatedButton.icon(
                               onPressed: widget.onNavigate,
                               icon: const Icon(Icons.navigation, size: 24),
-                              label: const Text(
-                                'NAVIGATE & HELP',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'HELP NOW',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
