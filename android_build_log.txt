@@ -1,0 +1,82 @@
+
+Welcome to Gradle 8.14!
+
+Here are the highlights of this release:
+ - Java 24 support
+ - GraalVM Native Image toolchain selection
+ - Enhancements to test reporting
+ - Build Authoring improvements
+
+For more details see https://docs.gradle.org/8.14/release-notes.html
+
+Starting a Gradle Daemon, 1 incompatible and 1 stopped Daemons could not be reused, use --status for details
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+
+> Task :gradle:compileKotlin
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:11:37 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:609:69 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:186:64 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:187:69 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :app
+w: file:///C:/Users/Admin/Sahay/android/app/build.gradle.kts:20:9: 'jvmTarget: String' is deprecated. Please migrate to the compilerOptions DSL. More details are here: https://kotl.in/u1r8ln
+
+> Task :app:DebugMinSdkCheck
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+
+> Task :app:compileFlutterBuildDebug
+../AppData/Local/Pub/Cache/hosted/pub.dev/record_linux-0.7.2/lib/record_linux.dart:12:7: Error: The non-abstract class 'RecordLinux' is missing implementations for these members:
+ - RecordMethodChannelPlatformInterface.startStream
+Try to either
+ - provide an implementation,
+ - inherit an implementation from a superclass or mixin,
+ - mark the class as abstract, or
+ - provide a 'noSuchMethod' implementation.
+class RecordLinux extends RecordPlatform {
+      ^^^^^^^^^^^
+../AppData/Local/Pub/Cache/hosted/pub.dev/record_platform_interface-1.5.0/lib/src/record_platform_interface.dart:46:29: Context: 'RecordMethodChannelPlatformInterface.startStream' is defined here.
+  Future<Stream<Uint8List>> startStream(String recorderId, RecordConfig config);
+                            ^^^^^^^^^^^
+../AppData/Local/Pub/Cache/hosted/pub.dev/record_linux-0.7.2/lib/record_linux.dart:36:16: Error: The method 'RecordLinux.hasPermission' has fewer named arguments than those of overridden method 'RecordMethodChannelPlatformInterface.hasPermission'.
+  Future<bool> hasPermission(String recorderId) {
+               ^
+../AppData/Local/Pub/Cache/hosted/pub.dev/record_platform_interface-1.5.0/lib/src/record_platform_interface.dart:74:16: Context: This is the overridden method ('hasPermission').
+  Future<bool> hasPermission(String recorderId, {bool request = true});
+               ^
+Target kernel_snapshot_program failed: Exception
+
+
+> Task :app:compileFlutterBuildDebug FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/Admin/Sahay/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command 'C:\src\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 1m 33s
+6 actionable tasks: 3 executed, 3 up-to-date

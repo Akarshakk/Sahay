@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -164,6 +165,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (!mounted) return;
           _showSOSUpdateSnackbar(data);
         });
+        
+        // Fetch any SOS alerts from the last hour that volunteer might have missed
+        _fetchRecentSOSAlerts();
       }
     }
 
@@ -231,197 +235,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showSOSAlertDialog(dynamic data) {
-    final sosData = data is Map ? data : {};
+    // The WebSocket sends { type: 'NEW_SOS', data: sosLog }
+    // So we need to extract the actual sosLog from data.data
+    final rawData = data is Map ? data : {};
+    final sosData = rawData['data'] is Map ? rawData['data'] : rawData;
+    
     final String sosId = sosData['id']?.toString() ?? 'Unknown';
     final String type = sosData['type']?.toString() ?? 'EMERGENCY';
     final String? message = sosData['message']?.toString();
     final String? address = sosData['address']?.toString();
-    final double? latitude = sosData['latitude'] is num
-        ? (sosData['latitude'] as num).toDouble()
-        : null;
-    final double? longitude = sosData['longitude'] is num
-        ? (sosData['longitude'] as num).toDouble()
-        : null;
+    
+    // Location is nested: { location: { latitude: X, longitude: Y } }
+    final locationData = sosData['location'] is Map ? sosData['location'] : {};
+    final double? latitude = locationData['latitude'] is num
+        ? (locationData['latitude'] as num).toDouble()
+        : (sosData['latitude'] is num ? (sosData['latitude'] as num).toDouble() : null);
+    final double? longitude = locationData['longitude'] is num
+        ? (locationData['longitude'] as num).toDouble()
+        : (sosData['longitude'] is num ? (sosData['longitude'] as num).toDouble() : null);
+        
     final String? userName = sosData['userName']?.toString();
     final String? userPhone = sosData['userPhone']?.toString();
+    
+    debugPrint('🚨 SOS Alert received: id=$sosId, user=$userName, lat=$latitude, lng=$longitude');
 
-    showDialog(
+    // Trigger haptic feedback for urgency
+    HapticFeedback.heavyImpact();
+
+    // Show dramatic full-screen alert
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryRed.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child:
-                  const Icon(Icons.sos, color: AppTheme.primaryRed, size: 28),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'SOS ALERT!',
-                style: TextStyle(
-                  color: AppTheme.primaryRed,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User info if available
-              if (userName != null) ...[
-                Row(
-                  children: [
-                    const Icon(Icons.person, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text(userName,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-
-              // Emergency type
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryRed.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  type,
-                  style: const TextStyle(
-                    color: AppTheme.primaryRed,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Message if present
-              if (message != null && message.isNotEmpty) ...[
-                const Text(
-                  'Message:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    message,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Location
-              const Text(
-                'Location:',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.all(12),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (address != null && address.isNotEmpty)
-                      Text(address, style: const TextStyle(fontSize: 14)),
-                    if (latitude != null && longitude != null)
-                      Text(
-                        'Coordinates: ${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              Text(
-                'SOS ID: $sosId',
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Dismiss'),
-          ),
-          if (userPhone != null)
-            ElevatedButton.icon(
-              onPressed: () async {
-                Navigator.pop(context);
-                final Uri phoneUri = Uri(scheme: 'tel', path: userPhone);
-                try {
-                  if (await canLaunchUrl(phoneUri)) {
-                    await launchUrl(phoneUri);
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _DramaticSOSAlert(
+          sosId: sosId,
+          type: type,
+          message: message ?? 'I need your help!',
+          address: address,
+          latitude: latitude,
+          longitude: longitude,
+          userName: userName,
+          userPhone: userPhone,
+          onDismiss: () => Navigator.of(context).pop(),
+          onNavigate: () {
+            Navigator.of(context).pop();
+            if (latitude != null && longitude != null) {
+              _openMapLocation(latitude, longitude, address);
+            }
+          },
+          onCall: userPhone != null
+              ? () async {
+                  Navigator.of(context).pop();
+                  final Uri phoneUri = Uri(scheme: 'tel', path: userPhone);
+                  try {
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(phoneUri);
+                    }
+                  } catch (e) {
+                    debugPrint('Failed to call: $e');
                   }
-                } catch (e) {
-                  debugPrint('Failed to call: $e');
                 }
-              },
-              icon: const Icon(Icons.phone, size: 18),
-              label: const Text('Call'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: Colors.white,
-              ),
+              : null,
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
             ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to map or location - can be enhanced
-              if (latitude != null && longitude != null) {
-                _openMapLocation(latitude, longitude, address);
-              }
-            },
-            icon: const Icon(Icons.map, size: 18),
-            label: const Text('View Map'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryRed,
-              foregroundColor: Colors.white,
-            ),
+            child: child,
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   void _showSOSUpdateSnackbar(dynamic data) {
-    final sosData = data is Map ? data : {};
+    // The WebSocket sends { type: 'SOS_UPDATED', data: sosLog }
+    final rawData = data is Map ? data : {};
+    final sosData = rawData['data'] is Map ? rawData['data'] : rawData;
+    
     final String? message = sosData['message']?.toString();
     final String action = sosData['action']?.toString() ?? 'Update';
 
@@ -455,6 +352,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// Fetch active SOS alerts from the last 1 hour that volunteer might have missed
+  Future<void> _fetchRecentSOSAlerts() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final result = await api.getActiveSOSAlerts();
+      
+      if (result['success'] == true && result['data'] != null) {
+        final alerts = result['data'] as List;
+        final now = DateTime.now();
+        
+        // Filter alerts from last 1 hour only
+        final recentAlerts = alerts.where((alert) {
+          try {
+            final createdAt = alert['createdAt'];
+            DateTime? alertTime;
+            
+            if (createdAt is String) {
+              alertTime = DateTime.tryParse(createdAt);
+            } else if (createdAt is Map && createdAt['_seconds'] != null) {
+              alertTime = DateTime.fromMillisecondsSinceEpoch(
+                (createdAt['_seconds'] as int) * 1000,
+              );
+            }
+            
+            if (alertTime != null) {
+              final difference = now.difference(alertTime);
+              return difference.inMinutes < 60; // Within last hour
+            }
+          } catch (e) {
+            debugPrint('Error parsing SOS alert time: $e');
+          }
+          return false;
+        }).toList();
+        
+        debugPrint('📢 Found ${recentAlerts.length} recent SOS alerts (last 1 hour)');
+        
+        // Check shared preferences for already-shown SOS alerts
+        final prefs = await SharedPreferences.getInstance();
+        final shownSOS = prefs.getStringList('shown_sos_alerts') ?? [];
+        
+        // Show alerts that haven't been shown yet (one at a time with delay)
+        for (final alert in recentAlerts) {
+          final sosId = alert['id']?.toString();
+          if (sosId != null && !shownSOS.contains(sosId)) {
+            if (!mounted) return;
+            
+            // Show the alert
+            _showSOSAlertDialog({'data': alert});
+            
+            // Mark as shown
+            shownSOS.add(sosId);
+            await prefs.setStringList('shown_sos_alerts', shownSOS);
+            
+            // Only show one at a time to not overwhelm user
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching recent SOS alerts: $e');
+    }
   }
 
   Future<void> _openMapLocation(double lat, double lng, String? address) async {
@@ -2343,7 +2303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 'DEBUG: Broadcast "${b['title']}" Created: ${createdAt.toLocal()}, Now: $now, Diff (min): ${difference.inMinutes}');
 
             // Show dialog for broadcasts from the last 24 hours that haven't been shown yet
-            if (difference.inHours < 24 && difference.inMinutes >= 0) {
+            if (difference.inHours < 12 && difference.inMinutes >= 0) {
               // Check if this broadcast was already shown
               final prefs = await SharedPreferences.getInstance();
               final shownBroadcasts =
@@ -2654,6 +2614,420 @@ class _TourTooltip extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Dramatic Full-Screen SOS Alert Widget
+/// Shows an urgent, pulsing red alert for nearby volunteers when someone triggers SOS
+class _DramaticSOSAlert extends StatefulWidget {
+  final String sosId;
+  final String type;
+  final String message;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
+  final String? userName;
+  final String? userPhone;
+  final VoidCallback onDismiss;
+  final VoidCallback onNavigate;
+  final VoidCallback? onCall;
+
+  const _DramaticSOSAlert({
+    required this.sosId,
+    required this.type,
+    required this.message,
+    this.address,
+    this.latitude,
+    this.longitude,
+    this.userName,
+    this.userPhone,
+    required this.onDismiss,
+    required this.onNavigate,
+    this.onCall,
+  });
+
+  @override
+  State<_DramaticSOSAlert> createState() => _DramaticSOSAlertState();
+}
+
+class _DramaticSOSAlertState extends State<_DramaticSOSAlert>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFB71C1C), // Dark red
+              Color(0xFFD32F2F), // Red
+              Color(0xFFE53935), // Light red
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header with dismiss button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      onPressed: widget.onDismiss,
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 28),
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Pulsing SOS Icon
+                      AnimatedBuilder(
+                        animation: _pulseAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _pulseAnimation.value,
+                            child: Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.3),
+                                    blurRadius: 30,
+                                    spreadRadius: 10,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.red.shade900.withOpacity(0.5),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.sos,
+                                  size: 80,
+                                  color: Color(0xFFB71C1C),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // EMERGENCY heading
+                      const Text(
+                        '🚨 EMERGENCY 🚨',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'SOMEONE NEEDS YOUR HELP!',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Person Info Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white30),
+                        ),
+                        child: Column(
+                          children: [
+                            // User name
+                            if (widget.userName != null) ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.person, color: Colors.white, size: 24),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      widget.userName!,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+
+                            // Emergency type badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                widget.type,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFB71C1C),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Message Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.message, color: Colors.red.shade700, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'MESSAGE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red.shade700,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              widget.message,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF333333),
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Location Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white30),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.location_on, color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'LOCATION',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white70,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            if (widget.address != null && widget.address!.isNotEmpty)
+                              Text(
+                                widget.address!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  height: 1.3,
+                                ),
+                              ),
+                            if (widget.latitude != null && widget.longitude != null)
+                              Text(
+                                '${widget.latitude!.toStringAsFixed(6)}, ${widget.longitude!.toStringAsFixed(6)}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+                      Text(
+                        'SOS ID: ${widget.sosId}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white54,
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          // Call Button
+                          if (widget.onCall != null)
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: widget.onCall,
+                                icon: const Icon(Icons.phone, size: 24),
+                                label: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'CALL',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (widget.onCall != null) const SizedBox(width: 12),
+
+                          // Navigate Button
+                          Expanded(
+                            flex: widget.onCall != null ? 2 : 1,
+                            child: ElevatedButton.icon(
+                              onPressed: widget.onNavigate,
+                              icon: const Icon(Icons.navigation, size: 24),
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'HELP NOW',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFFB71C1C),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Dismiss Button
+                      TextButton(
+                        onPressed: widget.onDismiss,
+                        child: const Text(
+                          'Dismiss Alert',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

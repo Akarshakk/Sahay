@@ -134,8 +134,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _currentAddress = parts.isNotEmpty ? parts.join(', ') : null;
         }
       } catch (e) {
-        // Geocoding may fail on web or emulator - that's okay
-        _currentAddress = null;
+        // Geocoding may fail on web or emulator - show fallback message
+        _currentAddress = 'Address lookup unavailable';
+        print('Geocoding error: $e');
       }
     } catch (e) {
       _currentLocation = 'Could not get location';

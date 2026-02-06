@@ -6,7 +6,7 @@ part of 'auth_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authControllerHash() => r'20b1307baa84aedd55a867f4cee8f71a792eb667';
+String _$authControllerHash() => r'804b4249d71a75acb4c73be65ae1ea50f9a22a63';
 
 /// Auth State Notifier - keepAlive: true prevents state from resetting on navigation
 ///

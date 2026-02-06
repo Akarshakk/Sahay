@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
     <!-- Required for speech recognition on Android 11+ -->
     <queries>
@@ -21,6 +22,7 @@
     <application
         android:label="sahay"
         android:name="${applicationName}"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

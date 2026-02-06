@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WebSocketService {
   IO.Socket? _socket;
-  final String baseUrl = kIsWeb ? 'http://localhost:3000' : 'http://10.1.19.96:3000';
+  final String baseUrl = 'https://sahay-backend-production.up.railway.app';
   
   bool get isConnected => _socket?.connected ?? false;
 

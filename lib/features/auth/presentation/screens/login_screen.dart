@@ -25,6 +25,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final LocalAuthentication _localAuth = LocalAuthentication();
+  
+  // Focus nodes for Enter key navigation
+  final _phoneFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _canUseBiometrics = false;
@@ -153,6 +157,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
+    _phoneFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -320,9 +326,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         TextFormField(
                           controller: _phoneController,
+                          focusNode: _phoneFocusNode,
                           keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.next,
                           maxLength: 10,
                           enabled: !_isLoading,
+                          onFieldSubmitted: (_) {
+                            _passwordFocusNode.requestFocus();
+                          },
                           style:
                               TextStyle(color: AppTheme.getTextColor(context)),
                           decoration: InputDecoration(
@@ -366,8 +377,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         TextFormField(
                           controller: _passwordController,
+                          focusNode: _passwordFocusNode,
                           obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
                           enabled: !_isLoading,
+                          onFieldSubmitted: (_) {
+                            if (_agreedToTerms && !_isLoading) {
+                              _handleLogin();
+                            }
+                          },
                           style:
                               TextStyle(color: AppTheme.getTextColor(context)),
                           decoration: InputDecoration(
@@ -596,47 +614,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Test Credentials Info
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                size: 18, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Test Credentials',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTestCredential(
-                            '9876543210', 'test1234', 'Citizen'),
-                        _buildTestCredential(
-                            '9876543211', 'test1234', 'Volunteer'),
-                        _buildTestCredential(
-                            '9876543212', 'test1234', 'Authority'),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: 800.ms),
-
-                  const SizedBox(height: 16),
-
                   Text(
                     'version: 1.0.0',
                     style: TextStyle(
@@ -649,48 +626,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTestCredential(String phone, String password, String role) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              role,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            phone,
-            style: const TextStyle(
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '/ $password',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
       ),
     );
   }
