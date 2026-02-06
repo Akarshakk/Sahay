@@ -130,6 +130,10 @@ class AuthController extends _$AuthController {
     required String address,
     required String profession,
     required DateTime dob,
+    // Location fields
+    String? stateLocation,
+    String? district,
+    String? city,
     // New fields for area-based system
     String? registeredArea,
     String? registeredAreaId,
@@ -156,6 +160,9 @@ class AuthController extends _$AuthController {
         address: address,
         profession: profession,
         dob: dob.toIso8601String(),
+        state: stateLocation,
+        district: district,
+        city: city,
         registeredArea: registeredArea,
         registeredAreaId: registeredAreaId,
         identityDocumentUrl: identityDocumentUrl,

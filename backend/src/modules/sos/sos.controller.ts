@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SOSService } from './sos.service';
 import { CreateSOSDto, AddSOSActionDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -41,6 +41,37 @@ export class SOSController {
     @ApiOperation({ summary: 'Get SOS history for current user' })
     async getHistory(@Request() req: any) {
         const logs = await this.sosService.getHistory(req.user.id);
+        return {
+            success: true,
+            data: logs,
+        };
+    }
+
+    @Get('active')
+    @ApiOperation({ summary: 'Get all active SOS alerts (for authorities/volunteers)' })
+    async getActiveAlerts() {
+        const logs = await this.sosService.getActiveSOSAlerts();
+        return {
+            success: true,
+            data: logs,
+        };
+    }
+
+    @Get('nearby')
+    @ApiOperation({ summary: 'Get nearby SOS alerts within a radius' })
+    @ApiQuery({ name: 'latitude', required: true, type: Number })
+    @ApiQuery({ name: 'longitude', required: true, type: Number })
+    @ApiQuery({ name: 'radius', required: false, type: Number, description: 'Radius in km (default: 5)' })
+    async getNearbyAlerts(
+        @Query('latitude') latitude: number,
+        @Query('longitude') longitude: number,
+        @Query('radius') radius?: number,
+    ) {
+        const logs = await this.sosService.getNearbySOSAlerts(
+            Number(latitude),
+            Number(longitude),
+            radius ? Number(radius) : 5,
+        );
         return {
             success: true,
             data: logs,

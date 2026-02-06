@@ -145,6 +145,104 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
+   * Subscribe to SOS alerts within a radius
+   */
+  @SubscribeMessage('subscribeToSOS')
+  handleSOSSubscription(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { latitude: number; longitude: number; radiusKm?: number },
+  ) {
+    const gridCellId = this.getGridCellId(data.latitude, data.longitude);
+    const sosRoom = `sos_${gridCellId}`;
+    
+    client.join(sosRoom);
+    client.join('sos_global'); // Also join global SOS room
+    
+    // Join adjacent cells for wider coverage
+    const adjacentCells = this.getAdjacentCells(data.latitude, data.longitude);
+    adjacentCells.forEach((cellId) => {
+      client.join(`sos_${cellId}`);
+    });
+    
+    this.logger.log(`Client ${client.id} subscribed to SOS alerts in room: ${sosRoom}`);
+    
+    return { event: 'subscribedToSOS', data: { room: sosRoom } };
+  }
+
+  /**
+   * Broadcast new SOS alert to nearby users
+   */
+  broadcastNewSOS(sosLog: any) {
+    const { latitude, longitude } = sosLog.location;
+    const gridCellId = this.getGridCellId(latitude, longitude);
+    
+    // Broadcast to the grid cell and adjacent cells
+    this.server.to(`sos_${gridCellId}`).emit('newSOS', {
+      type: 'NEW_SOS',
+      data: sosLog,
+    });
+    
+    const adjacentCells = this.getAdjacentCells(latitude, longitude);
+    adjacentCells.forEach((cellId) => {
+      this.server.to(`sos_${cellId}`).emit('newSOS', {
+        type: 'NEW_SOS',
+        data: sosLog,
+      });
+    });
+    
+    // Also broadcast to global SOS room (for authorities)
+    this.server.to('sos_global').emit('newSOS', {
+      type: 'NEW_SOS',
+      data: sosLog,
+    });
+    
+    this.logger.log(`🚨 SOS Alert broadcasted: ${sosLog.id}`);
+  }
+
+  /**
+   * Broadcast SOS status update (e.g., marked safe)
+   */
+  broadcastSOSUpdate(sosLog: any) {
+    this.server.to('sos_global').emit('sosUpdated', {
+      type: 'SOS_UPDATED',
+      data: sosLog,
+    });
+    
+    // Also broadcast to location-based rooms
+    if (sosLog.location) {
+      const { latitude, longitude } = sosLog.location;
+      const gridCellId = this.getGridCellId(latitude, longitude);
+      
+      this.server.to(`sos_${gridCellId}`).emit('sosUpdated', {
+        type: 'SOS_UPDATED',
+        data: sosLog,
+      });
+    }
+  }
+
+  /**
+   * Broadcast when SOS is resolved/user is safe
+   */
+  broadcastSOSResolved(sosLog: any) {
+    this.server.to('sos_global').emit('sosResolved', {
+      type: 'SOS_RESOLVED',
+      data: sosLog,
+    });
+    
+    if (sosLog.location) {
+      const { latitude, longitude } = sosLog.location;
+      const gridCellId = this.getGridCellId(latitude, longitude);
+      
+      this.server.to(`sos_${gridCellId}`).emit('sosResolved', {
+        type: 'SOS_RESOLVED',
+        data: sosLog,
+      });
+    }
+    
+    this.logger.log(`✅ SOS Resolved: ${sosLog.id}`);
+  }
+
+  /**
    * Create a grid cell ID for location-based rooms
    * Each cell is approximately 2km x 2km
    */

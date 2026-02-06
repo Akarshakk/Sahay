@@ -47,6 +47,22 @@ export class RegisterDto {
   @IsString()
   dob?: string;
 
+  // Location fields
+  @ApiPropertyOptional({ example: 'Maharashtra' })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional({ example: 'Mumbai' })
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiPropertyOptional({ example: 'Mumbai' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   // Area-based assignment (for volunteers/authorities)
   @ApiPropertyOptional({ example: 'Mumbai Central' })
   @IsOptional()

@@ -63,6 +63,27 @@ class WebSocketService {
     _socket?.on('emergencyBroadcast', callback);
   }
 
+  // SOS Events
+  void onNewSOS(Function(dynamic) callback) {
+    _socket?.on('newSOS', callback);
+  }
+
+  void onSOSUpdated(Function(dynamic) callback) {
+    _socket?.on('sosUpdated', callback);
+  }
+
+  void onSOSResolved(Function(dynamic) callback) {
+    _socket?.on('sosResolved', callback);
+  }
+
+  void subscribeToSOSAlerts(double latitude, double longitude, {double radiusKm = 5.0}) {
+    _socket?.emit('subscribeToSOS', {
+      'latitude': latitude,
+      'longitude': longitude,
+      'radiusKm': radiusKm,
+    });
+  }
+
   void disconnect() {
     _socket?.disconnect();
     _socket = null;

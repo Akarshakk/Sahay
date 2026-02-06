@@ -16,6 +16,10 @@ abstract class IAuthRepository {
     required String address,
     required String profession,
     required String dob,
+    // Location fields
+    String? state,
+    String? district,
+    String? city,
     // New fields
     String? registeredArea,
     String? registeredAreaId,
@@ -66,7 +70,9 @@ class AuthRepository implements IAuthRepository {
         phone: userData['phone'] ?? _currentUser?.phone ?? '',
         role: _parseRole(userData['role'] ?? 'citizen'),
         email: userData['email'] ?? _currentUser?.email,
-        state: userData['registeredArea'] ?? userData['address'] ?? _currentUser?.state,
+        state: userData['state'] ?? _currentUser?.state,
+        district: userData['district'] ?? _currentUser?.district,
+        city: userData['city'] ?? _currentUser?.city,
         profession: userData['profession'] ?? _currentUser?.profession,
         address: userData['address'] ?? _currentUser?.address,
         registeredArea: userData['registeredArea'] ?? _currentUser?.registeredArea,
@@ -113,9 +119,12 @@ class AuthRepository implements IAuthRepository {
           role: _parseRole(userData['role'] ?? 'citizen'),
           email: userData['email'],
           state: userData['state'],
+          district: userData['district'],
+          city: userData['city'],
           profession: userData['profession'],
           address: userData['address'],
           registeredArea: userData['registeredArea'],
+          registeredAreaId: userData['registeredAreaId'],
           identityDocumentUrl: userData['identityDocumentUrl'],
           identityDocumentType: userData['identityDocumentType'],
           emergencyContacts: mappedContacts,
@@ -145,6 +154,10 @@ class AuthRepository implements IAuthRepository {
     required String address,
     required String profession,
     required String dob,
+    // Location fields
+    String? state,
+    String? district,
+    String? city,
     // New fields
     String? registeredArea,
     String? registeredAreaId,
@@ -166,6 +179,11 @@ class AuthRepository implements IAuthRepository {
         'dob': dob,
       };
 
+      // Add location fields if present
+      if (state != null) requestData['state'] = state;
+      if (district != null) requestData['district'] = district;
+      if (city != null) requestData['city'] = city;
+
       // Add optional fields if present
       if (registeredArea != null) requestData['registeredArea'] = registeredArea;
       if (registeredAreaId != null) requestData['registeredAreaId'] = registeredAreaId;
@@ -174,6 +192,8 @@ class AuthRepository implements IAuthRepository {
       if (authorityCode != null) requestData['authorityCode'] = authorityCode;
       if (department != null) requestData['department'] = department;
       if (registrationNumber != null) requestData['registrationNumber'] = registrationNumber;
+
+      print('DEBUG: Register request data: $requestData');
 
       final response = await _apiService.register(requestData);
 
@@ -186,7 +206,16 @@ class AuthRepository implements IAuthRepository {
           name: userData['fullName'] ?? fullName,
           phone: userData['phone'] ?? phone,
           role: _parseRole(userData['role'] ?? role),
-          state: userData['registeredArea'] ?? address,
+          email: userData['email'] ?? email,
+          state: userData['state'] ?? state,
+          district: userData['district'] ?? district,
+          city: userData['city'] ?? city,
+          profession: userData['profession'] ?? profession,
+          address: userData['address'] ?? address,
+          registeredArea: userData['registeredArea'] ?? registeredArea,
+          registeredAreaId: userData['registeredAreaId'] ?? registeredAreaId,
+          identityDocumentUrl: userData['identityDocumentUrl'] ?? identityDocumentUrl,
+          identityDocumentType: userData['identityDocumentType'] ?? identityDocumentType,
           emergencyContacts: _mapContacts(userData['emergencyContacts']),
         );
 
@@ -202,7 +231,16 @@ class AuthRepository implements IAuthRepository {
         name: fullName,
         phone: phone,
         role: _parseRole(role),
-        state: registeredArea ?? address,
+        email: email,
+        state: state,
+        district: district,
+        city: city,
+        profession: profession,
+        address: address,
+        registeredArea: registeredArea,
+        registeredAreaId: registeredAreaId,
+        identityDocumentUrl: identityDocumentUrl,
+        identityDocumentType: identityDocumentType,
       );
       return _currentUser;
     } catch (e) {

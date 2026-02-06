@@ -78,7 +78,7 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Upload your government ID for verification',
+          'Upload Government ID',
           style: TextStyle(
             color: AppTheme.neutralGray.withValues(alpha: 0.6),
             fontSize: 12,
@@ -236,42 +236,49 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
   Future<void> _pickDocument() async {
     final picker = ImagePicker();
     
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Select Document Source',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    // On web, camera is not supported, so go directly to gallery
+    ImageSource? source;
+    
+    if (kIsWeb) {
+      source = ImageSource.gallery;
+    } else {
+      source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Select Document Source',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Icon(Icons.camera_alt, color: widget.accentColor),
-                title: const Text('Camera'),
-                subtitle: const Text('Take a photo of your document'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library, color: widget.accentColor),
-                title: const Text('Gallery'),
-                subtitle: const Text('Choose from gallery'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-            ],
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Icon(Icons.camera_alt, color: widget.accentColor),
+                  title: const Text('Camera'),
+                  subtitle: const Text('Take a photo of your document'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_library, color: widget.accentColor),
+                  title: const Text('Gallery'),
+                  subtitle: const Text('Choose from gallery'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
 
     if (source == null) return;
 

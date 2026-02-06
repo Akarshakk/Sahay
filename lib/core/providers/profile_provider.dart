@@ -9,6 +9,9 @@ class ProfileData {
   final String phone;
   final String profession;
   final String address;
+  final String state;
+  final String district;
+  final String city;
   final String? profileImagePath;
 
   ProfileData({
@@ -17,6 +20,9 @@ class ProfileData {
     this.phone = '',
     this.profession = '',
     this.address = '',
+    this.state = '',
+    this.district = '',
+    this.city = '',
     this.profileImagePath,
   });
 
@@ -26,6 +32,9 @@ class ProfileData {
     String? phone,
     String? profession,
     String? address,
+    String? state,
+    String? district,
+    String? city,
     String? profileImagePath,
   }) {
     return ProfileData(
@@ -34,6 +43,9 @@ class ProfileData {
       phone: phone ?? this.phone,
       profession: profession ?? this.profession,
       address: address ?? this.address,
+      state: state ?? this.state,
+      district: district ?? this.district,
+      city: city ?? this.city,
       profileImagePath: profileImagePath ?? this.profileImagePath,
     );
   }
@@ -57,6 +69,9 @@ class ProfileNotifier extends StateNotifier<ProfileData> {
       final phone = prefs.getString('profile_phone') ?? '';
       final profession = prefs.getString('profile_profession') ?? '';
       final address = prefs.getString('profile_address') ?? '';
+      final stateVal = prefs.getString('profile_state') ?? '';
+      final district = prefs.getString('profile_district') ?? '';
+      final city = prefs.getString('profile_city') ?? '';
       final imagePath = prefs.getString('profile_image');
 
       state = ProfileData(
@@ -65,6 +80,9 @@ class ProfileNotifier extends StateNotifier<ProfileData> {
         phone: phone,
         profession: profession,
         address: address,
+        state: stateVal,
+        district: district,
+        city: city,
         profileImagePath: imagePath,
       );
     } catch (e) {
@@ -83,6 +101,9 @@ class ProfileNotifier extends StateNotifier<ProfileData> {
       await prefs.setString('profile_phone', state.phone);
       await prefs.setString('profile_profession', state.profession);
       await prefs.setString('profile_address', state.address);
+      await prefs.setString('profile_state', state.state);
+      await prefs.setString('profile_district', state.district);
+      await prefs.setString('profile_city', state.city);
       if (state.profileImagePath != null) {
         await prefs.setString('profile_image', state.profileImagePath!);
       }
@@ -97,6 +118,9 @@ class ProfileNotifier extends StateNotifier<ProfileData> {
     String? phone,
     String? profession,
     String? address,
+    String? stateVal,
+    String? district,
+    String? city,
     String? profileImagePath,
   }) async {
     state = state.copyWith(
@@ -105,6 +129,9 @@ class ProfileNotifier extends StateNotifier<ProfileData> {
       phone: phone,
       profession: profession,
       address: address,
+      state: stateVal,
+      district: district,
+      city: city,
       profileImagePath: profileImagePath,
     );
     await _saveToPrefs();

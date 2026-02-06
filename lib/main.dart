@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/theme/app_theme.dart';
+import 'core/providers/theme_provider.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 
 import 'package:flutter/foundation.dart';
@@ -32,18 +33,21 @@ void main() async {
   );
 }
 
-class SahayApp extends StatelessWidget {
+class SahayApp extends ConsumerWidget {
   const SahayApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    
     return MaterialApp(
       title: 'Sahay - Crisis Response',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
+      themeMode: themeMode,
       home: const SplashScreen(),
     );
   }
 }
+

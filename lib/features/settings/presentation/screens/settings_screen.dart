@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/providers/theme_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Settings Screen
@@ -15,14 +17,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _darkMode = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.getCardColor(context),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.primaryRed),
@@ -131,35 +132,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.cardDark
+                  : Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Dark mode',
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppTheme.neutralGray,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.neutralGray,
                   ),
                 ),
                 Switch(
-                  value: _darkMode,
+                  value: ref.watch(themeModeProvider) == ThemeMode.dark,
                   onChanged: (value) {
-                    setState(() {
-                      _darkMode = value;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          value ? 'Dark mode enabled' : 'Dark mode disabled',
-                        ),
-                        backgroundColor: AppTheme.primaryGreen,
-                      ),
-                    );
+                    ref.read(themeModeProvider.notifier).toggleTheme();
                   },
-                  activeThumbColor: AppTheme.primaryRed,
+                  activeColor: AppTheme.primaryGreen,
+                  activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.3),
                 ),
               ],
             ),
@@ -177,7 +173,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
@@ -185,7 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title,
           style: TextStyle(
             fontSize: 16,
-            color: titleColor ?? AppTheme.neutralGray,
+            color: titleColor ?? AppTheme.getSecondaryTextColor(context),
           ),
         ),
         trailing: trailing ??
@@ -457,10 +453,19 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
+    if (kIsWeb) {
+      // On web, permission_handler doesn't work - show message instead
+      setState(() {
+        _isLoading = false;
+      });
+    } else {
+      _checkPermissions();
+    }
   }
 
   Future<void> _checkPermissions() async {
+    if (kIsWeb) return; // Skip on web
+    
     final loc = await Permission.location.status;
     final cam = await Permission.camera.status;
     final mic = await Permission.microphone.status;
@@ -528,56 +533,80 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
       title: const Text('Device Permissions'),
       content: _isLoading 
           ? const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()))
-          : SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   _buildToggle(
-                    icon: Icons.location_on,
-                    title: 'Location',
-                    subtitle: 'Required for emergency services',
-                    value: _locationStatus.isGranted,
-                    onChanged: (v) => _handlePermissionChange(Permission.location, _locationStatus.isGranted),
+          : kIsWeb
+              ? const SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.web, size: 48, color: AppTheme.primaryOrange),
+                      SizedBox(height: 16),
+                      Text(
+                        'Browser Permissions',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'On web browsers, permissions are managed differently:\n\n'
+                        '• Location: Browser will prompt when needed\n'
+                        '• Camera: Managed by browser settings\n'
+                        '• Notifications: Use browser notification settings\n\n'
+                        'For full permission control, please install the Sahay app on your mobile device.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ],
                   ),
-                  _buildToggle(
-                    icon: Icons.camera_alt,
-                    title: 'Camera',
-                    subtitle: 'To capture incident photos',
-                    value: _cameraStatus.isGranted,
-                    onChanged: (v) => _handlePermissionChange(Permission.camera, _cameraStatus.isGranted),
-                  ),
-                  _buildToggle(
-                    icon: Icons.mic,
-                    title: 'Microphone',
-                    subtitle: 'For voice SOS alerts',
-                    value: _microphoneStatus.isGranted,
-                    onChanged: (v) => _handlePermissionChange(Permission.microphone, _microphoneStatus.isGranted),
-                  ),
-                  _buildToggle(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    subtitle: 'Emergency alerts and updates',
-                    value: _notificationStatus.isGranted,
-                    onChanged: (v) => _handlePermissionChange(Permission.notification, _notificationStatus.isGranted),
-                  ),
-                   _buildToggle(
-                    icon: Icons.sms,
-                    title: 'SMS',
-                    subtitle: 'To send direct SOS messages',
-                    value: _smsStatus.isGranted,
-                    onChanged: (v) => _handlePermissionChange(Permission.sms, _smsStatus.isGranted),
-                  ),
-                   _buildToggle(
-                    icon: Icons.phone,
-                    title: 'Phone',
-                    subtitle: 'To make direct emergency calls',
-                    value: _phoneStatus.isGranted,
-                    onChanged: (v) => _handlePermissionChange(Permission.phone, _phoneStatus.isGranted),
-                  ),
+                )
+              : SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                       _buildToggle(
+                        icon: Icons.location_on,
+                        title: 'Location',
+                        subtitle: 'Required for emergency services',
+                        value: _locationStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.location, _locationStatus.isGranted),
+                      ),
+                      _buildToggle(
+                        icon: Icons.camera_alt,
+                        title: 'Camera',
+                        subtitle: 'To capture incident photos',
+                        value: _cameraStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.camera, _cameraStatus.isGranted),
+                      ),
+                      _buildToggle(
+                        icon: Icons.mic,
+                        title: 'Microphone',
+                        subtitle: 'For voice SOS alerts',
+                        value: _microphoneStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.microphone, _microphoneStatus.isGranted),
+                      ),
+                      _buildToggle(
+                        icon: Icons.notifications,
+                        title: 'Notifications',
+                        subtitle: 'Emergency alerts and updates',
+                        value: _notificationStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.notification, _notificationStatus.isGranted),
+                      ),
+                       _buildToggle(
+                        icon: Icons.sms,
+                        title: 'SMS',
+                        subtitle: 'To send direct SOS messages',
+                        value: _smsStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.sms, _smsStatus.isGranted),
+                      ),
+                       _buildToggle(
+                        icon: Icons.phone,
+                        title: 'Phone',
+                        subtitle: 'To make direct emergency calls',
+                        value: _phoneStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.phone, _phoneStatus.isGranted),
+                      ),
 
-                ],
-              ),
-            ),
+                    ],
+                  ),
+                ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
