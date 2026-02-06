@@ -25,6 +25,7 @@
         "freezed_annotation",
         "geocoding",
         "geolocator",
+        "google_fonts",
         "http",
         "image_picker",
         "intl",
@@ -36,6 +37,8 @@
         "record",
         "riverpod_annotation",
         "shared_preferences",
+        "shimmer",
+        "showcaseview",
         "socket_io_client",
         "speech_to_text",
         "url_launcher"
@@ -164,6 +167,30 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "shimmer",
+      "version": "3.0.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "showcaseview",
+      "version": "5.0.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "google_fonts",
+      "version": "8.0.1",
+      "dependencies": [
+        "crypto",
+        "flutter",
+        "http",
+        "path_provider"
       ]
     },
     {

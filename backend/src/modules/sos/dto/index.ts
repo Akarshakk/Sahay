@@ -54,3 +54,48 @@ export class AddSOSActionDto {
     @IsOptional()
     details?: string;
 }
+
+// DTO for volunteer responding to SOS
+export class VolunteerRespondDto {
+    @ApiProperty({ required: false })
+    @IsNumber()
+    @IsOptional()
+    latitude?: number;
+
+    @ApiProperty({ required: false })
+    @IsNumber()
+    @IsOptional()
+    longitude?: number;
+}
+
+// Single resource in dispatch
+export class DispatchResourceDto {
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    resourceId: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    resourceName: string;
+
+    @ApiProperty()
+    @IsNumber()
+    quantity: number;
+
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    category: string;
+}
+
+// DTO for authority dispatching resources
+export class AuthorityDispatchDto {
+    @ApiProperty({ type: [DispatchResourceDto] })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => DispatchResourceDto)
+    resources: DispatchResourceDto[];
+}
+

@@ -4,10 +4,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/verification_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/providers/tasks_provider.dart';
 import '../../../../core/providers/badge_provider.dart';
+import '../../../../core/providers/sos_notification_provider.dart';
+import '../../../../core/services/websocket_service.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../../core/models/badge_model.dart';
 import '../../../../core/models/task_model.dart';
+import '../../../../core/widgets/sos_alert_popup.dart';
 import 'volunteer_tasks_detailed_screen.dart';
 import '../../../feed/presentation/screens/community_feed_screen.dart';
 import 'all_activities_screen.dart';
@@ -32,12 +37,97 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..forward();
+    
+    // Initialize SOS notifications after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSOSNotifications();
+    });
+  }
+  
+  void _initializeSOSNotifications() async {
+    final webSocketService = ref.read(webSocketServiceProvider);
+    final sosNotifier = ref.read(sosNotificationProvider.notifier);
+    final user = ref.read(authControllerProvider);
+    
+    // Initialize WebSocket listeners
+    sosNotifier.initializeListeners();
+    
+    // Get current location and subscribe as responder
+    try {
+      final locationService = LocationService();
+      final position = await locationService.getCurrentLocation();
+      if (position != null && user != null) {
+        webSocketService.subscribeAsResponder(
+          user.id,
+          'VOLUNTEER',
+          position.latitude,
+          position.longitude,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error getting location for SOS subscription: $e');
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+  
+  bool _isPopupShowing = false;
+  
+  void _showSOSPopup(SOSAlert alert) async {
+    if (_isPopupShowing) return;
+    _isPopupShowing = true;
+    
+    // Get current location for distance calculation
+    double? currentLat, currentLng;
+    try {
+      final locationService = LocationService();
+      final position = await locationService.getCurrentLocation();
+      if (position != null) {
+        currentLat = position.latitude;
+        currentLng = position.longitude;
+      }
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+    }
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SOSAlertPopup(
+        alert: alert,
+        userRole: 'VOLUNTEER',
+        onHelp: () async {
+          Navigator.of(context).pop();
+          _isPopupShowing = false;
+          await ref.read(sosNotificationProvider.notifier).volunteerRespond(
+            alert.id, 
+            latitude: currentLat, 
+            longitude: currentLng,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(this.context).showSnackBar(
+              const SnackBar(
+                content: Text('You are now marked as responding! 🙌'),
+                backgroundColor: AppTheme.primaryGreen,
+              ),
+            );
+          }
+        },
+        onDispatch: () {}, // Not used for volunteers
+        onIgnore: () {
+          Navigator.of(context).pop();
+          _isPopupShowing = false;
+          ref.read(sosNotificationProvider.notifier).dismissPopup();
+        },
+        isLoading: ref.watch(sosNotificationProvider).isLoading,
+      ),
+    );
   }
 
   @override
@@ -47,6 +137,14 @@ class _VolunteerDashboardScreenState extends ConsumerState<VolunteerDashboardScr
     final regionTasksAsync = ref.watch(getTasksByRegionProvider('general'));
     final submissionsAsync = ref.watch(getMySubmissionsProvider);
     final badgesAsync = ref.watch(badgesProvider);
+    final sosState = ref.watch(sosNotificationProvider);
+    
+    // Show SOS popup if there's a pending alert
+    if (sosState.showPopup && sosState.pendingAlert != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSOSPopup(sosState.pendingAlert!);
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,

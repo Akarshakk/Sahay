@@ -18,7 +18,9 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/whisper_transcription_service.dart';
+import '../../../../core/providers/sos_notification_provider.dart';
 import '../../../../core/enums/app_enums.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/screens/home_screen.dart';
@@ -55,12 +57,108 @@ class _SOSActiveScreenState extends ConsumerState<SOSActiveScreen> {
   // Default location
   static const double _defaultLatitude = 19.0760;
   static const double _defaultLongitude = 72.8777;
+  
+  // Real-time volunteer and authority tracking
+  List<VolunteerResponse> _respondingVolunteers = [];
+  List<AuthorityDispatch> _authorityDispatches = [];
 
   @override
   void initState() {
     super.initState();
     _triggerSOSBackend();
     _initLocation();
+    _initWebSocketListeners();
+  }
+  
+  void _initWebSocketListeners() {
+    final webSocketService = ref.read(webSocketServiceProvider);
+    
+    // Listen for volunteer responses
+    webSocketService.onVolunteerResponding((data) {
+      if (!mounted) return;
+      final sosData = data['data'] as Map<String, dynamic>?;
+      if (sosData != null && sosData['sosId'] == _sosId) {
+        final volunteers = (sosData['allVolunteers'] as List<dynamic>?)
+            ?.map((v) => VolunteerResponse.fromJson(v as Map<String, dynamic>))
+            .toList() ?? [];
+        setState(() {
+          _respondingVolunteers = volunteers;
+        });
+      }
+    });
+    
+    // Listen for authority dispatches
+    webSocketService.onAuthorityDispatched((data) {
+      if (!mounted) return;
+      final sosData = data['data'] as Map<String, dynamic>?;
+      if (sosData != null && sosData['sosId'] == _sosId) {
+        final dispatches = (sosData['allDispatches'] as List<dynamic>?)
+            ?.map((d) => AuthorityDispatch.fromJson(d as Map<String, dynamic>))
+            .toList() ?? [];
+        setState(() {
+          _authorityDispatches = dispatches;
+        });
+        // Show authority dispatch popup
+        if (dispatches.isNotEmpty) {
+          _showAuthorityDispatchPopup(dispatches.last);
+        }
+      }
+    });
+  }
+  
+  void _showAuthorityDispatchPopup(AuthorityDispatch dispatch) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.check_circle, color: AppTheme.primaryGreen),
+            ),
+            const SizedBox(width: 12),
+            const Text('Help is on the way!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${dispatch.authorityName}${dispatch.department != null ? ' (${dispatch.department})' : ''} has dispatched:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 12),
+            ...dispatch.resources.map((r) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.check, color: AppTheme.primaryGreen, size: 18),
+                  const SizedBox(width: 8),
+                  Text('${r.quantity}x ${r.resourceName}'),
+                ],
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('OK, Thank You!'),
+          ),
+        ],
+      ),
+    );
   }
   
   Future<void> _initLocation() async {
@@ -917,23 +1015,117 @@ class _SOSActiveScreenState extends ConsumerState<SOSActiveScreen> {
   void _showVolunteersNearby() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Nearby Volunteers',
+              'Help Status',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
+            
+            // Authority Dispatches Section
+            if (_authorityDispatches.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.local_police, color: AppTheme.primaryGreen),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Authorities Dispatched',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ..._authorityDispatches.map((dispatch) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        '${dispatch.authorityName}: ${dispatch.resources.map((r) => '${r.quantity}x ${r.resourceName}').join(', ')}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // Volunteers Section
             if (widget.requireVolunteerAssistance) ...[
-              _buildVolunteerTile('Rahul Sharma', '0.5 km away', true),
-              _buildVolunteerTile('Priya Patel', '0.8 km away', true),
-              _buildVolunteerTile('Amit Kumar', '1.2 km away', false),
+              Row(
+                children: [
+                  const Icon(Icons.people, color: AppTheme.primaryOrange),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Volunteers (${_respondingVolunteers.length} responding)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_respondingVolunteers.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Waiting for nearby volunteers...'),
+                    ],
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _respondingVolunteers.length,
+                    itemBuilder: (context, index) {
+                      final volunteer = _respondingVolunteers[index];
+                      return _buildVolunteerTile(
+                        volunteer.odableName,
+                        volunteer.distanceKm != null 
+                          ? '${volunteer.distanceKm} km away'
+                          : 'Distance unknown',
+                        volunteer.status == 'ON_THE_WAY',
+                      );
+                    },
+                  ),
+                ),
             ] else
               const Text('Volunteer assistance not requested'),
             const SizedBox(height: 24),
