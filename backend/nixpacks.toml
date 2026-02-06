@@ -2,8 +2,9 @@
 
 # We explicitly list packages to ensure they are available in the PATH
 [phases.setup]
-# npm is included in nodejs, so we don't list it separately (which causes error)
-nixPkgs = ["nodejs", "ffmpeg", "python3"]
+# npm is included in nodejs
+# pip must be installed explicitly via python3Packages.pip
+nixPkgs = ["nodejs", "ffmpeg", "python3", "python3Packages.pip"]
 
 [phases.install]
 # Use npm install (safer than ci for cross-platform)
