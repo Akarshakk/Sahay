@@ -9,23 +9,30 @@ import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  print("DEBUG: App Started");
 
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyAPcssmJOlJfdxF2pu70rsPt60ntyiZkP8",
-        authDomain: "sahay-ai-project.firebaseapp.com",
-        projectId: "sahay-ai-project",
-        storageBucket: "sahay-ai-project.firebasestorage.app",
-        messagingSenderId: "604284185347",
-        appId: "1:604284185347:web:0b8449f458bc19b6eb1736",
-        measurementId: "G-3WS49GSX5S",
-      ),
-    );
-  } else {
-    await Firebase.initializeApp();
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyAPcssmJOlJfdxF2pu70rsPt60ntyiZkP8",
+          authDomain: "sahay-ai-project.firebaseapp.com",
+          projectId: "sahay-ai-project",
+          storageBucket: "sahay-ai-project.firebasestorage.app",
+          messagingSenderId: "604284185347",
+          appId: "1:604284185347:web:0b8449f458bc19b6eb1736",
+          measurementId: "G-3WS49GSX5S",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
+  } catch (e) {
+    print("Failed to initialize Firebase: $e");
+    // Continue running app even if Firebase fails, UI handles auth check gracefully
   }
 
+  print("DEBUG: Calling runApp");
   runApp(
     const ProviderScope(
       child: SahayApp(),
@@ -39,7 +46,7 @@ class SahayApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    
+
     return MaterialApp(
       title: 'Sahay - Crisis Response',
       debugShowCheckedModeBanner: false,
@@ -50,4 +57,3 @@ class SahayApp extends ConsumerWidget {
     );
   }
 }
-

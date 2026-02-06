@@ -15,13 +15,13 @@ import { IncidentStatus, IncidentPriority, PostCategory } from '../../../common/
 export class CreateIncidentDto {
   @ApiProperty({ example: 'Major road pothole causing accidents' })
   @IsString()
-  @MinLength(10)
+  @MinLength(1)
   @MaxLength(500)
   title: string;
 
   @ApiProperty({ example: 'Large pothole on MG Road near Central Mall causing multiple accidents.' })
   @IsString()
-  @MinLength(20)
+  @MinLength(1)
   description: string;
 
   @ApiProperty({ example: 'infrastructure', enum: PostCategory })

@@ -39,7 +39,7 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
 
   void _subscribeToSOSUpdates() {
     final ws = ref.read(webSocketServiceProvider);
-    
+
     // Listen for new SOS alerts
     ws.onNewSOS((data) {
       if (mounted) {
@@ -47,7 +47,8 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
         // Show a snackbar for new SOS
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🚨 New SOS Alert: ${data['data']?['userName'] ?? 'Someone'} needs help!'),
+            content: Text(
+                '🚨 New SOS Alert: ${data['data']?['userName'] ?? 'Someone'} needs help!'),
             backgroundColor: AppTheme.primaryRed,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
@@ -61,21 +62,22 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
         );
       }
     });
-    
+
     // Listen for SOS resolved
     ws.onSOSResolved((data) {
       if (mounted) {
         _loadNearbyAlerts();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${data['data']?['userName'] ?? 'Someone'} is now safe'),
+            content:
+                Text('✅ ${data['data']?['userName'] ?? 'Someone'} is now safe'),
             backgroundColor: AppTheme.primaryGreen,
             duration: const Duration(seconds: 3),
           ),
         );
       }
     });
-    
+
     // Subscribe to location-based SOS alerts
     final location = ref.read(currentLocationProvider).valueOrNull;
     if (location != null) {
@@ -103,7 +105,7 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
     try {
       final api = ref.read(apiServiceProvider);
       final location = ref.read(currentLocationProvider).valueOrNull;
-      
+
       if (location != null) {
         final result = await api.getNearbySOSAlerts(
           latitude: location.latitude,
@@ -135,12 +137,12 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.getCardColor(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.neutralGray),
+          icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -177,7 +179,8 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
                   if (_nearbyAlerts.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryRed,
                         borderRadius: BorderRadius.circular(10),
@@ -214,11 +217,11 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
     if (_isLoadingMy) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     if (_myLogs.isEmpty) {
       return _buildEmptyState('No SOS History', Icons.history);
     }
-    
+
     return RefreshIndicator(
       onRefresh: _loadHistory,
       child: ListView.builder(
@@ -239,11 +242,11 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
     if (_isLoadingNearby) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     if (_nearbyAlerts.isEmpty) {
       return _buildEmptyState('No Active Alerts Nearby', Icons.check_circle);
     }
-    
+
     return RefreshIndicator(
       onRefresh: _loadNearbyAlerts,
       child: ListView.builder(
@@ -282,8 +285,9 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
     final userName = log['userName'] ?? 'Unknown';
     final userPhone = log['userPhone'] ?? '';
     final statusText = log['status'] ?? 'TRIGGERED';
-    final createdAt = DateTime.tryParse(log['createdAt'] ?? '') ?? DateTime.now();
-    
+    final createdAt =
+        DateTime.tryParse(log['createdAt'] ?? '') ?? DateTime.now();
+
     Color statusColor = AppTheme.primaryRed;
     if (statusText == 'RESOLVED') {
       statusColor = AppTheme.primaryGreen;
@@ -295,7 +299,7 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: statusColor.withOpacity(0.3)),
         boxShadow: isNearby && statusText == 'TRIGGERED'
@@ -329,10 +333,10 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
                     if (isNearby) ...[
                       Text(
                         userName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.neutralGray,
+                          color: AppTheme.getTextColor(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -341,21 +345,26 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
                       '$type Alert',
                       style: TextStyle(
                         fontSize: isNearby ? 14 : 16,
-                        fontWeight: isNearby ? FontWeight.w500 : FontWeight.bold,
-                        color: isNearby ? Colors.grey[600] : AppTheme.neutralGray,
+                        fontWeight:
+                            isNearby ? FontWeight.w500 : FontWeight.bold,
+                        color: isNearby
+                            ? AppTheme.getSecondaryTextColor(context)
+                            : AppTheme.getTextColor(context),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                        Icon(Icons.location_on,
+                            size: 14,
+                            color: AppTheme.getSecondaryTextColor(context)),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             location,
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.neutralGray.withOpacity(0.7),
+                              color: AppTheme.getSecondaryTextColor(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -370,7 +379,8 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -387,10 +397,11 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
                               color: statusColor,
                               shape: BoxShape.circle,
                             ),
-                          ).animate(onPlay: (c) => c.repeat())
-                            .fadeIn(duration: 500.ms)
-                            .then()
-                            .fadeOut(duration: 500.ms),
+                          )
+                              .animate(onPlay: (c) => c.repeat())
+                              .fadeIn(duration: 500.ms)
+                              .then()
+                              .fadeOut(duration: 500.ms),
                         Text(
                           statusText == 'TRIGGERED' ? 'ACTIVE' : statusText,
                           style: TextStyle(
@@ -414,9 +425,11 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
               ),
             ],
           ),
-          
+
           // Show call button for nearby active alerts
-          if (isNearby && statusText == 'TRIGGERED' && userPhone.isNotEmpty) ...[
+          if (isNearby &&
+              statusText == 'TRIGGERED' &&
+              userPhone.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 12),
@@ -459,7 +472,7 @@ class _SOSHistoryScreenState extends ConsumerState<SOSHistoryScreen>
   String _formatTime(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    
+
     if (diff.inMinutes < 1) {
       return 'Just now';
     } else if (diff.inMinutes < 60) {

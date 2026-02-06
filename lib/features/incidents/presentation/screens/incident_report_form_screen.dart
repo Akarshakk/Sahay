@@ -21,19 +21,21 @@ class IncidentReportFormScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<IncidentReportFormScreen> createState() => _IncidentReportFormScreenState();
+  ConsumerState<IncidentReportFormScreen> createState() =>
+      _IncidentReportFormScreenState();
 }
 
-class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScreen> {
+class _IncidentReportFormScreenState
+    extends ConsumerState<IncidentReportFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
-  
+
   LocationData? _currentLocation;
   String _address = 'Detecting location...';
   bool _isLoadingLocation = true;
   bool _isOffline = false;
   bool _isDuplicateWarning = false;
-  
+
   IncidentSeverity _selectedSeverity = IncidentSeverity.medium;
 
   @override
@@ -54,13 +56,13 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     try {
       final locationService = ref.read(locationServiceProvider);
       final position = await locationService.getCurrentLocation();
-      
+
       if (position != null) {
         final address = await locationService.getAddressFromCoordinates(
           position.latitude,
           position.longitude,
         );
-        
+
         setState(() {
           _currentLocation = LocationData(
             latitude: position.latitude,
@@ -70,7 +72,7 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
           _address = address;
           _isLoadingLocation = false;
         });
-        
+
         // Check for duplicates after getting location
         _checkForDuplicates();
       } else {
@@ -93,7 +95,8 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     try {
       final duplicateCheck = await ref
           .read(incidentControllerProvider.notifier)
-          .checkDuplicate(_currentLocation!.latitude, _currentLocation!.longitude);
+          .checkDuplicate(
+              _currentLocation!.latitude, _currentLocation!.longitude);
 
       if (duplicateCheck.isSuccess && duplicateCheck.data != null) {
         setState(() {
@@ -108,8 +111,15 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
+        backgroundColor: AppTheme.getCardColor(context),
+        titleTextStyle: TextStyle(
+          color: AppTheme.getTextColor(context),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: AppTheme.getTextColor(context)),
         title: Text('Report ${widget.incidentType.name.toUpperCase()}'),
         actions: [
           if (_isOffline)
@@ -176,7 +186,7 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -207,10 +217,10 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
               children: [
                 Text(
                   widget.incidentType.name.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.neutralGray,
+                    color: AppTheme.getTextColor(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -233,21 +243,22 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.location_on, color: AppTheme.primaryGreen),
-              SizedBox(width: 8),
+              const Icon(Icons.location_on, color: AppTheme.primaryGreen),
+              const SizedBox(width: 8),
               Text(
                 'Incident Location',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextColor(context),
                 ),
               ),
             ],
@@ -270,7 +281,7 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
               _address,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: AppTheme.getSecondaryTextColor(context),
               ),
             ),
           if (_currentLocation != null) ...[
@@ -292,32 +303,38 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Incident Severity',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: AppTheme.getTextColor(context),
           ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildSeverityChip(IncidentSeverity.low, 'Low', AppTheme.primaryGreen),
+            _buildSeverityChip(
+                IncidentSeverity.low, 'Low', AppTheme.primaryGreen),
             const SizedBox(width: 8),
-            _buildSeverityChip(IncidentSeverity.medium, 'Medium', AppTheme.primaryOrange),
+            _buildSeverityChip(
+                IncidentSeverity.medium, 'Medium', AppTheme.primaryOrange),
             const SizedBox(width: 8),
-            _buildSeverityChip(IncidentSeverity.high, 'High', AppTheme.primaryRed),
+            _buildSeverityChip(
+                IncidentSeverity.high, 'High', AppTheme.primaryRed),
             const SizedBox(width: 8),
-            _buildSeverityChip(IncidentSeverity.critical, 'Critical', const Color(0xFF7B1FA2)),
+            _buildSeverityChip(
+                IncidentSeverity.critical, 'Critical', const Color(0xFF7B1FA2)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildSeverityChip(IncidentSeverity severity, String label, Color color) {
+  Widget _buildSeverityChip(
+      IncidentSeverity severity, String label, Color color) {
     final isSelected = _selectedSeverity == severity;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -328,7 +345,7 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? color : Colors.white,
+            color: isSelected ? color : AppTheme.getCardColor(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? color : color.withOpacity(0.3),
@@ -353,28 +370,29 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Describe the Situation',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: AppTheme.getTextColor(context),
           ),
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _descriptionController,
           maxLines: 5,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Briefly describe the emergency situation...',
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppTheme.getCardColor(context),
+            hintStyle:
+                TextStyle(color: AppTheme.getSecondaryTextColor(context)),
           ),
+          style: TextStyle(color: AppTheme.getTextColor(context)),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Please describe the situation';
-            }
-            if (value.trim().length < 20) {
-              return 'Please provide more details (at least 20 characters)';
             }
             return null;
           },
@@ -387,19 +405,21 @@ class _IncidentReportFormScreenState extends ConsumerState<IncidentReportFormScr
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(
+            color: AppTheme.getSecondaryTextColor(context).withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Icon(Icons.camera_alt_outlined, size: 40, color: Colors.grey[400]),
+          Icon(Icons.camera_alt_outlined,
+              size: 40, color: AppTheme.getSecondaryTextColor(context)),
           const SizedBox(height: 8),
           Text(
             'Add Photos/Videos (Optional)',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppTheme.getSecondaryTextColor(context),
             ),
           ),
           const SizedBox(height: 8),

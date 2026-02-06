@@ -22,18 +22,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _checkSessionAndNavigate() async {
+    print("DEBUG: Checking session");
     // Shorter delay for better UX - session check is fast
     await Future.delayed(const Duration(milliseconds: 800));
-    
+
     if (!mounted) return;
-    
+
     // Check for saved session
     final user = await ref.read(authControllerProvider.notifier).checkSession();
-    
+
     if (!mounted) return;
-    
+
     if (user != null) {
       // User is logged in, go to home screen
+      print("DEBUG: User logged in, navigating to Home");
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -88,14 +90,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   color: Color(0xFF000080), // Navy Blue
                 ),
               ),
-            ).animate()
-              .fadeIn(duration: 800.ms)
-              .scale(delay: 200.ms)
-              .then()
-              .shimmer(duration: 1500.ms),
-            
+            )
+                .animate()
+                .fadeIn(duration: 800.ms)
+                .scale(delay: 200.ms)
+                .then()
+                .shimmer(duration: 1500.ms),
+
             const SizedBox(height: 40),
-            
+
             const Text(
               'Sahay',
               style: TextStyle(
@@ -104,12 +107,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 color: Colors.white,
                 letterSpacing: 2,
               ),
-            ).animate()
-              .fadeIn(delay: 400.ms, duration: 800.ms)
-              .slideY(begin: 0.3, end: 0),
-            
+            )
+                .animate()
+                .fadeIn(delay: 400.ms, duration: 800.ms)
+                .slideY(begin: 0.3, end: 0),
+
             const SizedBox(height: 12),
-            
+
             Text(
               'Your Lifeline in Emergencies',
               style: TextStyle(
@@ -117,15 +121,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 color: Colors.white.withOpacity(0.9),
                 letterSpacing: 1,
               ),
-            ).animate()
-              .fadeIn(delay: 600.ms, duration: 800.ms),
-            
+            ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
+
             const SizedBox(height: 60),
-            
+
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ).animate()
-              .fadeIn(delay: 1000.ms),
+            ).animate().fadeIn(delay: 1000.ms),
           ],
         ),
       ),

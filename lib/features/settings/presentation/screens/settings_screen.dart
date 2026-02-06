@@ -448,7 +448,9 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
   PermissionStatus _notificationStatus = PermissionStatus.denied;
   PermissionStatus _smsStatus = PermissionStatus.denied;
   PermissionStatus _phoneStatus = PermissionStatus.denied;
+  PermissionStatus _contactsStatus = PermissionStatus.denied;
   bool _isLoading = true;
+  bool _isGrantingAll = false;
 
   @override
   void initState() {
@@ -472,6 +474,7 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
     final not = await Permission.notification.status;
     final sms = await Permission.sms.status;
     final phone = await Permission.phone.status;
+    final contacts = await Permission.contacts.status;
 
     if (mounted) {
       setState(() {
@@ -481,9 +484,65 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
         _notificationStatus = not;
         _smsStatus = sms;
         _phoneStatus = phone;
+        _contactsStatus = contacts;
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _grantAllPermissions() async {
+    if (kIsWeb) return;
+    
+    setState(() {
+      _isGrantingAll = true;
+    });
+    
+    try {
+      // Request all permissions one by one
+      await Permission.location.request();
+      await Permission.camera.request();
+      await Permission.microphone.request();
+      await Permission.notification.request();
+      await Permission.phone.request();
+      await Permission.contacts.request();
+      
+      // Refresh permission statuses
+      await _checkPermissions();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All permissions requested successfully!'),
+            backgroundColor: AppTheme.primaryGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error granting permissions: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error requesting permissions: $e'),
+            backgroundColor: AppTheme.primaryRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGrantingAll = false;
+        });
+      }
+    }
+  }
+  
+  bool get _allPermissionsGranted {
+    return _locationStatus.isGranted &&
+           _cameraStatus.isGranted &&
+           _microphoneStatus.isGranted &&
+           _notificationStatus.isGranted &&
+           _phoneStatus.isGranted &&
+           _contactsStatus.isGranted;
   }
 
   Future<void> _handlePermissionChange(Permission permission, bool currentValue) async {
@@ -561,6 +620,56 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Grant All Permissions Button
+                      if (!_allPermissionsGranted)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _isGrantingAll ? null : _grantAllPermissions,
+                            icon: _isGrantingAll 
+                                ? const SizedBox(
+                                    width: 16, 
+                                    height: 16, 
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.security),
+                            label: Text(_isGrantingAll ? 'Granting...' : 'Grant All Permissions'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryRed,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_allPermissionsGranted)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryGreen.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.primaryGreen),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.check_circle, color: AppTheme.primaryGreen),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'All permissions granted!',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryGreen,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                        _buildToggle(
                         icon: Icons.location_on,
                         title: 'Location',
@@ -602,6 +711,13 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
                         subtitle: 'To make direct emergency calls',
                         value: _phoneStatus.isGranted,
                         onChanged: (v) => _handlePermissionChange(Permission.phone, _phoneStatus.isGranted),
+                      ),
+                       _buildToggle(
+                        icon: Icons.contacts,
+                        title: 'Contacts',
+                        subtitle: 'To add emergency contacts',
+                        value: _contactsStatus.isGranted,
+                        onChanged: (v) => _handlePermissionChange(Permission.contacts, _contactsStatus.isGranted),
                       ),
 
                     ],
