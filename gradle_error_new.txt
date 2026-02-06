@@ -1,0 +1,725 @@
+Starting a Gradle Daemon, 1 incompatible and 2 stopped Daemons could not be reused, use --status for details
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+
+> Task :gradle:compileKotlin
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:11:37 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:609:69 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:186:64 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:187:69 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :app
+Warning: Flutter support for your project's Kotlin version (1.9.22) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.1.0 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (C:\Users\Admin\Sahay\android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (C:\Users\Admin\Sahay\android/build.gradle) by the ext.kotlin_version property.
+
+
+> Task :app:DebugMinSdkCheck
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:compileFlutterBuildDebug
+> Task :app:packJniLibsflutterBuildDebug
+> Task :cloud_firestore:preBuild UP-TO-DATE
+> Task :cloud_firestore:preDebugBuild UP-TO-DATE
+> Task :cloud_firestore:writeDebugAarMetadata UP-TO-DATE
+> Task :firebase_auth:preBuild UP-TO-DATE
+> Task :firebase_auth:preDebugBuild UP-TO-DATE
+> Task :firebase_auth:writeDebugAarMetadata UP-TO-DATE
+> Task :firebase_core:preBuild UP-TO-DATE
+> Task :firebase_core:preDebugBuild UP-TO-DATE
+> Task :firebase_core:writeDebugAarMetadata UP-TO-DATE
+> Task :firebase_storage:preBuild UP-TO-DATE
+> Task :firebase_storage:preDebugBuild UP-TO-DATE
+> Task :firebase_storage:writeDebugAarMetadata UP-TO-DATE
+> Task :flutter_contacts:preBuild UP-TO-DATE
+> Task :flutter_contacts:preDebugBuild UP-TO-DATE
+> Task :flutter_contacts:writeDebugAarMetadata UP-TO-DATE
+> Task :flutter_phone_direct_caller:preBuild UP-TO-DATE
+> Task :flutter_phone_direct_caller:preDebugBuild UP-TO-DATE
+> Task :flutter_phone_direct_caller:writeDebugAarMetadata UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:preBuild UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:preDebugBuild UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:writeDebugAarMetadata UP-TO-DATE
+> Task :flutter_volume_controller:preBuild UP-TO-DATE
+> Task :flutter_volume_controller:preDebugBuild UP-TO-DATE
+> Task :flutter_volume_controller:writeDebugAarMetadata UP-TO-DATE
+> Task :geocoding_android:preBuild UP-TO-DATE
+> Task :geocoding_android:preDebugBuild UP-TO-DATE
+> Task :geocoding_android:writeDebugAarMetadata UP-TO-DATE
+> Task :geolocator_android:preBuild UP-TO-DATE
+> Task :geolocator_android:preDebugBuild UP-TO-DATE
+> Task :geolocator_android:writeDebugAarMetadata UP-TO-DATE
+> Task :image_picker_android:preBuild UP-TO-DATE
+> Task :image_picker_android:preDebugBuild UP-TO-DATE
+> Task :image_picker_android:writeDebugAarMetadata UP-TO-DATE
+> Task :local_auth_android:preBuild UP-TO-DATE
+> Task :local_auth_android:preDebugBuild UP-TO-DATE
+> Task :local_auth_android:writeDebugAarMetadata UP-TO-DATE
+> Task :path_provider_android:preBuild UP-TO-DATE
+> Task :path_provider_android:preDebugBuild UP-TO-DATE
+> Task :path_provider_android:writeDebugAarMetadata UP-TO-DATE
+> Task :permission_handler_android:preBuild UP-TO-DATE
+> Task :permission_handler_android:preDebugBuild UP-TO-DATE
+> Task :permission_handler_android:writeDebugAarMetadata UP-TO-DATE
+> Task :record_android:preBuild UP-TO-DATE
+> Task :record_android:preDebugBuild UP-TO-DATE
+> Task :record_android:writeDebugAarMetadata UP-TO-DATE
+> Task :shared_preferences_android:preBuild UP-TO-DATE
+> Task :shared_preferences_android:preDebugBuild UP-TO-DATE
+> Task :shared_preferences_android:writeDebugAarMetadata UP-TO-DATE
+> Task :speech_to_text:preBuild UP-TO-DATE
+> Task :speech_to_text:preDebugBuild UP-TO-DATE
+> Task :speech_to_text:writeDebugAarMetadata UP-TO-DATE
+> Task :sqflite_android:preBuild UP-TO-DATE
+> Task :sqflite_android:preDebugBuild UP-TO-DATE
+> Task :sqflite_android:writeDebugAarMetadata UP-TO-DATE
+> Task :url_launcher_android:preBuild UP-TO-DATE
+> Task :url_launcher_android:preDebugBuild UP-TO-DATE
+> Task :url_launcher_android:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:cleanMergeDebugAssets
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :cloud_firestore:mergeDebugShaders UP-TO-DATE
+> Task :cloud_firestore:compileDebugShaders NO-SOURCE
+> Task :cloud_firestore:generateDebugAssets UP-TO-DATE
+> Task :cloud_firestore:mergeDebugAssets UP-TO-DATE
+> Task :firebase_auth:mergeDebugShaders UP-TO-DATE
+> Task :firebase_auth:compileDebugShaders NO-SOURCE
+> Task :firebase_auth:generateDebugAssets UP-TO-DATE
+> Task :firebase_auth:mergeDebugAssets UP-TO-DATE
+> Task :firebase_core:mergeDebugShaders UP-TO-DATE
+> Task :firebase_core:compileDebugShaders NO-SOURCE
+> Task :firebase_core:generateDebugAssets UP-TO-DATE
+> Task :firebase_core:mergeDebugAssets UP-TO-DATE
+> Task :firebase_storage:mergeDebugShaders UP-TO-DATE
+> Task :firebase_storage:compileDebugShaders NO-SOURCE
+> Task :firebase_storage:generateDebugAssets UP-TO-DATE
+> Task :firebase_storage:mergeDebugAssets UP-TO-DATE
+> Task :flutter_contacts:mergeDebugShaders UP-TO-DATE
+> Task :flutter_contacts:compileDebugShaders NO-SOURCE
+> Task :flutter_contacts:generateDebugAssets UP-TO-DATE
+> Task :flutter_contacts:mergeDebugAssets UP-TO-DATE
+> Task :flutter_phone_direct_caller:mergeDebugShaders UP-TO-DATE
+> Task :flutter_phone_direct_caller:compileDebugShaders NO-SOURCE
+> Task :flutter_phone_direct_caller:generateDebugAssets UP-TO-DATE
+> Task :flutter_phone_direct_caller:mergeDebugAssets UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeDebugShaders UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:compileDebugShaders NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:generateDebugAssets UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeDebugAssets UP-TO-DATE
+> Task :flutter_volume_controller:mergeDebugShaders UP-TO-DATE
+> Task :flutter_volume_controller:compileDebugShaders NO-SOURCE
+> Task :flutter_volume_controller:generateDebugAssets UP-TO-DATE
+> Task :flutter_volume_controller:mergeDebugAssets UP-TO-DATE
+> Task :geocoding_android:mergeDebugShaders UP-TO-DATE
+> Task :geocoding_android:compileDebugShaders NO-SOURCE
+> Task :geocoding_android:generateDebugAssets UP-TO-DATE
+> Task :geocoding_android:mergeDebugAssets UP-TO-DATE
+> Task :geolocator_android:mergeDebugShaders UP-TO-DATE
+> Task :geolocator_android:compileDebugShaders NO-SOURCE
+> Task :geolocator_android:generateDebugAssets UP-TO-DATE
+> Task :geolocator_android:mergeDebugAssets UP-TO-DATE
+> Task :image_picker_android:mergeDebugShaders UP-TO-DATE
+> Task :image_picker_android:compileDebugShaders NO-SOURCE
+> Task :image_picker_android:generateDebugAssets UP-TO-DATE
+> Task :image_picker_android:mergeDebugAssets UP-TO-DATE
+> Task :local_auth_android:mergeDebugShaders UP-TO-DATE
+> Task :local_auth_android:compileDebugShaders NO-SOURCE
+> Task :local_auth_android:generateDebugAssets UP-TO-DATE
+> Task :local_auth_android:mergeDebugAssets UP-TO-DATE
+> Task :path_provider_android:mergeDebugShaders UP-TO-DATE
+> Task :path_provider_android:compileDebugShaders NO-SOURCE
+> Task :path_provider_android:generateDebugAssets UP-TO-DATE
+> Task :path_provider_android:mergeDebugAssets UP-TO-DATE
+> Task :permission_handler_android:mergeDebugShaders UP-TO-DATE
+> Task :permission_handler_android:compileDebugShaders NO-SOURCE
+> Task :permission_handler_android:generateDebugAssets UP-TO-DATE
+> Task :permission_handler_android:mergeDebugAssets UP-TO-DATE
+> Task :record_android:mergeDebugShaders UP-TO-DATE
+> Task :record_android:compileDebugShaders NO-SOURCE
+> Task :record_android:generateDebugAssets UP-TO-DATE
+> Task :record_android:mergeDebugAssets UP-TO-DATE
+> Task :shared_preferences_android:mergeDebugShaders UP-TO-DATE
+> Task :shared_preferences_android:compileDebugShaders NO-SOURCE
+> Task :shared_preferences_android:generateDebugAssets UP-TO-DATE
+> Task :shared_preferences_android:mergeDebugAssets UP-TO-DATE
+> Task :speech_to_text:mergeDebugShaders UP-TO-DATE
+> Task :speech_to_text:compileDebugShaders NO-SOURCE
+> Task :speech_to_text:generateDebugAssets UP-TO-DATE
+> Task :speech_to_text:mergeDebugAssets UP-TO-DATE
+> Task :sqflite_android:mergeDebugShaders UP-TO-DATE
+> Task :sqflite_android:compileDebugShaders NO-SOURCE
+> Task :sqflite_android:generateDebugAssets UP-TO-DATE
+> Task :sqflite_android:mergeDebugAssets UP-TO-DATE
+> Task :url_launcher_android:mergeDebugShaders UP-TO-DATE
+> Task :url_launcher_android:compileDebugShaders NO-SOURCE
+> Task :url_launcher_android:generateDebugAssets UP-TO-DATE
+> Task :url_launcher_android:mergeDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:copyFlutterAssetsDebug
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :cloud_firestore:generateDebugResValues UP-TO-DATE
+> Task :cloud_firestore:generateDebugResources UP-TO-DATE
+> Task :cloud_firestore:packageDebugResources UP-TO-DATE
+> Task :firebase_auth:generateDebugResValues UP-TO-DATE
+> Task :firebase_auth:generateDebugResources UP-TO-DATE
+> Task :firebase_auth:packageDebugResources UP-TO-DATE
+> Task :firebase_core:generateDebugResValues UP-TO-DATE
+> Task :firebase_core:generateDebugResources UP-TO-DATE
+> Task :firebase_core:packageDebugResources UP-TO-DATE
+> Task :firebase_storage:generateDebugResValues UP-TO-DATE
+> Task :firebase_storage:generateDebugResources UP-TO-DATE
+> Task :firebase_storage:packageDebugResources UP-TO-DATE
+> Task :flutter_contacts:generateDebugResValues UP-TO-DATE
+> Task :flutter_contacts:generateDebugResources UP-TO-DATE
+> Task :flutter_contacts:packageDebugResources UP-TO-DATE
+> Task :flutter_phone_direct_caller:generateDebugResValues UP-TO-DATE
+> Task :flutter_phone_direct_caller:generateDebugResources UP-TO-DATE
+> Task :flutter_phone_direct_caller:packageDebugResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateDebugResValues UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateDebugResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:packageDebugResources UP-TO-DATE
+> Task :flutter_volume_controller:generateDebugResValues UP-TO-DATE
+> Task :flutter_volume_controller:generateDebugResources UP-TO-DATE
+> Task :flutter_volume_controller:packageDebugResources UP-TO-DATE
+> Task :geocoding_android:generateDebugResValues UP-TO-DATE
+> Task :geocoding_android:generateDebugResources UP-TO-DATE
+> Task :geocoding_android:packageDebugResources UP-TO-DATE
+> Task :geolocator_android:generateDebugResValues UP-TO-DATE
+> Task :geolocator_android:generateDebugResources UP-TO-DATE
+> Task :geolocator_android:packageDebugResources UP-TO-DATE
+> Task :image_picker_android:generateDebugResValues UP-TO-DATE
+> Task :image_picker_android:generateDebugResources UP-TO-DATE
+> Task :image_picker_android:packageDebugResources UP-TO-DATE
+> Task :local_auth_android:generateDebugResValues UP-TO-DATE
+> Task :local_auth_android:generateDebugResources UP-TO-DATE
+> Task :local_auth_android:packageDebugResources UP-TO-DATE
+> Task :path_provider_android:generateDebugResValues UP-TO-DATE
+> Task :path_provider_android:generateDebugResources UP-TO-DATE
+> Task :path_provider_android:packageDebugResources UP-TO-DATE
+> Task :permission_handler_android:generateDebugResValues UP-TO-DATE
+> Task :permission_handler_android:generateDebugResources UP-TO-DATE
+> Task :permission_handler_android:packageDebugResources UP-TO-DATE
+> Task :record_android:generateDebugResValues UP-TO-DATE
+> Task :record_android:generateDebugResources UP-TO-DATE
+> Task :record_android:packageDebugResources UP-TO-DATE
+> Task :shared_preferences_android:generateDebugResValues UP-TO-DATE
+> Task :shared_preferences_android:generateDebugResources UP-TO-DATE
+> Task :shared_preferences_android:packageDebugResources UP-TO-DATE
+> Task :speech_to_text:generateDebugResValues UP-TO-DATE
+> Task :speech_to_text:generateDebugResources UP-TO-DATE
+> Task :speech_to_text:packageDebugResources UP-TO-DATE
+> Task :sqflite_android:generateDebugResValues UP-TO-DATE
+> Task :sqflite_android:generateDebugResources UP-TO-DATE
+> Task :sqflite_android:packageDebugResources UP-TO-DATE
+> Task :url_launcher_android:generateDebugResValues UP-TO-DATE
+> Task :url_launcher_android:generateDebugResources UP-TO-DATE
+> Task :url_launcher_android:packageDebugResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :cloud_firestore:extractDeepLinksDebug UP-TO-DATE
+> Task :cloud_firestore:processDebugManifest UP-TO-DATE
+> Task :firebase_auth:extractDeepLinksDebug UP-TO-DATE
+> Task :firebase_auth:processDebugManifest UP-TO-DATE
+> Task :firebase_core:extractDeepLinksDebug UP-TO-DATE
+> Task :firebase_core:processDebugManifest UP-TO-DATE
+> Task :firebase_storage:extractDeepLinksDebug UP-TO-DATE
+> Task :firebase_storage:processDebugManifest UP-TO-DATE
+> Task :flutter_contacts:extractDeepLinksDebug UP-TO-DATE
+> Task :flutter_contacts:processDebugManifest UP-TO-DATE
+> Task :flutter_phone_direct_caller:extractDeepLinksDebug UP-TO-DATE
+> Task :flutter_phone_direct_caller:processDebugManifest UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:extractDeepLinksDebug UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:processDebugManifest UP-TO-DATE
+> Task :flutter_volume_controller:extractDeepLinksDebug UP-TO-DATE
+> Task :flutter_volume_controller:processDebugManifest UP-TO-DATE
+> Task :geocoding_android:extractDeepLinksDebug UP-TO-DATE
+> Task :geocoding_android:processDebugManifest UP-TO-DATE
+> Task :geolocator_android:extractDeepLinksDebug UP-TO-DATE
+> Task :geolocator_android:processDebugManifest UP-TO-DATE
+> Task :image_picker_android:extractDeepLinksDebug UP-TO-DATE
+> Task :image_picker_android:processDebugManifest UP-TO-DATE
+> Task :local_auth_android:extractDeepLinksDebug UP-TO-DATE
+> Task :local_auth_android:processDebugManifest UP-TO-DATE
+> Task :path_provider_android:extractDeepLinksDebug UP-TO-DATE
+> Task :path_provider_android:processDebugManifest UP-TO-DATE
+> Task :permission_handler_android:extractDeepLinksDebug UP-TO-DATE
+> Task :permission_handler_android:processDebugManifest UP-TO-DATE
+> Task :record_android:extractDeepLinksDebug UP-TO-DATE
+> Task :record_android:processDebugManifest UP-TO-DATE
+> Task :shared_preferences_android:extractDeepLinksDebug UP-TO-DATE
+> Task :shared_preferences_android:processDebugManifest UP-TO-DATE
+> Task :speech_to_text:extractDeepLinksDebug UP-TO-DATE
+> Task :speech_to_text:processDebugManifest UP-TO-DATE
+> Task :sqflite_android:extractDeepLinksDebug UP-TO-DATE
+> Task :sqflite_android:processDebugManifest UP-TO-DATE
+> Task :url_launcher_android:extractDeepLinksDebug UP-TO-DATE
+> Task :url_launcher_android:processDebugManifest UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:outputDebugAppLinkSettings UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :cloud_firestore:compileDebugLibraryResources UP-TO-DATE
+> Task :cloud_firestore:parseDebugLocalResources UP-TO-DATE
+> Task :cloud_firestore:generateDebugRFile UP-TO-DATE
+> Task :firebase_auth:compileDebugLibraryResources UP-TO-DATE
+> Task :firebase_auth:parseDebugLocalResources UP-TO-DATE
+> Task :firebase_auth:generateDebugRFile UP-TO-DATE
+> Task :firebase_core:compileDebugLibraryResources UP-TO-DATE
+> Task :firebase_core:parseDebugLocalResources UP-TO-DATE
+> Task :firebase_core:generateDebugRFile UP-TO-DATE
+> Task :firebase_storage:compileDebugLibraryResources UP-TO-DATE
+> Task :firebase_storage:parseDebugLocalResources UP-TO-DATE
+> Task :firebase_storage:generateDebugRFile UP-TO-DATE
+> Task :flutter_contacts:compileDebugLibraryResources UP-TO-DATE
+> Task :flutter_contacts:parseDebugLocalResources UP-TO-DATE
+> Task :flutter_contacts:generateDebugRFile UP-TO-DATE
+> Task :flutter_phone_direct_caller:compileDebugLibraryResources UP-TO-DATE
+> Task :flutter_phone_direct_caller:parseDebugLocalResources UP-TO-DATE
+> Task :flutter_phone_direct_caller:generateDebugRFile UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:compileDebugLibraryResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:parseDebugLocalResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateDebugRFile UP-TO-DATE
+> Task :flutter_volume_controller:compileDebugLibraryResources UP-TO-DATE
+> Task :flutter_volume_controller:parseDebugLocalResources UP-TO-DATE
+> Task :flutter_volume_controller:generateDebugRFile UP-TO-DATE
+> Task :geocoding_android:compileDebugLibraryResources UP-TO-DATE
+> Task :geocoding_android:parseDebugLocalResources UP-TO-DATE
+> Task :geocoding_android:generateDebugRFile UP-TO-DATE
+> Task :geolocator_android:compileDebugLibraryResources UP-TO-DATE
+> Task :geolocator_android:parseDebugLocalResources UP-TO-DATE
+> Task :geolocator_android:generateDebugRFile UP-TO-DATE
+> Task :image_picker_android:compileDebugLibraryResources UP-TO-DATE
+> Task :image_picker_android:parseDebugLocalResources UP-TO-DATE
+> Task :image_picker_android:generateDebugRFile UP-TO-DATE
+> Task :local_auth_android:compileDebugLibraryResources UP-TO-DATE
+> Task :local_auth_android:parseDebugLocalResources UP-TO-DATE
+> Task :local_auth_android:generateDebugRFile UP-TO-DATE
+> Task :path_provider_android:compileDebugLibraryResources UP-TO-DATE
+> Task :path_provider_android:parseDebugLocalResources UP-TO-DATE
+> Task :path_provider_android:generateDebugRFile UP-TO-DATE
+> Task :permission_handler_android:compileDebugLibraryResources UP-TO-DATE
+> Task :permission_handler_android:parseDebugLocalResources UP-TO-DATE
+> Task :permission_handler_android:generateDebugRFile UP-TO-DATE
+> Task :record_android:compileDebugLibraryResources UP-TO-DATE
+> Task :record_android:parseDebugLocalResources UP-TO-DATE
+> Task :record_android:generateDebugRFile UP-TO-DATE
+> Task :shared_preferences_android:compileDebugLibraryResources UP-TO-DATE
+> Task :shared_preferences_android:parseDebugLocalResources UP-TO-DATE
+> Task :shared_preferences_android:generateDebugRFile UP-TO-DATE
+> Task :speech_to_text:compileDebugLibraryResources UP-TO-DATE
+> Task :speech_to_text:parseDebugLocalResources UP-TO-DATE
+> Task :speech_to_text:generateDebugRFile UP-TO-DATE
+> Task :sqflite_android:compileDebugLibraryResources UP-TO-DATE
+> Task :sqflite_android:parseDebugLocalResources UP-TO-DATE
+> Task :sqflite_android:generateDebugRFile UP-TO-DATE
+> Task :url_launcher_android:compileDebugLibraryResources UP-TO-DATE
+> Task :url_launcher_android:parseDebugLocalResources UP-TO-DATE
+> Task :url_launcher_android:generateDebugRFile UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :cloud_firestore:generateDebugBuildConfig UP-TO-DATE
+> Task :cloud_firestore:javaPreCompileDebug UP-TO-DATE
+> Task :firebase_core:generateDebugBuildConfig UP-TO-DATE
+> Task :firebase_core:javaPreCompileDebug UP-TO-DATE
+> Task :firebase_core:compileDebugJavaWithJavac
+> Task :firebase_auth:generateDebugBuildConfig UP-TO-DATE
+> Task :firebase_auth:javaPreCompileDebug UP-TO-DATE
+> Task :firebase_storage:generateDebugBuildConfig UP-TO-DATE
+> Task :firebase_storage:javaPreCompileDebug UP-TO-DATE
+> Task :flutter_contacts:checkKotlinGradlePluginConfigurationErrors
+> Task :firebase_core:bundleLibCompileToJarDebug
+> Task :cloud_firestore:compileDebugJavaWithJavac
+> Task :cloud_firestore:bundleLibCompileToJarDebug
+
+> Task :firebase_auth:compileDebugJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :firebase_auth:bundleLibCompileToJarDebug UP-TO-DATE
+
+> Task :flutter_contacts:compileDebugKotlin
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:41:40 Unchecked cast: Any? to Map<String, Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:42:30 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:43:30 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:44:33 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:45:37 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:46:32 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:47:36 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:48:30 Unchecked cast: Any? to List<Map<String, Any?>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:49:29 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:50:32 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/Contact.kt:51:30 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/ContactChangeObserver.kt:15:14 Unnecessary safe call on a non-null receiver of type EventChannel.EventSink
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:217:86 Elvis operator (?:) always returns the left operand of non-nullable type Int
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:222:21 Name shadowed: id
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:403:42 Unnecessary non-null assertion (!!) on a non-null receiver of type Int
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:404:40 Unnecessary non-null assertion (!!) on a non-null receiver of type Int
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:416:37 Name shadowed: note
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:682:17 Variable 'results' is never used
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:693:25 Unnecessary non-null assertion (!!) on a non-null receiver of type Activity
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:741:25 Unnecessary non-null assertion (!!) on a non-null receiver of type Activity
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:780:106 Elvis operator (?:) always returns the left operand of non-nullable type Int
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:964:20 'PROTOCOL_AIM: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:965:20 'PROTOCOL_GOOGLE_TALK: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:966:20 'PROTOCOL_ICQ: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:967:20 'PROTOCOL_JABBER: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:968:20 'PROTOCOL_MSN: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:969:20 'PROTOCOL_NETMEETING: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:970:20 'PROTOCOL_QQ: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:971:20 'PROTOCOL_SKYPE: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:972:20 'PROTOCOL_YAHOO: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:985:50 'PROTOCOL_AIM: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:986:57 'PROTOCOL_GOOGLE_TALK: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:987:50 'PROTOCOL_ICQ: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:988:53 'PROTOCOL_JABBER: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:989:50 'PROTOCOL_MSN: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:990:57 'PROTOCOL_NETMEETING: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:991:53 'PROTOCOL_QQ: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:992:52 'PROTOCOL_SKYPE: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:993:52 'PROTOCOL_YAHOO: Int' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:1067:19 Variable 'i' is never used
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:1079:19 Variable 'i' is never used
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContacts.kt:1183:13 Parameter 'ops' is never used
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:47:58 'getFlutterEngine(): FlutterEngine' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:48:62 'getFlutterEngine(): FlutterEngine' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:178:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:207:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:208:43 Unchecked cast: Any to Map<String, Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:222:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:223:43 Unchecked cast: Any to Map<String, Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:238:71 Unchecked cast: Any! to List<String>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:251:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:252:41 Unchecked cast: Any to Map<String, Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:262:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:263:41 Unchecked cast: Any to Map<String, Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:273:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:274:41 Unchecked cast: Any to Map<String, Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:283:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:291:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:305:47 Unchecked cast: Any! to List<Any>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:306:63 Unchecked cast: Any to Map<String, Any?>
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/FlutterContactsPlugin.kt:380:68 'constructor Handler()' is deprecated. Deprecated in Java
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_contacts-1.1.9+2/android/src/main/kotlin/co/quis/flutter_contacts/properties/Account.kt:15:28 Unchecked cast: Any? to List<String>
+
+> Task :firebase_storage:compileDebugJavaWithJavac
+> Task :firebase_storage:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :flutter_contacts:javaPreCompileDebug UP-TO-DATE
+> Task :flutter_contacts:compileDebugJavaWithJavac NO-SOURCE
+> Task :flutter_contacts:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :flutter_phone_direct_caller:checkKotlinGradlePluginConfigurationErrors
+> Task :flutter_phone_direct_caller:javaPreCompileDebug UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:javaPreCompileDebug UP-TO-DATE
+> Task :flutter_phone_direct_caller:compileDebugKotlin
+> Task :flutter_plugin_android_lifecycle:compileDebugJavaWithJavac
+> Task :flutter_phone_direct_caller:compileDebugJavaWithJavac NO-SOURCE
+> Task :flutter_phone_direct_caller:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :flutter_volume_controller:checkKotlinGradlePluginConfigurationErrors
+> Task :flutter_volume_controller:javaPreCompileDebug UP-TO-DATE
+> Task :geocoding_android:javaPreCompileDebug UP-TO-DATE
+
+> Task :geocoding_android:compileDebugJavaWithJavac
+Java compiler version 23 has deprecated support for compiling with source/target version 8.
+Try one of the following options:
+    1. [Recommended] Use Java toolchain with a lower language version
+    2. Set a higher source/target version
+    3. Use a lower version of the JDK running the build (if you're not using Java toolchain)
+For more details on how to configure these settings, see https://developer.android.com/build/jdks.
+To suppress this warning, set android.javaCompile.suppressSourceTargetDeprecationWarning=true in gradle.properties.
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+
+> Task :geolocator_android:javaPreCompileDebug UP-TO-DATE
+> Task :geocoding_android:bundleLibCompileToJarDebug
+> Task :flutter_volume_controller:compileDebugKotlin
+
+> Task :geolocator_android:compileDebugJavaWithJavac
+Java compiler version 23 has deprecated support for compiling with source/target version 8.
+Try one of the following options:
+    1. [Recommended] Use Java toolchain with a lower language version
+    2. Set a higher source/target version
+    3. Use a lower version of the JDK running the build (if you're not using Java toolchain)
+For more details on how to configure these settings, see https://developer.android.com/build/jdks.
+To suppress this warning, set android.javaCompile.suppressSourceTargetDeprecationWarning=true in gradle.properties.
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+
+> Task :flutter_volume_controller:compileDebugJavaWithJavac NO-SOURCE
+> Task :flutter_volume_controller:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :image_picker_android:javaPreCompileDebug UP-TO-DATE
+> Task :geolocator_android:bundleLibCompileToJarDebug
+> Task :image_picker_android:compileDebugJavaWithJavac
+> Task :image_picker_android:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :local_auth_android:javaPreCompileDebug UP-TO-DATE
+> Task :local_auth_android:compileDebugJavaWithJavac
+> Task :local_auth_android:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :path_provider_android:javaPreCompileDebug UP-TO-DATE
+> Task :path_provider_android:compileDebugJavaWithJavac
+> Task :path_provider_android:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :permission_handler_android:javaPreCompileDebug UP-TO-DATE
+> Task :permission_handler_android:compileDebugJavaWithJavac
+> Task :permission_handler_android:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :record_android:checkKotlinGradlePluginConfigurationErrors
+> Task :record_android:javaPreCompileDebug UP-TO-DATE
+> Task :shared_preferences_android:checkKotlinGradlePluginConfigurationErrors
+> Task :shared_preferences_android:javaPreCompileDebug UP-TO-DATE
+> Task :speech_to_text:checkKotlinGradlePluginConfigurationErrors
+> Task :speech_to_text:javaPreCompileDebug UP-TO-DATE
+> Task :sqflite_android:javaPreCompileDebug UP-TO-DATE
+> Task :sqflite_android:compileDebugJavaWithJavac
+> Task :url_launcher_android:generateDebugBuildConfig UP-TO-DATE
+> Task :url_launcher_android:javaPreCompileDebug UP-TO-DATE
+> Task :sqflite_android:bundleLibCompileToJarDebug
+
+> Task :speech_to_text:compileDebugKotlin FAILED
+e: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/speech_to_text-6.6.0/android/src/main/kotlin/com/csdcorp/speech_to_text/SpeechToTextPlugin.kt:37:48 Unresolved reference: Registrar
+e: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/speech_to_text-6.6.0/android/src/main/kotlin/com/csdcorp/speech_to_text/SpeechToTextPlugin.kt:139:37 Unresolved reference: Registrar
+
+> Task :url_launcher_android:compileDebugJavaWithJavac
+
+> Task :shared_preferences_android:compileDebugKotlin
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.20/android/src/main/kotlin/io/flutter/plugins/sharedpreferences/SharedPreferencesPlugin.kt:451:52 Unnecessary non-null assertion (!!) on a non-null receiver of type String
+
+> Task :record_android:compileDebugKotlin
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/record_android-1.5.0/android/src/main/kotlin/com/llfbandit/record/methodcall/RecorderWrapper.kt:200:65 Name shadowed: intent
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/record_android-1.5.0/android/src/main/kotlin/com/llfbandit/record/record/format/Format.kt:121:21 Unsafe use of a nullable receiver of type MediaCodecInfo.AudioCapabilities?
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/record_android-1.5.0/android/src/main/kotlin/com/llfbandit/record/record/format/Format.kt:123:11 Unsafe use of a nullable receiver of type MediaCodecInfo.AudioCapabilities?
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/record_android-1.5.0/android/src/main/kotlin/com/llfbandit/record/record/format/Format.kt:127:13 Unsafe use of a nullable receiver of type MediaCodecInfo.AudioCapabilities?
+w: file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/record_android-1.5.0/android/src/main/kotlin/com/llfbandit/record/record/format/Format.kt:135:25 Unsafe use of a nullable receiver of type MediaCodecInfo.AudioCapabilities?
+
+[Incubating] Problems report is available at: file:///C:/Users/Admin/Sahay/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':speech_to_text:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':speech_to_text:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+	at org.gradle.internal.Either$Right.fold(Either.java:175)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:64)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:20)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:141)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:73)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	... 2 more
+
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 1m 12s
+300 actionable tasks: 38 executed, 262 up-to-date
