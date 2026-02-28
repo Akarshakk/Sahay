@@ -58,7 +58,7 @@ flutter pub get
 flutter run
 ```
 
----
+--
 
 ## 📁 Project Structure
 
