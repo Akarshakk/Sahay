@@ -101,7 +101,7 @@ FIREBASE_PRIVATE_KEY="your-private-key"
 DEFAULT_SEARCH_RADIUS_METERS=10000
 ```
 
----
+--
 
 ## 📱 User Roles
 
