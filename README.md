@@ -87,7 +87,7 @@ Sahay/
 └── web/                    # Web build assets
 ```
 
----
+--
 
 ## 🔧 Configuration
 
